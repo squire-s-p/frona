@@ -146,7 +146,7 @@ export async function bulkCreateNotes(notes: { title: string, content: string }[
     return createdNotes;
 }
 
-export async function updateNote(id: string, data: { title?: string, content?: string, properties?: any, folderId?: string | null, isFavorite?: boolean }) {
+export async function updateNote(id: string, data: { title?: string, content?: string, properties?: any, folderId?: string | null, isFavorite?: boolean, tags?: string[] }) {
     const user = await requireUser();
 
     const note = await prisma.note.update({
@@ -222,11 +222,31 @@ async function syncNoteLinks(sourceNoteId: string, content: string, userId?: str
 export async function findNoteByTitle(title: string) {
     const user = await requireUser();
     return prisma.note.findFirst({
-        where: {
-            userId: user.id,
-            title: { equals: title, mode: "insensitive" }
-        }
+        where: { userId: user.id, title }
     });
+}
+
+export async function getDailyNote() {
+    const user = await requireUser();
+    const today = new Date();
+    const title = today.toISOString().split("T")[0]; // YYYY-MM-DD
+
+    let note = await prisma.note.findFirst({
+        where: { userId: user.id, title }
+    });
+
+    if (!note) {
+        note = await prisma.note.create({
+            data: {
+                userId: user.id,
+                title,
+                content: `# ${title}\n\n`,
+                properties: {}
+            }
+        });
+    }
+
+    return note;
 }
 
 export async function searchNotes(query: string) {

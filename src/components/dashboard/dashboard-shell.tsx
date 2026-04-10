@@ -20,7 +20,7 @@ export default function DashboardShell({
   return (
     <SidebarProvider>
       <div className="min-h-screen bg-background">
-        <AppSidebar />
+        <AppSidebar user={user} />
 
         {/* ✅ inset — це “права” частина */}
         <SidebarInset className="bg-background md:rounded-tl-3xl md:rounded-bl-3xl md:rounded-tr-3xl md:mt-2 md:mr-2 md:mb-2 md:border md:border-border md:shadow-sm overflow-hidden">

@@ -32,7 +32,7 @@ export default function ProjectCreateDialog({
 
     startTransition(async () => {
       try {
-        await createProject(fd);
+        await createProject({ name });
         setName("");
         setOpen(false);
         onCreated?.();

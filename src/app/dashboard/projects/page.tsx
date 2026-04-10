@@ -58,8 +58,8 @@ export default async function ProjectsPage() {
 
           site: p.site ?? null,
           cost: p.cost ? p.cost.toString() : null,
-          createdAt: p.createdAt.toISOString(),
-          updatedAt: p.updatedAt.toISOString(),
+          createdAt: p.createdAt,
+          updatedAt: p.updatedAt,
           status: p.status as unknown as ProjectStatus,
         }))}
       />

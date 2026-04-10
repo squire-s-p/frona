@@ -74,7 +74,7 @@ export function ChartContainer({
 export function ChartTooltip({
   className,
   ...props
-}: React.ComponentProps<typeof RechartsPrimitive.Tooltip>) {
+}: React.ComponentProps<typeof RechartsPrimitive.Tooltip> & { className?: string }) {
   return (
     <RechartsPrimitive.Tooltip
       {...props}

@@ -13,21 +13,22 @@ function requireUserId(session: any) {
 /**
  * UI enums (what your components use)
  */
-type Priority = "LOW" | "MEDIUM" | "HIGH" | "NONE";
+type Priority = "LOW" | "MEDIUM" | "HIGH" | "URGENT" | "NONE";
 type Status = "TODO" | "DONE";
 
 /**
  * DB enums (what Prisma expects based on schema.prisma)
  * Priority: low | medium | high | urgent
  */
-type PriorityDb = "low" | "medium" | "high";
+type PriorityDb = "low" | "medium" | "high" | "urgent";
 
-function mapPriority(p?: Priority): PriorityDb | "urgent" {
+function mapPriority(p?: Priority): PriorityDb {
   switch (p) {
     case "NONE": return "low";
-    case "LOW": return "medium";
-    case "MEDIUM": return "high";
-    case "HIGH": return "urgent";
+    case "LOW": return "low";
+    case "MEDIUM": return "medium";
+    case "HIGH": return "high";
+    case "URGENT": return "urgent";
     default: return "low";
   }
 }
@@ -602,16 +603,16 @@ export async function duplicateTask(taskId: string) {
       isTemplate: false as any, // Don't template copy
 
       // Copy tags
-      taskTags: (task as any).taskTags.length > 0
+      taskTags: (task as any).taskTags && (task as any).taskTags.length > 0
         ? {
-          create: task.taskTags.map((tt) => ({ tagId: tt.tagId })),
+          create: (task as any).taskTags.map((tt: any) => ({ tagId: tt.tagId })),
         }
         : undefined,
 
       // Copy subtasks (reset isDone)
-      subtasks: task.subtasks.length > 0
+      subtasks: (task as any).subtasks && (task as any).subtasks.length > 0
         ? {
-          create: task.subtasks.map((s) => ({
+          create: (task as any).subtasks.map((s: any) => ({
             title: s.title,
             isDone: false,
           })),

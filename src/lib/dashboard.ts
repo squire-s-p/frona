@@ -32,7 +32,7 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
     transactionsMonth,
   ] = await Promise.all([
     prisma.project.count({
-      where: { userId, isArchived: false },
+      where: { userId, status: "active" },
     }),
 
     prisma.task.count({

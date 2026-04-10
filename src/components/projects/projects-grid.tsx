@@ -7,8 +7,8 @@ export type ProjectRow = {
   source: string | null;
   site: string | null;
   cost: any | null; // Prisma Decimal
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string | Date;
+  updatedAt: string | Date;
   status: "active" | "completed" | "archived";
   clientName?: string | null;
 };

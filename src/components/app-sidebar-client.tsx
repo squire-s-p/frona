@@ -148,7 +148,6 @@ export function AppSidebarClient({
             name: user.name ?? "Користувач",
             email: user.email ?? "",
             avatar: user.image ?? "",
-            fallback: initials(user.name),
           }}
         />
       </SidebarFooter>

@@ -31,8 +31,8 @@ export default function ProjectCard(props: {
     source?: string | null;
     site?: string | null;
     cost?: string | null;
-    createdAt: Date;
-    updatedAt?: Date;
+    createdAt: string | Date;
+    updatedAt?: string | Date;
     status?: "active" | "completed" | "archived";
     clientName?: string | null;
 }) {

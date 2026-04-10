@@ -4,6 +4,7 @@ import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { cn } from "@/lib/utils";
 import { Loader2, Wallet, CreditCard, Banknote, Bitcoin, PiggyBank } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -80,7 +81,7 @@ export function AccountDialog({
     const isEditing = !!account;
 
     const form = useForm<FormValues>({
-        resolver: zodResolver(formSchema),
+        resolver: zodResolver(formSchema) as any,
         defaultValues: {
             name: account?.name || "",
             type: account?.type || "bank",

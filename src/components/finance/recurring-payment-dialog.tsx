@@ -71,7 +71,7 @@ export function RecurringPaymentDialog({
     const [categories, setCategories] = useState<any[]>([]);
 
     const form = useForm<FormValues>({
-        resolver: zodResolver(formSchema),
+        resolver: zodResolver(formSchema) as any,
         defaultValues: {
             name: "",
             amount: 0,

@@ -57,7 +57,7 @@ export default function TaskBoard({
   const [movingId, setMovingId] = React.useState<string | null>(null);
 
   const grouped = React.useMemo(() => {
-    const map: Record<TaskStatus, TaskLite[]> = { todo: [], doing: [], done: [] };
+    const map: Record<TaskStatus, TaskLite[]> = { todo: [], doing: [], done: [], blocked: [], canceled: [] };
     for (const t of tasks) map[t.status].push(t);
     return map;
   }, [tasks]);

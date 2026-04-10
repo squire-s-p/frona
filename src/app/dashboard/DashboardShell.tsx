@@ -1,5 +1,5 @@
-import Sidebar from "./Sidebar";
-import Topbar from "./Topbar";
+import { AppSidebar } from "@/components/app-sidebar";
+import { DashboardTopbar as Topbar } from "@/components/dashboard/topbar";
 
 type UserShape = {
   name?: string | null;
@@ -12,14 +12,14 @@ export default function DashboardShell({
   user,
   children,
 }: {
-  user: UserShape;
+  user: any; // Using any to match the slightly different User types if needed, or just specific
   children: React.ReactNode;
 }) {
   return (
     <div className="min-h-dvh bg-zinc-950 text-zinc-100">
       <div className="mx-auto flex min-h-dvh max-w-6xl">
         <aside className="hidden w-64 border-r border-zinc-800 bg-zinc-950 md:block">
-          <Sidebar />
+          <AppSidebar user={user} />
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">

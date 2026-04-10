@@ -27,9 +27,9 @@ export async function POST(req: Request) {
         userId: session.user.id,
         name,
         source: body?.source ? String(body.source) : null,
-        website: body?.website ? String(body.website) : null,
-        price: price ? price : null, // Prisma прийме string для Decimal
-        access: body?.access ? String(body.access) : null,
+        site: body?.website ? String(body.website) : null,
+        cost: price ? price : null,
+        accesses: body?.access ? String(body.access) : null,
         clientContact: body?.clientContact ? String(body.clientContact) : null,
         notes: body?.notes ? String(body.notes) : null,
       },

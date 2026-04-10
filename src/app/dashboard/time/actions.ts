@@ -553,8 +553,8 @@ export async function createManualWorkEntry(input: z.infer<typeof manualWorkSche
       const calRes = await createCalendarEvent({
         title: syncTitle,
         allDay: false,
-        startIso: syncStart.toISOString(),
-        endIso: syncEnd.toISOString(),
+        startIso: (syncStart as Date).toISOString(),
+        endIso: (syncEnd as Date).toISOString(),
       });
       if (calRes.event.id) {
         await prisma.timeEntry.update({
