@@ -1,0 +1,241 @@
+# Monobank Auto-Sync Implementation Plan
+
+## Проблема
+
+Дані з Monobank оновлюються тільки вручну, через що баланси застарілі на кілька днів.
+
+## Рішення
+
+Реалізувати автоматичну синхронізацію з комбінацією підходів:
+
+### 1. Client-Side Polling (найпростіше)
+
+**Переваги:**
+- Не потребує серверної інфраструктури
+- Працює поки користувач на сторінці
+- Простота реалізації
+
+**Реалізація:**
+
+```typescript
+// В finance-page-client.tsx
+useEffect(() => {
+  const interval = setInterval(async () => {
+    await syncMonobankAccounts();
+    await fetchData(); // оновити UI
+  }, 5 * 60 * 1000); // кожні 5 хвилин
+
+  return () => clearInterval(interval);
+}, []);
+```
+
+**Обмеження Monobank API:**
+- Максимум 60 запитів/хвилину per token
+- Рекомендовано робити запити не частіше 1 раз на хвилину
+
+### 2. Manual Sync Button
+
+Кнопка "Синхронізувати" в UI з індикатором стану:
+- Loading spinner під час синхронізації
+- Last synced timestamp
+- Success/error feedback
+
+### 3. UI Improvements
+
+#### Індикатор останньої синхронізації:
+```tsx
+<div className="text-xs text-zinc-500">
+  Остання синхронізація: {formatDistanceToNow(lastSyncedAt)}
+</div>
+```
+
+#### Кнопка синхронізації:
+```tsx
+<Button onClick={handleSync} disabled={isSyncing}>
+  {isSyncing ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+  Синхронізувати
+</Button>
+```
+
+---
+
+## Детальний План
+
+### Phase A: Manual Sync UI
+
+#### [MODIFY] [src/components/finance/finance-page-client.tsx](file:///c:/Users/oleks/dashboard-app/src/components/finance/finance-page-client.tsx)
+
+Додати:
+1. State для sync status (`isSyncing`, `lastSyncedAt`)
+2. Функцію `handleManualSync`:
+   ```typescript
+   async function handleManualSync() {
+     setIsSyncing(true);
+     try {
+       await syncMonobankAccounts();
+       await syncMonobankTransactions();
+       await fetchData();
+       setLastSyncedAt(new Date());
+       toast.success("Синхронізація завершена");
+     } catch (error) {
+       toast.error("Помилка синхронізації");
+     } finally {
+       setIsSyncing(false);
+     }
+   }
+   ```
+3. UI елементи в header:
+   - Sync button
+   - Last synced indicator
+
+#### [MODIFY] [src/app/dashboard/finance/actions.ts](file:///c:/Users/oleks/dashboard-app/src/app/dashboard/finance/actions.ts)
+
+Покращити [syncMonobankAccounts](file:///c:/Users/oleks/dashboard-app/src/app/dashboard/finance/actions.ts#16-85):
+- Додати rate limiting check
+- Повертати timestamp
+- Кращу Error handling
+
+### Phase B: Auto-Sync
+
+#### [MODIFY] [src/components/finance/finance-page-client.tsx](file:///c:/Users/oleks/dashboard-app/src/components/finance/finance-page-client.tsx)
+
+1. Auto-sync при mount:
+   ```typescript
+   useEffect(() => {
+     // Sync on load якщо дані старі (>5 хв)
+     const needsSync = !lastSyncedAt || 
+       Date.now() - lastSyncedAt.getTime() > 5 * 60 * 1000;
+     
+     if (needsSync) {
+       handleManualSync();
+     }
+   }, []);
+   ```
+
+2. Periodic auto-sync:
+   ```typescript
+   useEffect(() => {
+     const interval = setInterval(() => {
+       handleManualSync();
+     }, 5 * 60 * 1000); // кожні 5 хвилин
+     
+     return () => clearInterval(interval);
+   }, []);
+   ```
+
+3. Visibility API (sync коли користувач повертається):
+   ```typescript
+   useEffect(() => {
+     function handleVisibilityChange() {
+       if (!document.hidden) {
+         const timeSinceLastSync = Date.now() - lastSyncedAt;
+         if (timeSinceLastSync > 5 * 60 * 1000) {
+           handleManualSync();
+         }
+       }
+     }
+     
+     document.addEventListener('visibilitychange', handleVisibilityChange);
+     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+   }, [lastSyncedAt]);
+   ```
+
+### Phase C: Optimizations
+
+#### Rate Limiting Helper
+
+```typescript
+// src/lib/rate-limiter.ts
+export class RateLimiter {
+  private lastCall: number = 0;
+  private minInterval: number;
+
+  constructor(minIntervalMs: number) {
+    this.minInterval = minIntervalMs;
+  }
+
+  async throttle<T>(fn: () => Promise<T>): Promise<T> {
+    const now = Date.now();
+    const timeSinceLastCall = now - this.lastCall;
+    
+    if (timeSinceLastCall < this.minInterval) {
+      const waitTime = this.minInterval - timeSinceLastCall;
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+    
+    this.lastCall = Date.now();
+    return fn();
+  }
+}
+
+export const monobankRateLimiter = new RateLimiter(60 * 1000); // 1 хв
+```
+
+---
+
+## UI Mockup
+
+```
+┌─────────────────────────────────────────────────────┐
+│  Фінанси                                            │
+│  Огляд ваших активів та витрат                      │
+│                                                     │
+│  [🔄 Синхронізувати] Остання: 2 хв тому            │
+└─────────────────────────────────────────────────────┘
+```
+
+---
+
+## Verification
+
+### Manual Testing
+- ✅ Натиснути "Синхронізувати" - дані оновлюються
+- ✅ Зачекати 5 хвилин - авто-sync спрацьовує
+- ✅ Вийти і зайти на сторінку - синхронізація при поверненні
+- ✅ Перевірити rate limiting - не більше 1 req/min
+
+### Edge Cases
+- Network timeout
+- Monobank API rate limit error (429)
+- Invalid token
+- Multiple tabs відкриті
+
+---
+
+## Timeline
+
+- **Phase A** (Manual Sync UI): 30 хв
+- **Phase B** (Auto-Sync): 20 хв
+- **Phase C** (Optimizations): 20 хв
+
+**Загалом**: ~1-1.5 години
+
+---
+
+## Альтернативи (для майбутнього)
+
+### Webhooks (складніше)
+Monobank підтримує webhooks, але потрібно:
+1. Публічний endpoint на сервері
+2. Налаштування webhook URL в Monobank
+3. Verification signature
+4. Background processing
+
+**Плюси:**
+- Instant updates
+- Не витрачає API limits
+
+**Мінуси:**
+- Складна інфраструктура
+- Потребує vercel/server з публічним URL
+
+### Cron Job (серверна)
+Запускати sync кожні 5 хв на сервері (vercel cron, AWS Lambda, etc.)
+
+**Плюси:**
+- Працює навіть якщо користувач офлайн
+- Централізовано
+
+**Мінуси:**
+- Витрачає API limits навіть коли не потрібно
+- З складніше для Next.js deployed apps

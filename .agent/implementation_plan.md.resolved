@@ -1,0 +1,98 @@
+# Time Tracking Fixes
+
+## Issues to Fix
+
+### 1. Timeline Not Showing New Entries ❌
+**Problem**: New entries don't appear on timeline after creation
+**Root Cause**: Need to investigate if entries are being created correctly and if timeline is filtering them properly
+**Solution**: Verify `timelineEntries` filter in [TimePageClient](file:///c:/Users/oleks/dashboard-app/src/components/time/time-page-client.tsx#92-482) includes all work entries
+
+### 2. Breaks Not Appearing ❌  
+**Problem**: Gaps between entries don't show as break rows
+**Current Logic**: Line 701 in [TimeEntriesList](file:///C:/Users/oleks/dashboard-app/src/components/time/time-entries-list.tsx#308-760) - shows break only if gap > 60 seconds
+**Issue**: This is correct! Breaks SHOULD only show for gaps > 1 minute
+**Action**: Verify this is working as expected - might not be a bug
+
+### 3. Entries Splitting When They Should Merge ❌ **CRITICAL**
+**Problem**: 
+- Entry 1: ends at 01:02
+- Entry 2: starts at 01:02  
+- Same project + same task
+- They appear as 2 separate entries instead of merging into one
+
+**Root Cause**: [finalizeActiveToEntry()](file:///c:/Users/oleks/dashboard-app/src/app/dashboard/time/actions.ts#174-208) (line 179) creates new entry without checking if it can merge with previous entry
+
+**Solution**: Add merge logic to [finalizeActiveToEntry()](file:///c:/Users/oleks/dashboard-app/src/app/dashboard/time/actions.ts#174-208)
+
+## Implementation Plan
+
+### Step 1: Add Merge Logic to [finalizeActiveToEntry()](file:///c:/Users/oleks/dashboard-app/src/app/dashboard/time/actions.ts#174-208)
+**File**: [src/app/dashboard/time/actions.ts](file:///c:/Users/oleks/dashboard-app/src/app/dashboard/time/actions.ts)
+
+Before creating new entry, check:
+1. Find most recent entry for this user
+2. If exists AND:
+   - Same `type` (work/work)
+   - Same `projectId` 
+   - Same `taskId`
+   - `previousEntry.endAt` == `newEntry.startAt` (touching times)
+   - Gap between them <= 60 seconds
+3. Then: **UPDATE** previous entry's `endAt` and `durationSec` instead of creating new one
+
+**Pseudo-code**:
+```typescript
+async function finalizeActiveToEntry(userId: string) {
+  const active = await prisma.activeTimer.findUnique({ where: { userId } });
+  if (!active) return null;
+
+  const endedAt = now();
+  const durationSec = secondsBetween(active.startedAt, endedAt);
+
+  if (durationSec < MIN_ENTRY_SECONDS) {
+    await prisma.activeTimer.delete({ where: { userId } });
+    return { created: false, reason: "too_short", durationSec };
+  }
+
+  // NEW: Try to merge with previous entry
+  const previousEntry = await prisma.timeEntry.findFirst({
+    where: { userId },
+    orderBy: { endAt: 'desc' },
+    take: 1,
+  });
+
+  const canMerge = previousEntry && 
+    previousEntry.type === active.mode &&
+    previousEntry.projectId === (active.mode === 'work' ? active.projectId : null) &&
+    previousEntry.taskId === (active.mode === 'work' ? active.taskId : null) &&
+    previousEntry.endAt &&
+    Math.abs(previousEntry.endAt.getTime() - active.startedAt.getTime()) <= 60000; // 1 min tolerance
+
+  if (canMerge) {
+    // Merge: extend previous entry
+    const newDuration = secondsBetween(previousEntry.startAt, endedAt);
+    await prisma.timeEntry.update({
+      where: { id: previousEntry.id },
+      data: {
+        endAt: endedAt,
+        durationSec: newDuration,
+      },
+    });
+    await prisma.activeTimer.delete({ where: { userId } });
+    return { created: false, merged: true, durationSec: newDuration };
+  }
+
+  // Create new entry (existing logic)
+  await prisma.timeEntry.create({ ... });
+  await prisma.activeTimer.delete({ where: { userId } });
+  return { created: true, durationSec };
+}
+```
+
+### Step 2: Verify Timeline Rendering
+Check if `timelineEntries` correctly filters work entries
+
+### Step 3: Test All Scenarios
+- [ ] Start work → stop → start same project/task immediately → should merge
+- [ ] Start work → stop → wait 2 min → start same project/task → should NOT merge (break shows)
+- [ ] Start work → stop → start different project → should NOT merge
+- [ ] Timeline shows all entries correctly

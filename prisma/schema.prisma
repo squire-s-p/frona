@@ -1,0 +1,826 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  image         String?
+  timezone      String    @default("Europe/Kyiv")
+  baseCurrency  String    @default("UAH")
+  dashboardLayout Json?   // Для iOS-стайл віджетів
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  emailVerified DateTime?
+
+  // ✅ Email/password auth (1:1)
+  password UserPassword?
+
+  // ✅ Time tracking
+  activeTimer ActiveTimer?
+  timeEntries TimeEntry[]
+
+  accounts        Account[]
+  categories      Category[]
+  financeAccounts FinanceAccount[]
+  transfers       Transfer[]
+  financeTags     FinanceTag[] @relation("FinanceTags")
+  projects        Project[]
+  clients         Client[]
+  sessions        Session[]
+  deviceSessions  DeviceSession[]
+  tags            Tag[]
+  tasks           Task[]
+  taskAttachments TaskAttachment[]
+  taskComments    TaskComment[]
+  transactions    Transaction[]
+  projectComments ProjectComment[]
+  invoices        Invoice[]
+  budgets         Budget[]
+  savingsGoals    SavingsGoal[]
+  recurringPayments RecurringPayment[]
+  shoppingItems     ShoppingItem[]
+  cashflowForecasts CashflowForecast[]
+  automationRules   AutomationRule[]
+  whiteboards       Whiteboard[]
+  folders           Folder[]
+  notes             Note[]
+  bankAccounts      BankAccount[] @relation("UserBankAccounts")
+}
+
+model ShoppingItem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  // Legacy fields (optional support or for main display)
+  url       String?
+  price     Decimal?
+  
+  imageUrl  String?
+  status    String   @default("PLANNED") // PLANNED, BOUGHT
+  links     ShoppingLink[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ShoppingLink {
+  id        String       @id @default(cuid())
+  itemId    String
+  item      ShoppingItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  url       String
+  price     Decimal?
+  siteName  String?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
+model Client {
+  id     String @id @default(cuid())
+  userId String
+
+  name        String
+  taxId       String?
+  email       String?
+  address     String?
+  contactInfo String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projects Project[]
+  invoices Invoice[]
+  transactions Transaction[]
+
+  @@index([userId])
+  @@index([userId, name])
+}
+
+model UserPassword {
+  userId       String @id
+  passwordHash String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Project {
+  id     String @id @default(cuid())
+  userId String
+  name   String
+
+  description   String?
+  source        String?
+  clientName    String?
+  site          String?
+  cost          Decimal? @db.Decimal(12, 2)
+  accesses      String?
+  clientContact String?
+  notes         String?
+
+  status      ProjectStatus @default(active)
+  completedAt DateTime?
+  archivedAt  DateTime?
+
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  isPinned Boolean @default(false)
+
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks           Task[]
+  timeEntries     TimeEntry[]
+  transactions    Transaction[]
+  projectComments ProjectComment[]
+  invoices        Invoice[]
+  activeTimers    ActiveTimer[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([completedAt])
+  @@index([archivedAt])
+  @@index([updatedAt])
+  @@index([clientId])
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  userId      String
+  projectId   String?
+  title       String
+  description String?
+  status      TaskStatus @default(todo)
+  dueAt       DateTime?
+  priority    Priority   @default(medium)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  endAt       DateTime?
+  startAt     DateTime?
+
+  isPinned    Boolean    @default(false)
+  isTemplate  Boolean    @default(false)
+
+  // Recurring tasks
+  recurrenceRule String? // JSON: { frequency: "daily" | "weekly" | "monthly" | "yearly", interval: number, endDate?: string }
+  parentTaskId   String? // For recurring instances, link to original task
+  parentTask     Task?   @relation("TaskRecurrence", fields: [parentTaskId], references: [id], onDelete: Cascade)
+  recurringTasks Task[]  @relation("TaskRecurrence")
+
+  subtasks     Subtask[]
+  project      Project?         @relation(fields: [projectId], references: [id])
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attachments  TaskAttachment[]
+  comments     TaskComment[]
+  taskTags     TaskTag[]
+  timeEntries  TimeEntry[]
+  activeTimers ActiveTimer[]
+
+  @@index([userId])
+  @@index([projectId])
+  @@index([status])
+  @@index([priority])
+  @@index([updatedAt])
+  @@index([createdAt])
+  @@index([title])
+  @@index([parentTaskId])
+}
+
+model Subtask {
+  id     String  @id @default(cuid())
+  taskId String
+  title  String
+  isDone    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+}
+
+model Tag {
+  id       String    @id @default(cuid())
+  userId   String
+  name     String
+  color    String?
+  isPinned Boolean   @default(false)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskTags TaskTag[]
+  notes    Note[]    @relation("NoteTags")
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model TaskTag {
+  taskId String
+  tagId  String
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, tagId])
+  @@index([tagId])
+}
+
+model TaskComment {
+  id        String   @id @default(cuid())
+  taskId    String
+  userId    String?
+  body      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  task Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([taskId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model TaskAttachment {
+  id        String   @id @default(cuid())
+  taskId    String
+  userId    String?
+  name      String
+  url       String
+  mimeType  String?
+  size      Int?
+  createdAt DateTime @default(now())
+
+  task Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([taskId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+enum TimeEntryType {
+  work
+  break
+}
+
+model TimeEntry {
+  id     String @id @default(cuid())
+  userId String
+
+  type TimeEntryType @default(work)
+
+  projectId String?
+  taskId    String?
+
+  startAt     DateTime
+  endAt       DateTime?
+  durationSec Int?
+
+  note String?
+  calendarEventId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // project can be null for breaks
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  task    Task?    @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([projectId])
+  @@index([taskId])
+  @@index([type])
+  @@index([startAt])
+}
+
+enum ActiveTimerMode {
+  work
+  break
+}
+
+model ActiveTimer {
+  userId String @id
+
+  mode ActiveTimerMode @default(work)
+
+  projectId String?
+  taskId    String?
+  note      String?
+
+  startedAt DateTime @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  task    Task?    @relation(fields: [taskId], references: [id], onDelete: SetNull)
+
+  @@index([projectId])
+  @@index([taskId])
+}
+
+model FinanceAccount {
+  id              String        @id @default(cuid())
+  userId          String
+  name            String
+  type            String        @default("bank") // bank, cash, stripe, paypal, crypto, savings
+  role            String        @default("liquid") // liquid, savings, tax, other
+  currency        String
+  balance         Decimal       @default(0) @db.Decimal(12, 2)
+  color           String?
+  includeInTotal  Boolean       @default(true)
+  lastSyncedAt    DateTime?
+  isArchived      Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions    Transaction[]
+  transfersFrom   Transfer[]    @relation("FromAccount")
+  transfersTo     Transfer[]    @relation("ToAccount")
+  recurringPayments RecurringPayment[]
+  savingsGoals    SavingsGoal[]
+
+  @@index([userId])
+  @@index([type])
+  @@index([role])
+}
+
+model Category {
+  id           String        @id @default(cuid())
+  userId       String
+  type         MoneyType
+  name         String
+  isTaxable    Boolean       @default(false)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+  budget       Budget?
+  recurringPayments RecurringPayment[]
+
+  @@unique([userId, type, name])
+  @@index([userId])
+}
+
+model Budget {
+    id String @id @default(cuid())
+    userId String
+    categoryId String @unique
+    amount Decimal @db.Decimal(12, 2)
+    period String @default("monthly")
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+    category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+    @@index([userId])
+}
+
+model SavingsGoal {
+    id String @id @default(cuid())
+    userId String
+    name String
+    targetAmount Decimal @db.Decimal(12, 2)
+    currentAmount Decimal @default(0) @db.Decimal(12, 2)
+    monthlyContribution Decimal? @db.Decimal(12, 2)
+    goalType String @default("general") // emergency, purchase, investment, vacation, crypto
+    status String @default("active") // active, completed, paused
+    deadline DateTime?
+    color String?
+    accountId String?
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+    account FinanceAccount? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+    @@index([userId])
+    @@index([accountId])
+}
+
+model CashflowForecast {
+  id          String   @id @default(cuid())
+  userId      String
+  date        DateTime
+  balance     Decimal  @db.Decimal(12, 2)
+  income      Decimal  @db.Decimal(12, 2)
+  expense     Decimal  @db.Decimal(12, 2)
+  description String?
+  source      String   // "recurring", "scheduled", "manual"
+  createdAt   DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+model RecurringPayment {
+    id              String          @id @default(cuid())
+    userId          String
+    name            String
+    amount          Decimal         @db.Decimal(12, 2)
+    type            MoneyType       // income or expense
+    frequency       String          // "monthly", "yearly", "weekly"
+    nextPaymentDate DateTime
+    endDate         DateTime?
+    categoryId      String?
+    accountId       String?
+    autoCreate      Boolean         @default(false)
+    lastGenerated   DateTime?
+    affectsForecast Boolean         @default(true)
+    isExpectedIncome Boolean        @default(false)
+    createdAt       DateTime        @default(now())
+    updatedAt       DateTime        @updatedAt
+
+    user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+    category Category?       @relation(fields: [categoryId], references: [id])
+    account  FinanceAccount? @relation(fields: [accountId], references: [id])
+
+    @@index([userId])
+    @@index([nextPaymentDate])
+    @@index([autoCreate])
+}
+
+model Transaction {
+  id            String    @id @default(cuid())
+  userId        String
+  accountId     String
+  categoryId    String
+  projectId     String?
+  clientId      String?
+  type          MoneyType
+  amount        Decimal   @db.Decimal(12, 2)
+  date          DateTime
+  description   String?
+  note          String?
+  tagIds        String[]  @default([])
+  recurringId   String?
+  isRecurring   Boolean   @default(false)
+  splitParentId String?
+  createdAt     DateTime  @default(now())
+
+  account  FinanceAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  category Category       @relation(fields: [categoryId], references: [id])
+  project  Project?       @relation(fields: [projectId], references: [id])
+  client   Client?        @relation(fields: [clientId], references: [id])
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  recurring Transaction?  @relation("TransactionSplits", fields: [recurringId], references: [id], onDelete: SetNull)
+  splits    Transaction[] @relation("TransactionSplits")
+
+  @@index([userId])
+  @@index([accountId])
+  @@index([categoryId])
+  @@index([projectId])
+  @@index([clientId])
+  @@index([date])
+  @@index([recurringId])
+  @@index([splitParentId])
+}
+
+model Transfer {
+  id            String   @id @default(cuid())
+  userId        String
+  fromAccountId String
+  toAccountId   String
+  amount        Decimal  @db.Decimal(12, 2)
+  fee           Decimal  @default(0) @db.Decimal(12, 2)
+  exchangeRate  Decimal? @db.Decimal(18, 8)
+  note          String?
+  date          DateTime
+  createdAt     DateTime @default(now())
+  
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fromAccount FinanceAccount @relation("FromAccount", fields: [fromAccountId], references: [id])
+  toAccount   FinanceAccount @relation("ToAccount", fields: [toAccountId], references: [id])
+  
+  @@index([userId])
+  @@index([fromAccountId])
+  @@index([toAccountId])
+  @@index([date])
+}
+
+model FinanceTag {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  color     String?
+  createdAt DateTime @default(now())
+  
+  user User @relation("FinanceTags", fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+
+model Account {
+  id                       String  @id @default(cuid())
+  userId                   String
+  access_token             String?
+  expires_at               Int?
+  id_token                 String?
+  provider                 String
+  providerAccountId        String
+  refresh_token            String?
+  refresh_token_expires_in Int?
+  scope                    String?
+  session_state            String?
+  token_type               String?
+  type                     String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model DeviceSession {
+  id         String   @id @default(cuid())
+  userId     String
+  userAgent  String?
+  ipAddress  String?
+  browser    String?
+  os         String?
+  device     String?
+  lastActive DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+enum TaskStatus {
+  todo
+  doing
+  done
+  blocked
+  canceled
+}
+
+enum Priority {
+  low
+  medium
+  high
+  urgent
+}
+
+enum MoneyType {
+  income
+  expense
+}
+
+enum ProjectStatus {
+  active
+  completed
+  archived
+}
+
+model ProjectComment {
+  id        String  @id @default(cuid())
+  projectId String
+  userId    String?
+
+  body String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([projectId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+enum InvoiceStatus {
+  draft
+  issued
+  paid
+  canceled
+}
+
+model Invoice {
+  id       String @id @default(cuid())
+  userId   String
+  clientId String
+
+  numberInt Int
+  number    String
+
+  issueDate DateTime      @default(now())
+  dueDate   DateTime?
+  currency  String        @default("UAH")
+  status    InvoiceStatus @default(draft)
+
+  notes          String?
+  sellerSnapshot Json
+  buyerSnapshot  Json
+
+  subtotal Decimal @default(0)
+  total    Decimal @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client    Client        @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  items     InvoiceItem[]
+  project   Project?      @relation(fields: [projectId], references: [id])
+  projectId String?
+
+  @@unique([userId, numberInt])
+  @@index([userId, createdAt])
+  @@index([clientId])
+}
+
+model InvoiceItem {
+  id        String @id @default(cuid())
+  invoiceId String
+
+  name        String
+  description String?
+  unit        String? // "шт", "год", ...
+  qty         Decimal @default(1)
+  price       Decimal @default(0)
+  amount      Decimal @default(0)
+
+  sort Int @default(0)
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+}
+model AutomationRule {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  pattern     String   // Ключове слово для пошуку в описі
+  type        String   // "category" | "project"
+  targetId    String   // ID категорії або проекту
+  minAmount   Decimal? @db.Decimal(12, 2)
+  maxAmount   Decimal? @db.Decimal(12, 2)
+  currency    String?  // USD, EUR, UAH
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Whiteboard {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  data      Json     // Елементи Excalidraw
+  preview   String?  // Thumbnail (base64 або шлях)
+  isPinned  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([updatedAt])
+}
+
+model Folder {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  parentId  String?
+  parent    Folder?  @relation("FolderToFolder", fields: [parentId], references: [id], onDelete: Cascade)
+  children  Folder[] @relation("FolderToFolder")
+  notes     Note[]
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  userId    String
+  folderId  String?
+  title     String
+  content    String?  @db.Text
+  properties Json?    @default("{}")
+  tags       String[] @default([])
+  tagsRel    Tag[]    @relation("NoteTags")
+  isFavorite Boolean @default(false)
+  isArchived Boolean @default(false)
+
+  folder    Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  outgoingLinks NoteLink[] @relation("SourceNote")
+  incomingLinks NoteLink[] @relation("TargetNote")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([folderId])
+  @@index([title])
+}
+
+model NoteLink {
+  id        String   @id @default(cuid())
+  sourceId  String
+  targetId  String
+
+  source    Note     @relation("SourceNote", fields: [sourceId], references: [id], onDelete: Cascade)
+  target    Note     @relation("TargetNote", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceId, targetId])
+  @@index([sourceId])
+  @@index([targetId])
+}
+
+// ─── Bank Sync Module ────────────────────────────────────────────────────────
+// Isolated domain: raw Monobank data, separated from Finance domain.
+// Finance module reads only from FinanceAccount/Transaction tables.
+
+model BankAccount {
+  id              String    @id @default(cuid())
+  userId          String
+  monoAccountId   String    // Monobank's account ID (e.g. "HUsh7f...")
+  monoToken       String    // AES-256 encrypted token
+  name            String    // Display name (e.g. "Mono Чорна")
+  type            String    // white, black, platinum, fop, etc.
+  currencyCode    Int       // 980 = UAH, 840 = USD, 978 = EUR
+  balance         BigInt    @default(0) // in kopecks (raw from Monobank)
+  creditLimit     BigInt    @default(0)
+  iban            String?
+  maskedPan       String[]  @default([])
+  lastSyncAt      DateTime? // null = initial import not done yet
+  importDoneAt    DateTime? // set when full 12-month import completes
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user            User              @relation("UserBankAccounts", fields: [userId], references: [id], onDelete: Cascade)
+  transactions    BankTransaction[]
+
+  @@unique([userId, monoAccountId])
+  @@index([userId])
+  @@index([lastSyncAt])
+}
+
+model BankTransaction {
+  id                String   @id @default(cuid())
+  bankAccountId     String
+  monoTransactionId String   @unique // Monobank's transaction ID — primary dedup key
+  time              DateTime // converted from unix timestamp
+  amount            Int      // in kopecks (negative = expense, positive = income)
+  operationAmount   Int
+  currencyCode      Int
+  mcc               Int      @default(0)
+  description       String
+  comment           String?
+  cashbackAmount    Int      @default(0)
+  commissionRate    Int      @default(0)
+  hold              Boolean  @default(false)
+  receiptId         String?
+  counterEdrpou     String?
+  counterIban       String?
+  raw               Json     // full raw Monobank statement item
+
+  bankAccount       BankAccount @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
+
+  @@index([bankAccountId, time])
+  @@index([time])
+  @@index([mcc])
+}
