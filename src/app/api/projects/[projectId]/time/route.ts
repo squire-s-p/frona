@@ -10,8 +10,9 @@ function startOfDay(d: Date) {
 
 export async function GET(
   req: Request,
-  { params }: { params: { projectId: string } }
+  { params }: { params: Promise<{ projectId: string }> }
 ) {
+  const { projectId } = await params;
   const session = await getAuthSession();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -26,7 +27,7 @@ export async function GET(
 
   const entries = await prisma.timeEntry.findMany({
     where: {
-      projectId: params.projectId,
+      projectId: projectId,
       userId: session.user.id,
       startAt: { gte: fromDay },
     },
