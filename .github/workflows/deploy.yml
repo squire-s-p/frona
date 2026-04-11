@@ -20,17 +20,20 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            cd /root/frona
+		export NVM_DIR="$HOME/.nvm"
+		source $NVM_DIR/nvm.sh
 
-            git fetch origin
-            git reset --hard origin/main
+		cd /root/frona
 
-            npm install
+		git fetch origin
+		git reset --hard origin/main
 
-            npx prisma generate
-            npx prisma migrate deploy
+		npm install
 
-            npm run build
+		npx prisma generate
+		npx prisma migrate deploy
 
-            pm2 restart ecosystem.config.js --update-env
-            pm2 save
+		npm run build
+
+		pm2 restart ecosystem.config.js --update-env
+		pm2 save
