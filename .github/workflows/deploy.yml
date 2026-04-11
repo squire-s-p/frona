@@ -20,8 +20,11 @@ jobs:
 
       - name: Prepare standalone
         run: |
-          mkdir build
+          mkdir -p build/.next
           cp -r .next/standalone/* build/
+          cp -r .next/standalone/.next build/
+          cp -r public build/ || echo "No public dir"
+          cp -r .next/static build/.next/static
 
       - name: Archive
         run: tar -czf build.tar.gz build
