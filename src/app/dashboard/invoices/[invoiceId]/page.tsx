@@ -76,7 +76,7 @@ export default async function InvoicePage({
             subtotal: Number(invoice.subtotal),
             total: Number(invoice.total),
           }}
-          items={invoice.items.map((it) => ({
+          items={invoice.items.map((it: any) => ({
             id: it.id,
             name: it.name,
             description: (it as any).description ?? "",

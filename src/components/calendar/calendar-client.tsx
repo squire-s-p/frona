@@ -133,14 +133,14 @@ function layoutDayTimedEvents(day: Date, events: CalendarEvent[], hourPx = 48) {
   const endMs = dayEndMs(day);
 
   const timed = events
-    .filter((e) => !isAllDayOrMultiDay(e))
-    .filter((e) => overlapsRange(e, startOfDay(day), endOfDay(day)))
-    .map((e) => {
+    .filter((e: any) => !isAllDayOrMultiDay(e))
+    .filter((e: any) => overlapsRange(e, startOfDay(day), endOfDay(day)))
+    .map((e: any) => {
       const s = clamp(toLocalDate(e.start).getTime(), startMs, endMs);
       const en = clamp(toLocalDate(e.end).getTime(), startMs, endMs);
       return { e, s, en };
     })
-    .sort((a, b) => a.s - b.s);
+    .sort((a: any, b: any) => a.s - b.s);
 
   const active: Array<{ end: number; col: number }> = [];
   const placed: Array<{ e: CalendarEvent; s: number; en: number; col: number }> =
@@ -151,7 +151,7 @@ function layoutDayTimedEvents(day: Date, events: CalendarEvent[], hourPx = 48) {
       if (active[i]!.end <= item.s) active.splice(i, 1);
     }
 
-    const used = new Set(active.map((a) => a.col));
+    const used = new Set(active.map((a: any) => a.col));
     let col = 0;
     while (used.has(col)) col++;
 
@@ -159,7 +159,7 @@ function layoutDayTimedEvents(day: Date, events: CalendarEvent[], hourPx = 48) {
     placed.push({ e: item.e, s: item.s, en: item.en, col });
   }
 
-  const positioned: Positioned[] = placed.map((p) => {
+  const positioned: Positioned[] = placed.map((p: any) => {
     let cols = 1;
     for (const q of placed) {
       const overlaps = !(q.en <= p.s || q.s >= p.en);
@@ -231,8 +231,8 @@ export default function CalendarClient() {
         if (!alive) return;
         setCalendars(res.calendars);
 
-        const primary = res.calendars.find((c) => c.primary);
-        if (primary) setCalendarId(primary.id);
+        const primary = res.calendars.find((c: any) => c.primary);
+        if (primary) setCalendarId((primary as any).id);
       } catch (e: any) {
         if (!alive) return;
         setError(e?.message ?? "Не вдалося завантажити список календарів");
@@ -370,7 +370,7 @@ export default function CalendarClient() {
               <Button
                 variant="outline"
                 size="icon"
-                onClick={() => setAnchor((d) => moveAnchor(mode, d, -1))}
+                onClick={() => setAnchor((d: Date) => moveAnchor(mode, d, -1))}
                 aria-label="Prev"
               >
                 ‹
@@ -378,7 +378,7 @@ export default function CalendarClient() {
               <Button
                 variant="outline"
                 size="icon"
-                onClick={() => setAnchor((d) => moveAnchor(mode, d, 1))}
+                onClick={() => setAnchor((d: Date) => moveAnchor(mode, d, 1))}
                 aria-label="Next"
               >
                 ›
@@ -397,7 +397,7 @@ export default function CalendarClient() {
                 {calendars.length === 0 ? (
                   <SelectItem value="primary">Primary</SelectItem>
                 ) : (
-                  calendars.map((c) => (
+                  calendars.map((c: any) => (
                     <SelectItem key={c.id} value={c.id}>
                       {c.primary ? `${c.name} (основний)` : c.name}
                     </SelectItem>
@@ -516,7 +516,7 @@ function DayView({
               <div className="text-xs text-muted-foreground/50 h-full flex items-center pl-2">—</div>
             ) : (
               <div className="flex flex-wrap gap-2">
-                {allDay.map((e) => (
+                {allDay.map((e: any) => (
                   <a
                     key={e.id}
                     href="#"
@@ -541,7 +541,7 @@ function DayView({
 
       <div className="flex-1 overflow-y-auto min-h-0 relative scroll-smooth group [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         <div className="grid grid-cols-[60px_1fr]">
-          {hours.map((h) => (
+          {hours.map((h: number) => (
             <React.Fragment key={h}>
               <div className="border-r border-border/50 p-2 text-[10px] text-muted-foreground text-center relative">
                 <span className="-translate-y-1/2 absolute top-0 left-0 right-0">{h === 0 ? "" : String(h).padStart(2, "0") + ":00"}</span>
@@ -572,7 +572,7 @@ function DayView({
             </div>
           )}
 
-          {positioned.map((p) => {
+          {positioned.map((p: any) => {
             const widthPct = 100 / p.cols;
             const leftPct = p.col * widthPct;
 
@@ -633,7 +633,7 @@ function WeekView({
       .filter((e) => overlapsRange(e, startOfDay(d), endOfDay(d)))
   );
 
-  const positionedByDay = days.map((d) => layoutDayTimedEvents(d, events, hourPx));
+  const positionedByDay = days.map((d: Date) => layoutDayTimedEvents(d, events, hourPx));
 
   const now = new Date();
   const currentTop = ((now.getHours() * 60 + now.getMinutes()) / 60) * hourPx;
@@ -643,7 +643,7 @@ function WeekView({
       <div className="shrink-0 bg-muted/20 border-b border-border/50">
         <div className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-border/50">
           <div className="p-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground flex items-end justify-center pb-1">Час</div>
-          {days.map((d) => {
+          {days.map((d: Date) => {
             const isToday = isSameDay(now, d);
             return (
               <div key={d.toISOString()} className="p-3 flex flex-col items-center justify-center border-l border-border/50">
@@ -661,13 +661,13 @@ function WeekView({
 
         <div className="grid grid-cols-[60px_repeat(7,1fr)] min-h-[40px]">
           <div className="border-r border-border/50 p-2 text-[10px] text-muted-foreground flex items-center justify-center text-center">Весь день</div>
-          {days.map((d, idx) => (
+          {days.map((d: Date, idx: number) => (
             <div key={d.toISOString()} className="border-l p-1 border-border/50">
               {allDayByDay[idx]!.length === 0 ? (
                 <div className="text-xs text-muted-foreground/50 h-full flex items-center justify-center">—</div>
               ) : (
                 <div className="flex flex-wrap md:flex-col gap-1">
-                  {allDayByDay[idx]!.slice(0, 3).map((e) => (
+                  {allDayByDay[idx]!.slice(0, 3).map((e: any) => (
                     <a
                       key={e.id}
                       href="#"
@@ -698,7 +698,7 @@ function WeekView({
 
       <div className="flex-1 overflow-y-auto min-h-0 relative scroll-smooth group [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         <div className="grid grid-cols-[60px_repeat(7,1fr)]">
-          {hours.map((h) => (
+          {hours.map((h: number) => (
             <React.Fragment key={h}>
               <div className="border-r p-2 text-[10px] text-muted-foreground text-center relative border-border/50">
                 <span className="-translate-y-1/2 absolute top-0 left-0 right-0">{h === 0 ? "" : String(h).padStart(2, "0") + ":00"}</span>
@@ -724,7 +724,7 @@ function WeekView({
           className="absolute left-[60px] right-0 top-0 grid grid-cols-7"
           style={{ height: hourPx * 24 }}
         >
-          {days.map((d, idx) => {
+          {days.map((d: Date, idx: number) => {
             const isToday = isSameDay(now, d);
             return (
               <div key={d.toISOString()} className="relative">
@@ -736,7 +736,7 @@ function WeekView({
                     <div className="absolute -left-1.5 -top-1.5 w-3 h-3 bg-primary rounded-full" />
                   </div>
                 )}
-                {positionedByDay[idx]!.map((p) => {
+                {positionedByDay[idx]!.map((p: any) => {
                   const widthPct = 100 / p.cols;
                   const leftPct = p.col * widthPct;
 
@@ -802,7 +802,7 @@ function MonthView({ anchor, events, onCreateAt, onEventClick }: { anchor: Date;
         className="flex-1 min-h-0 grid grid-cols-7 gap-px bg-border/50 overflow-y-auto rounded-b-xl [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
         style={{ gridTemplateRows: `repeat(${days.length / 7}, minmax(0, 1fr))` }}
       >
-        {days.map((d) => {
+        {days.map((d: Date) => {
           const total = events.filter((e) => overlapsRange(e, startOfDay(d), endOfDay(d)));
           const preview = total.slice(0, 4);
           const isCurrentMonth = d.getMonth() === anchor.getMonth();
@@ -831,7 +831,7 @@ function MonthView({ anchor, events, onCreateAt, onEventClick }: { anchor: Date;
               </div>
 
               <div className="flex-1 overflow-y-auto space-y-1 mt-1 pr-1 pb-1 scrollbar-hide">
-                {preview.map((e) => (
+                {preview.map((e: any) => (
                   <a
                     key={e.id}
                     href="#"
@@ -867,7 +867,7 @@ function YearView({ anchor, events, onEventClick }: { anchor: Date; events: Cale
 
   return (
     <div className="flex-1 overflow-y-auto grid gap-3 md:grid-cols-3 xl:grid-cols-4 content-start p-2">
-      {months.map((m) => {
+      {months.map((m: Date) => {
         const mStart = startOfMonth(m).getTime();
         const mEnd = endOfMonth(m).getTime();
 

@@ -43,7 +43,7 @@ export default async function InvoicesPage() {
           {invoices.length === 0 ? (
             <div className="p-6 text-sm text-muted-foreground">Поки немає рахунків</div>
           ) : (
-            invoices.map((inv) => (
+            invoices.map((inv: any) => (
               <div
                 key={inv.id}
                 className="flex flex-col gap-2 p-4 md:flex-row md:items-center md:justify-between md:p-6"

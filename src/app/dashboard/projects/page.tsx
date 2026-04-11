@@ -46,8 +46,8 @@ export default async function ProjectsPage() {
   return (
     <div className="space-y-6">
       <ProjectsClient
-        clients={clients.map((c) => ({ id: c.id, name: c.name }))}
-        projects={projects.map((p) => ({
+        clients={clients.map((c: any) => ({ id: c.id, name: c.name }))}
+        projects={projects.map((p: any) => ({
           id: p.id,
           name: p.name,
           description: p.description ?? null,
