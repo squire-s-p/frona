@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { toast } from "sonner";
 
 import { registerWithEmail } from "./actions";
@@ -13,6 +14,8 @@ import { Separator } from "@/components/ui/separator";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
 
   const [name, setName] = React.useState("");
   const [email, setEmail] = React.useState("");
@@ -60,11 +63,11 @@ export default function RegisterPage() {
         <div className="w-full max-w-md">
           <div className="rounded-2xl border bg-card p-6 shadow-sm">
             <div className="flex flex-col items-center text-center">
-              <div className="mb-3 grid h-10 w-10 place-items-center rounded-xl border bg-background">
-                <span className="text-sm font-semibold">N</span>
+              <div className="mb-6 flex size-20 items-center justify-center overflow-hidden">
+                <img src="/logo.svg" alt="Frona Logo" className="size-full object-contain brightness-0 invert" />
               </div>
 
-              <h1 className="text-xl font-semibold">Створіть свій обліковий запис</h1>
+              <h1 className="text-2xl font-bold tracking-tight">Створити акаунт у Frona</h1>
               <p className="mt-1 text-sm text-muted-foreground">
                 Вже маєте обліковий запис?{" "}
                 <Link className="underline underline-offset-4" href="/login">
@@ -124,7 +127,7 @@ export default function RegisterPage() {
             <div className="grid gap-2">
               <Button
                 variant="outline"
-                onClick={() => router.push(`/login?callbackUrl=/dashboard`)}
+                onClick={() => signIn("google", { callbackUrl })}
               >
                 Продовжити з Google
               </Button>

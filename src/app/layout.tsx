@@ -16,8 +16,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Frona test - Your Business Dashboard",
-  description: "Modern business dashboard for managing projects, finances, and time tracking.",
+  title: "Frona — Next-gen Business OS",
+  description: "Організуйте свої проекти, фінанси та час в одному професійному просторі.",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
