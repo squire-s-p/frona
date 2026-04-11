@@ -231,7 +231,7 @@ export async function getFullDashboardData() {
   ]);
 
   // Clients for all-time revenue mapping
-  const topClientIds = allClientsRevenue.map(t => t.clientId as string);
+  const topClientIds = allClientsRevenue.map((t: { clientId: string | null }) => t.clientId).filter(Boolean) as string[];
   const topClients = await prisma.client.findMany({
     where: { id: { in: topClientIds } },
     select: { id: true, name: true }
