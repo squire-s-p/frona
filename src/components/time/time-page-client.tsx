@@ -139,7 +139,23 @@ export default function TimePageClient({
 }) {
 
   const router = useRouter();
-  // ✅ FIXED: Use explicit local construction to avoid UTC midnight shifts
+
+  const hydratedEntries = React.useMemo(() => {
+    return (entries || []).map(e => ({
+      ...e,
+      startAt: new Date(e.startAt),
+      endAt: e.endAt ? new Date(e.endAt) : null,
+    }));
+  }, [entries]);
+
+  const hydratedActiveTimer = React.useMemo(() => {
+    if (!activeTimer) return null;
+    return {
+      ...activeTimer,
+      startedAt: new Date(activeTimer.startedAt),
+    };
+  }, [activeTimer]);
+
   const date = React.useMemo(() => {
     const [y, m, d] = dateISO.split("-").map(Number);
     return new Date(y, m - 1, d, 0, 0, 0);
@@ -151,14 +167,14 @@ export default function TimePageClient({
     getWeeklySummary().then(setWeeklyData);
   }, []);
 
-  const isRunning = !!activeTimer;
+  const isRunning = !!hydratedActiveTimer;
 
   const totals = React.useMemo(() => {
     let work = 0;
     let brk = 0;
 
     // Враховуємо лише робочі записи
-    const workEntries = entries
+    const workEntries = hydratedEntries
       .filter((e) => e.type === "work")
       .sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
 
@@ -181,10 +197,10 @@ export default function TimePageClient({
   // ✅ Active duration tick
   const [now, setNow] = React.useState(() => Date.now());
   const activeStartedMs = React.useMemo(() => {
-    if (!activeTimer) return null;
-    const d = new Date(activeTimer.startedAt);
+    if (!hydratedActiveTimer) return null;
+    const d = hydratedActiveTimer.startedAt;
     return Number.isFinite(d.getTime()) ? d.getTime() : null;
-  }, [activeTimer]);
+  }, [hydratedActiveTimer]);
 
   React.useEffect(() => {
     if (!activeStartedMs) return;
@@ -260,21 +276,21 @@ export default function TimePageClient({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isRunning, activeTimer?.mode]);
+  }, [isRunning, hydratedActiveTimer?.mode]);
 
   // Trigger beep every hour of active work
   const lastHourRef = React.useRef(0);
   React.useEffect(() => {
-    if (activeTimer && activeTimer.mode === "work" && activeDurationSec > 0) {
+    if (hydratedActiveTimer && hydratedActiveTimer.mode === "work" && activeDurationSec > 0) {
       const hours = Math.floor(activeDurationSec / 3600);
       if (hours > lastHourRef.current) {
         playBeep(880, 0.5); // Hourly beep
         lastHourRef.current = hours;
       }
-    } else if (!activeTimer) {
+    } else if (!hydratedActiveTimer) {
       lastHourRef.current = 0;
     }
-  }, [activeDurationSec, activeTimer, playBeep]);
+  }, [activeDurationSec, hydratedActiveTimer, playBeep]);
 
   // Idle Detection Logic
   const [isIdleDialogOpen, setIsIdleDialogOpen] = React.useState(false);
@@ -312,9 +328,9 @@ export default function TimePageClient({
       window.removeEventListener("click", handleActivity);
       window.clearInterval(checkInterval);
     };
-  }, [activeTimer, isIdleDialogOpen]);
+  }, [hydratedActiveTimer, isIdleDialogOpen]);
 
-  const displayEntries = React.useMemo(() => entries.filter(e => e.type === "work"), [entries]);
+  const displayEntries = React.useMemo(() => hydratedEntries.filter(e => e.type === "work"), [hydratedEntries]);
 
   const goTo = (d: Date) => router.push(`/dashboard/time?date=${toISODate(d)}`);
   const goPrev = () => goTo(addDays(date, -1));
@@ -328,7 +344,7 @@ export default function TimePageClient({
   // - якщо є таймер (work/break) -> stopActive() (у тебе це toggle: work->break, break->stop)
   const onMainTimerAction = () => {
     startTransition(async () => {
-      if (!activeTimer) {
+      if (!hydratedActiveTimer) {
         await startWork({});
         router.refresh();
         return;
@@ -347,7 +363,7 @@ export default function TimePageClient({
   };
 
   const mainButton = React.useMemo(() => {
-    if (!activeTimer) {
+    if (!hydratedActiveTimer) {
       return {
         icon: <Play className="h-4 w-4" />,
         aria: "Почати роботу",
@@ -360,7 +376,7 @@ export default function TimePageClient({
       aria: "Зупинити",
       title: "Стоп",
     };
-  }, [activeTimer]);
+  }, [hydratedActiveTimer]);
 
   const [workDialogOpen, setWorkDialogOpen] = React.useState(false);
   const [workInitialRange, setWorkInitialRange] = React.useState<{ startAt: Date; endAt: Date } | null>(null);
@@ -369,15 +385,15 @@ export default function TimePageClient({
 
   const editingWorkEntry = React.useMemo(() => {
     if (!editingWorkEntryId) return null;
-    return entries.find((e) => e.id === editingWorkEntryId && e.type === "work") ?? null;
-  }, [entries, editingWorkEntryId]);
+    return hydratedEntries.find((e) => e.id === editingWorkEntryId && e.type === "work") ?? null;
+  }, [hydratedEntries, editingWorkEntryId]);
 
   const [taskDialogOpen, setTaskDialogOpen] = React.useState(false);
   const [taskDialogProjectId, setTaskDialogProjectId] = React.useState<string | null>(null);
 
   // Timeline: only WORK segments. Break = empty space.
-  const timelineEntries = React.useMemo(() => entries.filter((e) => e.type === "work"), [entries]);
-  const timelineActiveTimer = activeTimer?.mode === "work" ? activeTimer : null;
+  const timelineEntries = React.useMemo(() => hydratedEntries.filter((e) => e.type === "work"), [hydratedEntries]);
+  const timelineActiveTimer = hydratedActiveTimer?.mode === "work" ? hydratedActiveTimer : null;
 
   // Hover highlighting state
   const [highlightedId, setHighlightedId] = React.useState<string | null>(null);
@@ -704,13 +720,13 @@ export default function TimePageClient({
           projects={projects}
           getTasksForProjectAction={getTasksForProject}
           activeTimer={
-            activeTimer
+            hydratedActiveTimer
               ? {
-                mode: activeTimer.mode,
-                startedAt: activeTimer.startedAt,
-                note: activeTimer.note,
-                project: activeTimer.project,
-                task: activeTimer.task,
+                mode: hydratedActiveTimer.mode,
+                startedAt: hydratedActiveTimer.startedAt,
+                note: hydratedActiveTimer.note,
+                project: hydratedActiveTimer.project,
+                task: hydratedActiveTimer.task,
               }
               : null
           }
