@@ -130,7 +130,7 @@ export default function TimeTimeline({
         type: it.type,
         leftPct: Number(left.toFixed(4)),
         widthPct: Number(width.toFixed(4)),
-        title: it.title,
+        title: it.type === "break" ? "Перерва" : "Робота",
       });
     }
 
