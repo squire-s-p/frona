@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getAuthSession } from "@/lib/auth-session";
 import { getUtcDayRange } from "@/lib/time/day-range";
+import { revalidatePath } from "next/cache";
 import { createCalendarEvent, updateCalendarEvent, deleteCalendarEvent } from "@/app/dashboard/calendar/actions";
 
 const MIN_ENTRY_SECONDS = 1;
@@ -356,6 +357,7 @@ export async function startWork(input: z.infer<typeof startWorkSchema> = {}) {
       },
     });
 
+    revalidatePath("/dashboard/time");
     return { ok: true, resumed: true };
   }
 
@@ -379,6 +381,7 @@ export async function startWork(input: z.infer<typeof startWorkSchema> = {}) {
     },
   });
 
+  revalidatePath("/dashboard/time");
   return { ok: true };
 }
 
@@ -396,6 +399,7 @@ export async function stopActive() {
   if (!active) return { ok: true, state: "none" as const };
 
   await finalizeActiveToEntry(user.id);
+  revalidatePath("/dashboard/time");
   return { ok: true, state: "none" as const };
 }
 
@@ -567,6 +571,7 @@ export async function createManualWorkEntry(input: z.infer<typeof manualWorkSche
     }
   }
 
+  revalidatePath("/dashboard/time");
   return { ok: true };
 }
 
@@ -791,6 +796,8 @@ export async function deleteTimeEntry(entryId: string) {
       id: entryId,
     },
   });
+  
+  revalidatePath("/dashboard/time");
   return { ok: true };
 }
 

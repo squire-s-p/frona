@@ -430,10 +430,10 @@ export default function TimeTimeline({
               key={s.id}
               title={s.title}
               className={cn(
-                "absolute top-0 h-full rounded-sm transition-all",
-                s.type === "break" ? "bg-muted" : "bg-foreground/30",
-                canEditWork && isWork ? "cursor-pointer hover:ring-1 hover:ring-foreground/20" : "",
-                isHighlighted && "bg-foreground/50"
+                "absolute top-0 h-full rounded-sm transition-all shadow-sm",
+                s.type === "break" ? "bg-muted" : "bg-primary",
+                canEditWork && isWork ? "cursor-pointer hover:ring-2 hover:ring-primary/50" : "",
+                isHighlighted && "bg-primary/80 ring-2 ring-primary"
               )}
               style={{ left: `${s.leftPct}%`, width: `${s.widthPct}%` }}
               onPointerDown={(e) => {
@@ -456,8 +456,8 @@ export default function TimeTimeline({
             key={activeSegment.id}
             title={activeSegment.title}
             className={cn(
-              "absolute top-0 h-full rounded-sm ring-1 ring-foreground/20",
-              activeSegment.type === "break" ? "bg-muted" : "bg-foreground/40"
+              "absolute top-0 h-full rounded-sm ring-2 ring-primary/40 animate-pulse",
+              activeSegment.type === "break" ? "bg-muted" : "bg-primary/60"
             )}
             style={{ left: `${activeSegment.leftPct}%`, width: `${activeSegment.widthPct}%` }}
           />
