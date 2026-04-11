@@ -263,7 +263,7 @@ export async function getFullDashboardData() {
     dailyMap[day] = (dailyMap[day] || 0) + (e.durationSec || 0);
   });
   // ISO week: Mon(1) -> Sun(0), map to [Mon, Tue, Wed, Thu, Fri, Sat, Sun]
-  const weeklyHours = [1, 2, 3, 4, 5, 6, 0].map((dow) =>
+  const weeklyHours = [1, 2, 3, 4, 5, 6, 0].map((dow: number) =>
     Math.round(((dailyMap[dow] || 0) / 3600) * 10) / 10
   );
 

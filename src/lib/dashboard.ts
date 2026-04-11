@@ -69,14 +69,14 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
     }),
   ]);
 
-  const timeTodaySeconds = timeEntriesToday.reduce((acc, t) => {
+  const timeTodaySeconds = timeEntriesToday.reduce((acc: number, t: any) => {
     const start = t.startAt.getTime();
     const end = (t.endAt ?? new Date()).getTime();
     const diff = Math.max(0, Math.floor((end - start) / 1000));
     return acc + diff;
   }, 0);
 
-  const balanceMonth = transactionsMonth.reduce((acc, tx) => {
+  const balanceMonth = transactionsMonth.reduce((acc: number, tx: any) => {
     const amount = Number(tx.amount); // Decimal -> number
     return tx.type === "income" ? acc + amount : acc - amount;
   }, 0);
