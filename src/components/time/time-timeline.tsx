@@ -78,14 +78,23 @@ export default function TimeTimeline({
 
   React.useEffect(() => setMounted(true), []);
 
-  // stable day window baseline (SSR === client)
-  // ✅ FIXED: Use explicit local construction to avoid UTC shifts
-  const dayStart = React.useMemo(() => {
+  // stable day window baseline: we need the UTC range that corresponds to 00:00..23:59 in the user's timezone
+  const { dayStart, dayEnd, rangeMs } = React.useMemo(() => {
+    // We use a simplified approach for the timeline:
+    // entries are UTC. We need to know where 00:00 of dateISO is in UTC.
+    // We can use a trick: parse dateISO as a local date, then convert to UTC.
+    
+    // This is basically what we need for the UI to align.
     const [y, m, d] = dateISO.split("-").map(Number);
-    return new Date(y, m - 1, d, 0, 0, 0);
+    const localStart = new Date(y, m - 1, d, 0, 0, 0);
+    const localEnd = new Date(y, m - 1, d, 23, 59, 59, 999);
+    
+    return {
+      dayStart: localStart,
+      dayEnd: localEnd,
+      rangeMs: localEnd.getTime() - localStart.getTime()
+    };
   }, [dateISO]);
-  const dayEnd = React.useMemo(() => new Date(dayStart.getTime() + 24 * 3600 * 1000), [dayStart]);
-  const rangeMs = dayEnd.getTime() - dayStart.getTime();
 
   const segments = React.useMemo(() => {
     const list: Array<{
@@ -96,16 +105,20 @@ export default function TimeTimeline({
       title: string;
     }> = [];
 
+    const startBoundary = dayStart.getTime();
+
     for (const it of entries) {
-      const startMs = new Date(it.startAt as any).getTime();
-      const endMs = new Date((it.endAt ?? it.startAt) as any).getTime();
+      // ✅ entries are already hydrated to Date objects by TimePageClient
+      const startMs = it.startAt.getTime();
+      const endMs = it.endAt ? it.endAt.getTime() : startMs;
+      
       if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) continue;
 
-      const left = clamp(((startMs - dayStart.getTime()) / rangeMs) * 100, 0, 100);
-      const right = clamp(((endMs - dayStart.getTime()) / rangeMs) * 100, 0, 100);
+      const left = clamp(((startMs - startBoundary) / rangeMs) * 100, 0, 100);
+      const right = clamp(((endMs - startBoundary) / rangeMs) * 100, 0, 100);
 
       const width = clamp(right - left, 0, 100);
-      if (width <= 0.05) continue;
+      if (width <= 0) continue;
 
       list.push({
         id: it.id,
@@ -123,21 +136,21 @@ export default function TimeTimeline({
     if (!mounted) return null;
     if (!activeTimer) return null;
 
-    // show overlay only for the current day (best effort)
     const now = new Date();
     const todayISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
     if (todayISO !== dateISO) return null;
 
-    const startMs = new Date(activeTimer.startedAt as any).getTime();
+    const startMs = activeTimer.startedAt.getTime();
     if (!Number.isFinite(startMs)) return null;
 
     const nowMs = Date.now();
+    const startBoundary = dayStart.getTime();
 
-    const left = clamp(((startMs - dayStart.getTime()) / rangeMs) * 100, 0, 100);
-    const right = clamp(((nowMs - dayStart.getTime()) / rangeMs) * 100, 0, 100);
+    const left = clamp(((startMs - startBoundary) / rangeMs) * 100, 0, 100);
+    const right = clamp(((nowMs - startBoundary) / rangeMs) * 100, 0, 100);
     const width = clamp(right - left, 0, 100);
 
-    if (width <= 0.05) return null;
+    if (width <= 0) return null;
 
     return {
       id: "active",

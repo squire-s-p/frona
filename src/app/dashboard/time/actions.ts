@@ -6,7 +6,7 @@ import { getAuthSession } from "@/lib/auth-session";
 import { getUtcDayRange } from "@/lib/time/day-range";
 import { createCalendarEvent, updateCalendarEvent, deleteCalendarEvent } from "@/app/dashboard/calendar/actions";
 
-const MIN_ENTRY_SECONDS = 60;
+const MIN_ENTRY_SECONDS = 1;
 
 function now() {
   return new Date();
