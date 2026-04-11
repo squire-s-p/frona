@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
@@ -12,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
@@ -49,7 +50,7 @@ export default function RegisterPage() {
     if (!res.ok) {
       toast.error("Не вдалося створити акаунт", {
         description: res.message ?? "Спробуйте ще раз.",
-        duration: 12000, // ✅ ще довше для помилок
+        duration: 12000,
       });
       return;
     }
@@ -58,94 +59,102 @@ export default function RegisterPage() {
   }
 
   return (
+    <div className="w-full max-w-md">
+      <div className="rounded-2xl border bg-card p-6 shadow-sm">
+        <div className="flex flex-col items-center text-center">
+          <div className="mb-6 flex size-20 items-center justify-center overflow-hidden">
+            <img src="/logo.svg" alt="Frona Logo" className="size-full object-contain brightness-0 invert" />
+          </div>
+
+          <h1 className="text-2xl font-bold tracking-tight">Створити акаунт у Frona</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Вже маєте обліковий запис?{" "}
+            <Link className="underline underline-offset-4" href="/login">
+              Увійти
+            </Link>
+          </p>
+        </div>
+
+        <form className="mt-6 space-y-3" onSubmit={onSubmit}>
+          <div className="space-y-2">
+            <div className="text-sm font-medium">Ім&apos;я</div>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Олександр"
+              type="text"
+              autoComplete="name"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-sm font-medium">Email</div>
+            <Input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="m@example.com"
+              type="email"
+              autoComplete="email"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-sm font-medium">Пароль</div>
+            <Input
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              type="password"
+              autoComplete="new-password"
+              required
+              minLength={8}
+            />
+          </div>
+
+          <Button className="w-full" type="submit" disabled={pending}>
+            {pending ? "Створення..." : "Створити"}
+          </Button>
+        </form>
+
+        <div className="my-6 flex items-center gap-3">
+          <Separator className="flex-1" />
+          <span className="text-xs text-muted-foreground">Або</span>
+          <Separator className="flex-1" />
+        </div>
+
+        <div className="grid gap-2">
+          <Button
+            variant="outline"
+            onClick={() => signIn("google", { callbackUrl })}
+          >
+            Продовжити з Google
+          </Button>
+        </div>
+
+        <p className="mt-4 text-center text-xs text-muted-foreground">
+          Натискаючи «Продовжити», ви погоджуєтеся з нашими{" "}
+          <Link className="underline underline-offset-4" href="/terms">
+            Умовами надання послуг
+          </Link>{" "}
+          та{" "}
+          <Link className="underline underline-offset-4" href="/privacy">
+            Політикою конфіденційності
+          </Link>
+          .
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto flex min-h-screen max-w-7xl items-center justify-center px-4 py-10">
-        <div className="w-full max-w-md">
-          <div className="rounded-2xl border bg-card p-6 shadow-sm">
-            <div className="flex flex-col items-center text-center">
-              <div className="mb-6 flex size-20 items-center justify-center overflow-hidden">
-                <img src="/logo.svg" alt="Frona Logo" className="size-full object-contain brightness-0 invert" />
-              </div>
-
-              <h1 className="text-2xl font-bold tracking-tight">Створити акаунт у Frona</h1>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Вже маєте обліковий запис?{" "}
-                <Link className="underline underline-offset-4" href="/login">
-                  Увійти
-                </Link>
-              </p>
-            </div>
-
-            <form className="mt-6 space-y-3" onSubmit={onSubmit}>
-              <div className="space-y-2">
-                <div className="text-sm font-medium">Ім&apos;я</div>
-                <Input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Олександр"
-                  type="text"
-                  autoComplete="name"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <div className="text-sm font-medium">Email</div>
-                <Input
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="m@example.com"
-                  type="email"
-                  autoComplete="email"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <div className="text-sm font-medium">Пароль</div>
-                <Input
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  minLength={8}
-                />
-              </div>
-
-              <Button className="w-full" type="submit" disabled={pending}>
-                {pending ? "Створення..." : "Створити"}
-              </Button>
-            </form>
-
-            <div className="my-6 flex items-center gap-3">
-              <Separator className="flex-1" />
-              <span className="text-xs text-muted-foreground">Або</span>
-              <Separator className="flex-1" />
-            </div>
-
-            <div className="grid gap-2">
-              <Button
-                variant="outline"
-                onClick={() => signIn("google", { callbackUrl })}
-              >
-                Продовжити з Google
-              </Button>
-            </div>
-
-            <p className="mt-4 text-center text-xs text-muted-foreground">
-              Натискаючи «Продовжити», ви погоджуєтеся з нашими{" "}
-              <Link className="underline underline-offset-4" href="/terms">
-                Умовами надання послуг
-              </Link>{" "}
-              та{" "}
-              <Link className="underline underline-offset-4" href="/privacy">
-                Політикою конфіденційності
-              </Link>
-              .
-            </p>
-          </div>
-        </div>
+        <Suspense fallback={<div className="text-muted-foreground">Завантаження...</div>}>
+          <RegisterForm />
+        </Suspense>
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getAuthSession } from "@/lib/auth-session";
 import LoginForm from "./login-form";
@@ -24,7 +25,9 @@ export default async function LoginPage(props: { searchParams: Promise<SP> }) {
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto flex min-h-screen max-w-7xl items-center justify-center px-4 py-10">
-        <LoginForm callbackUrl={callbackUrl} error={error} registered={registered} />
+        <Suspense fallback={<div>Завантаження...</div>}>
+          <LoginForm callbackUrl={callbackUrl} error={error} registered={registered} />
+        </Suspense>
       </div>
     </div>
   );
