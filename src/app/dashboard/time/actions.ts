@@ -7,7 +7,7 @@ import { getUtcDayRange } from "@/lib/time/day-range";
 import { revalidatePath } from "next/cache";
 import { createCalendarEvent, updateCalendarEvent, deleteCalendarEvent } from "@/app/dashboard/calendar/actions";
 
-const MIN_ENTRY_SECONDS = 1;
+const MIN_ENTRY_SECONDS = 60;
 
 function now() {
   return new Date();
@@ -926,53 +926,61 @@ export async function getRelevantTasks() {
  */
 export async function getWeeklySummary() {
   const user = await requireUser();
+  const tz = user.timezone || "Europe/Kyiv";
   const now = new Date();
 
-  // Last 7 days in user's timezone (approximate by UTC days for the summary)
-  const days: Array<{ dateISO: string; workSec: number }> = [];
+  // Last 7 days in user's timezone.
+  const dayBuckets: Array<{ dateISO: string; start: Date; end: Date; workSec: number }> = [];
 
   for (let i = 6; i >= 0; i--) {
     const d = new Date(now.getTime() - i * 24 * 3600 * 1000);
-    const iso = d.toISOString().split("T")[0];
-    days.push({ dateISO: iso, workSec: 0 });
+    // YYYY-MM-DD in the target timezone
+    const iso = new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(d);
+    const { start, end } = getUtcDayRange(iso, tz);
+    dayBuckets.push({ dateISO: iso, start, end, workSec: 0 });
   }
 
-  const startDate = new Date(now.getTime() - 7 * 24 * 3600 * 1000);
-  startDate.setUTCHours(0, 0, 0, 0);
+  const overallStart = dayBuckets[0].start;
 
-  const entries = await prisma.timeEntry.findMany({
-    where: {
-      userId: user.id,
-      type: "work",
-      startAt: { gte: startDate },
-    },
-    select: {
-      startAt: true,
-      durationSec: true,
-    },
-  });
+  const [entries, active] = await Promise.all([
+    prisma.timeEntry.findMany({
+      where: {
+        userId: user.id,
+        type: "work",
+        startAt: { gte: overallStart },
+      },
+      select: {
+        startAt: true,
+        durationSec: true,
+      },
+    }),
+    prisma.activeTimer.findUnique({
+      where: { userId: user.id },
+    })
+  ]);
 
   for (const entry of entries) {
-    const iso = entry.startAt.toISOString().split("T")[0];
-    const day = days.find((d) => d.dateISO === iso);
-    if (day) {
-      day.workSec += entry.durationSec ?? 0;
+    const t = entry.startAt.getTime();
+    for (const b of dayBuckets) {
+      if (t >= b.start.getTime() && t < b.end.getTime()) {
+        b.workSec += entry.durationSec ?? 0;
+        break;
+      }
     }
   }
 
   // Also include active timer if any
-  const active = await prisma.activeTimer.findUnique({
-    where: { userId: user.id },
-  });
-
   if (active && active.mode === "work") {
-    const iso = now.toISOString().split("T")[0];
-    const day = days.find((d) => d.dateISO === iso);
-    if (day) {
-      day.workSec += secondsBetween(active.startedAt, now);
+    const t = active.startedAt.getTime();
+    const currentNow = new Date();
+    for (const b of dayBuckets) {
+      if (t >= b.start.getTime() && t < b.end.getTime()) {
+        b.workSec += secondsBetween(active.startedAt, currentNow);
+        break;
+      }
     }
   }
 
-  return days;
+  return dayBuckets.map(b => ({ dateISO: b.dateISO, workSec: b.workSec }));
 }
 

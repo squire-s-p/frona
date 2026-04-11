@@ -79,22 +79,29 @@ export default function TimeTimeline({
   React.useEffect(() => setMounted(true), []);
 
   // stable day window baseline: we need the UTC range that corresponds to 00:00..23:59 in the user's timezone
-  const { dayStart, dayEnd, rangeMs } = React.useMemo(() => {
-    // We use a simplified approach for the timeline:
-    // entries are UTC. We need to know where 00:00 of dateISO is in UTC.
-    // We can use a trick: parse dateISO as a local date, then convert to UTC.
-    
-    // This is basically what we need for the UI to align.
+  const { dayStartMs, dayEndMs, rangeMs } = React.useMemo(() => {
+    // We reuse the same logic as the server to find the UTC boundaries of the dayISO
     const [y, m, d] = dateISO.split("-").map(Number);
-    const localStart = new Date(y, m - 1, d, 0, 0, 0);
-    const localEnd = new Date(y, m - 1, d, 23, 59, 59, 999);
+    
+    const tz = timezone || "Europe/Kyiv";
+    let start = new Date(Date.UTC(y, m - 1, d, 0, 0, 0));
+    
+    for (let i = 0; i < 2; i++) {
+      const local = new Date(start.toLocaleString("en-US", { timeZone: tz }));
+      const desired = new Date(y, m - 1, d, 0, 0, 0);
+      const diff = local.getTime() - desired.getTime();
+      start = new Date(start.getTime() - diff);
+    }
+    
+    const startMs = start.getTime();
+    const endMs = startMs + 24 * 3600 * 1000 - 1;
     
     return {
-      dayStart: localStart,
-      dayEnd: localEnd,
-      rangeMs: localEnd.getTime() - localStart.getTime()
+      dayStartMs: startMs,
+      dayEndMs: endMs,
+      rangeMs: endMs - startMs
     };
-  }, [dateISO]);
+  }, [dateISO, timezone]);
 
   const segments = React.useMemo(() => {
     const list: Array<{
@@ -105,8 +112,6 @@ export default function TimeTimeline({
       title: string;
     }> = [];
 
-    const startBoundary = dayStart.getTime();
-
     for (const it of entries) {
       // ✅ entries are already hydrated to Date objects by TimePageClient
       const startMs = it.startAt.getTime();
@@ -114,8 +119,8 @@ export default function TimeTimeline({
       
       if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) continue;
 
-      const left = clamp(((startMs - startBoundary) / rangeMs) * 100, 0, 100);
-      const right = clamp(((endMs - startBoundary) / rangeMs) * 100, 0, 100);
+      const left = clamp(((startMs - dayStartMs) / rangeMs) * 100, 0, 100);
+      const right = clamp(((endMs - dayStartMs) / rangeMs) * 100, 0, 100);
 
       const width = clamp(right - left, 0, 100);
       if (width <= 0) continue;
@@ -125,29 +130,25 @@ export default function TimeTimeline({
         type: it.type,
         leftPct: Number(left.toFixed(4)),
         widthPct: Number(width.toFixed(4)),
-        title: it.type === "break" ? "Перерва" : "Робота",
+        title: it.title,
       });
     }
 
     return list;
-  }, [entries, dayStart, rangeMs]);
+  }, [entries, dayStartMs, rangeMs]);
 
   const activeSegment = React.useMemo(() => {
     if (!mounted) return null;
     if (!activeTimer) return null;
 
     const now = new Date();
-    const todayISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-    if (todayISO !== dateISO) return null;
-
     const startMs = activeTimer.startedAt.getTime();
     if (!Number.isFinite(startMs)) return null;
 
     const nowMs = Date.now();
-    const startBoundary = dayStart.getTime();
 
-    const left = clamp(((startMs - startBoundary) / rangeMs) * 100, 0, 100);
-    const right = clamp(((nowMs - startBoundary) / rangeMs) * 100, 0, 100);
+    const left = clamp(((startMs - dayStartMs) / rangeMs) * 100, 0, 100);
+    const right = clamp(((nowMs - dayStartMs) / rangeMs) * 100, 0, 100);
     const width = clamp(right - left, 0, 100);
 
     if (width <= 0) return null;
@@ -159,7 +160,7 @@ export default function TimeTimeline({
       widthPct: Number(width.toFixed(4)),
       title: activeTimer.mode === "break" ? "Перерва (активно)" : "Робота (активно)",
     };
-  }, [mounted, activeTimer, dateISO, dayStart, rangeMs]);
+  }, [mounted, activeTimer, dateISO, dayStartMs, rangeMs]);
 
   const ticks = React.useMemo(() => Array.from({ length: 24 }, (_, i) => i), []);
 
@@ -201,12 +202,12 @@ export default function TimeTimeline({
   const selectableMaxMinute = React.useMemo(() => {
     const now = new Date();
     const todayStartTime = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    const viewedDayStartTime = dayStart.getTime();
+    const viewedDayStartTime = dayStartMs; // this is already the start of dateISO in UTC ms
 
-    if (viewedDayStartTime > todayStartTime) return -1;
+    if (viewedDayStartTime > todayStartTime + 86400000) return -1;
     if (viewedDayStartTime < todayStartTime) return 24 * 60;
     return now.getHours() * 60 + now.getMinutes();
-  }, [dayStart]);
+  }, [dayStartMs]);
 
   function minuteFromClientX(clientX: number) {
     const el = barRef.current;

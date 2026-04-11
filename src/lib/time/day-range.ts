@@ -32,19 +32,26 @@ function minutesFromParts(p: { hour: number; minute: number }) {
  * Беремо "локальний" день YYYY-MM-DD у заданому timeZone
  * і повертаємо UTC start/end для запитів в БД.
  */
-export function getUtcDayRange(dateISO: string, timeZone: string) {
-  // Початковий guess: UTC midnight цього дня
-  let guess = new Date(`${dateISO}T00:00:00.000Z`);
-
-  // Ітеративно “підганяємо” guess до локального 00:00 у timeZone
+export function getUtcDayRange(dateISO: string, timeZone: string = "Europe/Kyiv") {
+  const [y, m, d] = dateISO.split("-").map(Number);
+  
+  // 1. Створюємо дату в UTC, яка відповідає 00:00:00 цього дня в локальному часі
+  // Ми використовуємо Intl для зворотного розрахунку
+  const tz = timeZone || "Europe/Kyiv";
+  
+  // guess start: 00:00 UTC
+  let start = new Date(Date.UTC(y, m - 1, d, 0, 0, 0));
+  
+  // Ітеративно підганяємо, щоб знайти момент UTC, коли в локальному часі 00:00
   for (let i = 0; i < 2; i++) {
-    const parts = getZonedParts(guess, timeZone);
-    const localMinutes = minutesFromParts(parts);
-    const diffMinutes = localMinutes; // нам треба 00:00, тобто відняти поточні хвилини
-    guess = new Date(guess.getTime() - diffMinutes * 60_000);
+    const local = new Date(start.toLocaleString("en-US", { timeZone: tz }));
+    const desired = new Date(y, m - 1, d, 0, 0, 0);
+    const diff = local.getTime() - desired.getTime();
+    start = new Date(start.getTime() - diff);
   }
 
-  const start = guess;
-  const end = new Date(start.getTime() + 24 * 60 * 60_000);
+  // 2. Те саме для кінця дня (23:59:59.999)
+  let end = new Date(start.getTime() + 24 * 3600 * 1000 - 1);
+  
   return { start, end };
 }
