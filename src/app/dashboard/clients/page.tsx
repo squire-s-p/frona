@@ -24,9 +24,9 @@ export default async function ClientsPage() {
     }),
   ]);
 
-  const rows = clients.map((c) => {
+  const rows = clients.map((c: any) => {
     const totalProjects = c.projects.length;
-    const activeProjects = c.projects.filter((p) => p.status === "active").length;
+    const activeProjects = c.projects.filter((p: any) => p.status === "active").length;
 
     return {
       id: c.id,

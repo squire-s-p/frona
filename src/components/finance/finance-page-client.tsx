@@ -433,7 +433,7 @@ export function FinancePageClient() {
     }, [lastSyncedAt, handleSync]);
 
     // Totals
-    const totalBalanceUAH = accounts.reduce((sum, acc) => {
+    const totalBalanceUAH = accounts.reduce((sum: number, acc: any) => {
         if (acc.currency === "USD") return sum + (acc.balance * rates.USD);
         if (acc.currency === "EUR") return sum + (acc.balance * rates.EUR);
         return sum + acc.balance;
@@ -619,7 +619,7 @@ export function FinancePageClient() {
                                                     contentStyle={{ backgroundColor: '#18181b', border: 'none', borderRadius: '8px', color: '#f4f4f5' }}
                                                 />
                                                 <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                                                    {financialStats.barChart.map((entry, index) => (
+                                                    {financialStats.barChart.map((entry: any, index: number) => (
                                                         <Cell key={`cell-${index}`} fill={index === 0 ? '#18181b' : '#a1a1aa'} />
                                                     ))}
                                                 </Bar>
@@ -754,7 +754,7 @@ export function FinancePageClient() {
                                                 <SelectContent>
                                                     <SelectItem value="all">Усі категорії</SelectItem>
                                                     <SelectItem value="transfer-special-id">Перекази</SelectItem>
-                                                    {categories.map(c => (
+                                                    {categories.map((c: any) => (
                                                         <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                                                     ))}
                                                 </SelectContent>
@@ -765,7 +765,7 @@ export function FinancePageClient() {
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="all">Усі проекти</SelectItem>
-                                                    {projects.map(p => (
+                                                    {projects.map((p: any) => (
                                                         <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                                                     ))}
                                                 </SelectContent>
@@ -780,7 +780,7 @@ export function FinancePageClient() {
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="all">Усі рахунки</SelectItem>
-                                                    {accounts.map(acc => (
+                                                    {accounts.map((acc: any) => (
                                                         <SelectItem key={acc.id} value={acc.id}>
                                                             <div className="flex items-center gap-2 text-xs">
                                                                 <div className={cn(
