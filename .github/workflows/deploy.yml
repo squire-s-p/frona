@@ -12,8 +12,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
       - name: Install deps
-        run: npm install
+        run: npm ci
 
       - name: Build
         run: npm run build
@@ -55,10 +61,11 @@ jobs:
             rm /root/build.tar.gz
 
             cp /root/frona/.env /root/app/build/.env
+            if [ ! -f "/root/app/build/.env" ]; then echo "FATAL: .env file NOT found!"; exit 1; fi
 
             cd /root/app/build
 
             pm2 delete dashboard || true
-            pm2 start server.js --name dashboard
+            pm2 start server.js --name dashboard --update-env
 
             pm2 save
