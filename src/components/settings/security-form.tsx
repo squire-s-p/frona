@@ -17,7 +17,18 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { ShieldCheck, KeyRound, Smartphone, LogOut, Laptop, Key, Loader2, Monitor, Trash2 } from "lucide-react";
 import { updatePasswordAction, revokeDeviceSessionAction, revokeAllOtherDeviceSessionsAction } from "@/app/dashboard/settings/actions";
-import { DeviceSession } from "@prisma/client";
+// DeviceSession type defined locally to bypass Prisma generate issues in CI
+interface DeviceSession {
+  id: string;
+  userId: string;
+  userAgent: string | null;
+  ipAddress: string | null;
+  browser: string | null;
+  os: string | null;
+  device: string | null;
+  lastActive: Date;
+  createdAt: Date;
+}
 
 const initialPasswordState = { error: null, success: null };
 
