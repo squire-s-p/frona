@@ -22,7 +22,9 @@ jobs:
           script: |
             cd /root/frona
 
-            git pull
+            git fetch origin
+            git reset --hard origin/main
+
             npm install
 
             npx prisma generate
