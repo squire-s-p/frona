@@ -2,6 +2,9 @@
 // AES-256-GCM encryption for monoToken storage.
 // Token is NEVER returned to the client — decrypted only inside service layer.
 
+import { config } from "dotenv";
+config();
+
 import crypto from "crypto";
 
 const ALGORITHM = "aes-256-gcm";
