@@ -3,6 +3,7 @@
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client"; // 👈 додано
 
 const RegisterSchema = z.object({
   name: z.string().trim().min(2).max(80).optional().or(z.literal("")),
@@ -23,14 +24,18 @@ export async function registerWithEmail(formData: FormData) {
 
   const { name, email, password } = parsed.data;
 
-  const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+  const existing = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true },
+  });
+
   if (existing) {
     return { ok: false as const, message: "Користувач з таким email вже існує." };
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
 
-  await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => { // 👈 типізація
     const user = await tx.user.create({
       data: { email, name: name?.trim() ? name.trim() : null },
       select: { id: true },
