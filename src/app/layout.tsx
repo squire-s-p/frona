@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Frona",
-  description: "Твій робочий простір",
+  title: "Frona test - Your Business Dashboard",
+  description: "Modern business dashboard for managing projects, finances, and time tracking.",
 };
 
 export default function RootLayout({

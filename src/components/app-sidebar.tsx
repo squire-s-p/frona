@@ -94,7 +94,7 @@ export function AppSidebar({
           {/* Текст ховається при collapse */}
           {!collapsed && (
             <div className="min-w-0 leading-tight">
-              <div className="truncate text-base font-medium tracking-tight">Frona</div>
+              <div className="truncate text-base font-medium tracking-tight">Frona test</div>
             </div>
           )}
         </div>

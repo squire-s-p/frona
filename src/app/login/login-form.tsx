@@ -132,7 +132,7 @@ export default function LoginForm({
             <img src="/logo.svg" alt="Frona Logo" className="size-full object-contain invert" />
           </div>
 
-          <h1 className="text-2xl font-bold tracking-tight">Ласкаво просимо до Frona</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Ласкаво просимо до Frona test</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Перейдіть до вашої панелі керування
           </p>
