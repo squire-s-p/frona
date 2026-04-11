@@ -128,7 +128,7 @@ export async function bulkCreateNotes(notes: { title: string, content: string }[
 
     // Create multiple notes in a single query for high performance
     const createdNotes = await (prisma.note as any).createManyAndReturn({
-        data: notes.map(note => ({
+        data: notes.map((note: any) => ({
             userId: user.id,
             title: note.title,
             content: note.content,
@@ -155,7 +155,7 @@ export async function updateNote(id: string, data: { title?: string, content?: s
             ...data,
             tagsRel: data.tags !== undefined ? {
                 set: [], // Clear existing relations
-                connectOrCreate: data.tags.map(tagName => ({
+                connectOrCreate: data.tags.map((tagName: any) => ({
                     where: { userId_name: { userId: user.id, name: tagName } },
                     create: { userId: user.id, name: tagName }
                 }))
@@ -187,7 +187,7 @@ async function syncNoteLinks(sourceNoteId: string, content: string, userId?: str
     // Simple regex for [[Note Title]] - handles [[Link|Alias]] by splitting
     const linkRegex = /\[\[(.*?)\]\]/g;
     const matches = Array.from(content.matchAll(linkRegex));
-    const targetTitles = [...new Set(matches.map(m => m[1].split('|')[0].trim()))];
+    const targetTitles = [...new Set(matches.map((m: any) => m[1].split('|')[0].trim()))];
 
     // Find notes with these titles for the user
     const targetNotes = await prisma.note.findMany({
@@ -198,7 +198,7 @@ async function syncNoteLinks(sourceNoteId: string, content: string, userId?: str
         select: { id: true }
     });
 
-    const targetIds = targetNotes.map(n => n.id);
+    const targetIds = targetNotes.map((n: any) => n.id);
 
     // Delete old links
     await prisma.noteLink.deleteMany({
@@ -208,7 +208,7 @@ async function syncNoteLinks(sourceNoteId: string, content: string, userId?: str
     // Create new links
     if (targetIds.length > 0) {
         await prisma.noteLink.createMany({
-            data: targetIds.map(targetId => ({
+            data: targetIds.map((targetId: any) => ({
                 sourceId: sourceNoteId,
                 targetId
             })),
@@ -286,12 +286,12 @@ export async function getNoteGraph() {
     ]);
 
     return {
-        nodes: notes.map(n => ({
+        nodes: notes.map((n: any) => ({
             id: n.id,
             title: n.title,
             color: n.tagsRel[0]?.color || null
         })),
-        links: links.map(l => ({ source: l.sourceId, target: l.targetId }))
+        links: links.map((l: any) => ({ source: l.sourceId, target: l.targetId }))
     };
 }
 
@@ -424,7 +424,7 @@ export async function seedTestData() {
     // 6. Синхронізація лінків (для всіх нотаток)
     const allNotes = [note1, note2, note3, noteReact, noteNext, note4, note5, noteRoot];
     await Promise.all(
-        allNotes.map(n => syncNoteLinks(n.id, n.content ?? ""))
+        allNotes.map((n: any) => syncNoteLinks(n.id, n.content ?? ""))
     );
 
     revalidatePath("/dashboard/notes");
