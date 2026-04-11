@@ -116,7 +116,7 @@ export async function importMonthChunk(
 
     try {
         const statements = await service.getStatement(account.monoAccountId, fromS, toS);
-        const rows = statements.map(s => mapStatementToDb(s, accountId));
+        const rows = statements.map((s: any) => mapStatementToDb(s, accountId));
         const inserted = await insertTransactions(rows);
 
         // Bridge to Finance domain
@@ -186,7 +186,7 @@ export async function syncAccountIncremental(accountId: string): Promise<SyncSta
 
     try {
         const statements = await service.getStatement(account.monoAccountId, fromS, toS);
-        const rows = statements.map(s => mapStatementToDb(s, accountId));
+        const rows = statements.map((s: any) => mapStatementToDb(s, accountId));
         const inserted = await insertTransactions(rows);
 
         // Bridge new transactions to Finance domain

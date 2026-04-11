@@ -39,7 +39,7 @@ export async function GET(
     notes: invoice.notes ?? null,
     seller: invoice.sellerSnapshot as any,
     buyer: invoice.buyerSnapshot as any,
-    items: invoice.items.map((it) => ({
+    items: invoice.items.map((it: any) => ({
       name: it.name,
       description: (it as any).description ?? null,
       qty: Number(it.qty),

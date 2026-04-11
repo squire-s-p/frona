@@ -235,7 +235,7 @@ function MetaStatsWidget({ data, size }: { data: any; size: WidgetLayout["size"]
   return (
     <WidgetContainer icon={Activity} label="Огляд діяльності" size={size}>
        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-2">
-          {stats.map((s, i) => (
+          {stats.map((s: any, i: number) => (
              <div key={i} className="p-4 rounded-lg bg-muted/40 border border-border/50 flex flex-col gap-2">
                 <div className="flex items-center justify-between">
                    <s.icon className="h-4 w-4 text-muted-foreground" />
@@ -263,7 +263,7 @@ export function QuickActionsWidget({ size }: { size: WidgetLayout["size"] }) {
   return (
     <WidgetContainer icon={Zap} label="Швидка навігація" size={size}>
       <div className={`grid ${size === "sm" ? "grid-cols-2" : "grid-cols-3"} gap-2`}>
-        {actions.slice(0, size === "sm" ? 4 : 6).map(({ href, icon: Icon, label }) => (
+        {actions.slice(0, size === "sm" ? 4 : 6).map(({ href, icon: Icon, label }: any) => (
           <Link key={href} href={href} className="flex flex-col items-center justify-center p-3 rounded-lg border bg-muted/30 hover:bg-muted transition-all">
             <Icon className="h-4 w-4 mb-2 text-muted-foreground" />
             <span className="text-[10px] font-medium text-center">{label}</span>

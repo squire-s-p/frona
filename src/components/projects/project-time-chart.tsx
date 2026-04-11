@@ -70,14 +70,14 @@ export default function ProjectTimeChart({ buckets }: { buckets: TimeBucket[] })
     const sliced =
       range === "all" ? buckets : buckets.slice(-Number(range as "90" | "30" | "7"));
 
-    return sliced.map((b) => ({
+    return sliced.map((b: any) => ({
       ...b,
       hours: b.minutes / 60,
     }));
   }, [buckets, range]);
 
   const totalMinutes = React.useMemo(
-    () => data.reduce((acc, x) => acc + (x.minutes ?? 0), 0),
+    () => data.reduce((acc: number, x: any) => acc + (x.minutes ?? 0), 0),
     [data]
   );
 

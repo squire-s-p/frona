@@ -338,7 +338,7 @@ export function NotesExplorer({ folders, notes, tags = [], view }: NotesExplorer
                         </Button>
                         {isTagsExpanded && (
                             <div className="flex flex-wrap gap-1.5 px-2 mt-2 ml-1 animate-in fade-in slide-in-from-top-1 duration-200">
-                                {allTags.map(tag => (
+                                {allTags.map((tag: any) => (
                                     <DropdownMenu key={tag.id} open={tagMenuOpen === tag.id} onOpenChange={(open) => !open && setTagMenuOpen(null)}>
                                         <DropdownMenuTrigger asChild>
                                             <Button
@@ -422,7 +422,7 @@ export function NotesExplorer({ folders, notes, tags = [], view }: NotesExplorer
                             Закладки
                         </h3>
                         <div className="space-y-0.5">
-                            {pinnedNotes.map(note => (
+                            {pinnedNotes.map((note: any) => (
                                 <NoteItem
                                     key={`pinned-${note.id}`}
                                     note={note}
@@ -449,7 +449,7 @@ export function NotesExplorer({ folders, notes, tags = [], view }: NotesExplorer
                     <div className="h-px flex-1 bg-zinc-100 dark:bg-zinc-900/50 mx-2" />
                 </div>
 
-                {folders.map(folder => (
+                {folders.map((folder: any) => (
                     <FolderItem
                         key={folder.id}
                         folder={folder}
@@ -477,7 +477,7 @@ export function NotesExplorer({ folders, notes, tags = [], view }: NotesExplorer
                     />
                 ))}
 
-                {rootNotes.map(note => (
+                {rootNotes.map((note: any) => (
                     <NoteItem
                         key={note.id}
                         note={note}
