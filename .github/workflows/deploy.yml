@@ -20,11 +20,12 @@ jobs:
             cd /root/frona
 
             git pull
-
             npm install
-            npm run build
 
             npx prisma generate
             npx prisma migrate deploy
 
-            pm2 restart all
+            npm run build
+
+            pm2 restart ecosystem.config.js --update-env
+            pm2 save
