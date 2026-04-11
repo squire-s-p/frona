@@ -429,7 +429,7 @@ export function TaskDialog({
       from: task?.startDate ? new Date(task.startDate) : undefined,
       to: task?.endDate ? new Date(task.endDate) : undefined,
     });
-    setTagIds(task?.tags?.map((t) => t.id) ?? []);
+    setTagIds(task?.tags?.map((t: any) => t.id) ?? []);
 
     const recurrence = parseRecurrenceRule(task?.recurrenceRule ?? null);
     setIsRecurring(!!recurrence);
@@ -459,7 +459,7 @@ export function TaskDialog({
       to: task?.endDate ? new Date(task.endDate) : undefined,
     });
 
-    setTagIds(task?.tags?.map((t) => t.id) ?? []);
+    setTagIds(task?.tags?.map((t: any) => t.id) ?? []);
 
     const recurrence = parseRecurrenceRule(task?.recurrenceRule ?? null);
     setIsRecurring(!!recurrence);
@@ -553,10 +553,10 @@ export function TaskDialog({
     startTransition(async () => {
       let savedTask: any;
       if (task) {
-        await updateTask(task.id, payload);
+        await updateTask(task.id, payload as any);
         savedTask = task;
       } else {
-        savedTask = await createTask(payload);
+        savedTask = await createTask(payload as any);
       }
 
       // Persist pending attachments
@@ -598,7 +598,7 @@ export function TaskDialog({
     startTransition(async () => {
       await addTaskComment(task.id, text);
 
-      setComments((prev) => [
+      setComments((prev: any[]) => [
         ...prev,
         {
           id: `tmp-${Date.now()}`,
@@ -619,7 +619,7 @@ export function TaskDialog({
     if (!task) return;
     startTransition(async () => {
       await deleteTaskComment(commentId);
-      setComments((prev) => prev.filter((c) => c.id !== commentId));
+      setComments((prev: any[]) => prev.filter((c: any) => c.id !== commentId));
     });
   }
 
@@ -661,7 +661,7 @@ export function TaskDialog({
           });
         } else {
           // New task - store in pending state
-          setPendingAttachments(prev => [...prev, {
+          setPendingAttachments((prev: any[]) => [...prev, {
             id: `pending-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             name: data.name,
             url: data.url,
@@ -693,7 +693,7 @@ export function TaskDialog({
     if (!task) return;
     startTransition(async () => {
       await deleteTaskAttachment(attachmentId);
-      setAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
+      setAttachments((prev: any[]) => prev.filter((a: any) => a.id !== attachmentId));
     });
   }
 
@@ -703,7 +703,7 @@ export function TaskDialog({
     setAddingSubtask(true);
     try {
       const subtask = await createSubtask(task.id, title);
-      setSubtasks((prev) => [...prev, subtask as unknown as SubtaskRow]);
+      setSubtasks((prev: any[]) => [...prev, subtask as unknown as SubtaskRow]);
       setNewSubtaskTitle("");
     } catch (error) {
       toast.error("Failed to create subtask");
@@ -715,14 +715,14 @@ export function TaskDialog({
   async function onToggleSubtask(subtaskId: string, isDone: boolean) {
     if (!task) return;
     // Optimistic update
-    setSubtasks((prev) => prev.map(s => s.id === subtaskId ? { ...s, isDone } : s));
+    setSubtasks((prev: any[]) => prev.map((s: any) => s.id === subtaskId ? { ...s, isDone } : s));
 
     startTransition(async () => {
       try {
         await toggleSubtask(subtaskId, isDone);
       } catch (error) {
         // Revert on error
-        setSubtasks((prev) => prev.map(s => s.id === subtaskId ? { ...s, isDone: !isDone } : s));
+        setSubtasks((prev: any[]) => prev.map((s: any) => s.id === subtaskId ? { ...s, isDone: !isDone } : s));
         toast.error("Failed to update subtask");
       }
     });
@@ -732,7 +732,7 @@ export function TaskDialog({
     if (!task) return;
     // Optimistic update
     const previous = subtasks;
-    setSubtasks((prev) => prev.filter(s => s.id !== subtaskId));
+    setSubtasks((prev: any[]) => prev.filter((s: any) => s.id !== subtaskId));
 
     startTransition(async () => {
       try {

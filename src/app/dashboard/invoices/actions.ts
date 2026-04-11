@@ -80,7 +80,7 @@ export async function createInvoice(input: unknown) {
   const issueDate = data.issueDate ? new Date(data.issueDate) : new Date();
   const dueDate = data.dueDate ? new Date(data.dueDate) : addDays(issueDate, 7);
 
-  const invoice = await prisma.$transaction(async (tx) => {
+  const invoice = await prisma.$transaction(async (tx: any) => {
     const last = await tx.invoice.findFirst({
       where: { userId: session.user.id },
       orderBy: { numberInt: "desc" },
@@ -330,7 +330,7 @@ async function recalcTotals(invoiceId: string) {
     select: { amount: true },
   });
 
-  const subtotal = items.reduce((acc, i) => acc + Number(i.amount), 0);
+  const subtotal = items.reduce((acc: number, i: any) => acc + Number(i.amount), 0);
   const total = subtotal;
 
   await prisma.invoice.update({

@@ -61,7 +61,7 @@ export async function getProjectsSummary(
             where: { clientId: { in: filters.clientIds } },
             select: { id: true }
         });
-        const clientProjectIds = clientProjects.map(p => p.id);
+        const clientProjectIds = clientProjects.map((p: any) => p.id);
         if (where.projectId) {
             where.projectId = { in: (where.projectId.in as string[]).filter(id => clientProjectIds.includes(id)) };
         } else {
@@ -86,30 +86,30 @@ export async function getProjectsSummary(
         _sum: { durationSec: true },
     });
 
-    const prevMap = new Map(groupedPrev.map(g => [g.projectId, g._sum.durationSec ?? 0]));
+    const prevMap = new Map<string | null, number>(groupedPrev.map((g: any) => [g.projectId, g._sum.durationSec ?? 0]));
 
     const activeProjectIds = grouped
-        .map((g) => g.projectId)
-        .filter((id): id is string => id !== null);
+        .map((g: any) => g.projectId)
+        .filter((id: any): id is string => id !== null);
 
     const projects = await prisma.project.findMany({
         where: { id: { in: activeProjectIds } },
         include: { client: true },
     });
 
-    const projectMap = new Map(projects.map((p) => [p.id, p]));
+    const projectMap = new Map<string, any>(projects.map((p: any) => [p.id, p]));
 
     const result: ProjectSummaryItem[] = grouped
-        .filter(g => g.projectId !== null)
-        .map(g => {
+        .filter((g: any) => g.projectId !== null)
+        .map((g: any) => {
             const pid = g.projectId as string;
             const project = projectMap.get(pid);
             const current = g._sum.durationSec ?? 0;
             const previous = prevMap.get(pid) ?? 0;
 
             let growth: number | undefined = undefined;
-            if (previous > 0) {
-                growth = ((current - previous) / previous) * 100;
+            if ((previous as number) > 0) {
+                growth = (((current as number) - (previous as number)) / (previous as number)) * 100;
             }
 
             return {
@@ -222,9 +222,9 @@ export async function getProjectTaskDetails(
         _sum: { durationSec: true },
     });
 
-    tasks.sort((a, b) => (b._sum?.durationSec ?? 0) - (a._sum?.durationSec ?? 0));
+    tasks.sort((a: any, b: any) => (b._sum?.durationSec ?? 0) - (a._sum?.durationSec ?? 0));
 
-    return tasks.map(t => ({
+    return tasks.map((t: any) => ({
         note: t.note || "Без опису",
         duration: t._sum?.durationSec ?? 0
     }));

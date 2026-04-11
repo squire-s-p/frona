@@ -28,7 +28,7 @@ export async function getTaxStats() {
         select: { id: true }
     });
 
-    const fopAccountIds = fopAccounts.map(a => a.id);
+    const fopAccountIds = fopAccounts.map((a: any) => a.id);
 
     // Поточний рік
     const yearStart = startOfYear(now);
@@ -57,20 +57,20 @@ export async function getTaxStats() {
         : [];
 
     // Розраховуємо загальний дохід (для ліміту)
-    const totalYearlyIncome = incomeTransactions.reduce((sum, tx) => sum + Number(tx.amount), 0);
+    const totalYearlyIncome = incomeTransactions.reduce((sum: number, tx: any) => sum + Number(tx.amount), 0);
 
     // Розраховуємо оподатковуваний дохід
     // Оскільки в БД у категорій за замовчуванням isTaxable = false, 
     // ми вважаємо всі надходження на ФОП доходом, крім внутрішніх переказів.
-    const taxableIncomeTransactions = incomeTransactions.filter(tx =>
+    const taxableIncomeTransactions = incomeTransactions.filter((tx: any) =>
         tx.category?.name !== "Внутрішній переказ"
     );
 
-    const yearlyTaxableIncome = taxableIncomeTransactions.reduce((sum, tx) => sum + Number(tx.amount), 0);
+    const yearlyTaxableIncome = taxableIncomeTransactions.reduce((sum: number, tx: any) => sum + Number(tx.amount), 0);
 
     const quarterlyTaxableIncome = taxableIncomeTransactions
-        .filter(tx => tx.date >= quarterStart && tx.date <= quarterEnd)
-        .reduce((sum, tx) => sum + Number(tx.amount), 0);
+        .filter((tx: any) => tx.date >= quarterStart && tx.date <= quarterEnd)
+        .reduce((sum: number, tx: any) => sum + Number(tx.amount), 0);
 
     // Розрахунок податків для 3-ї групи ФОП (5% ЄП + 1% ВЗ)
     const epRate = 0.05;
@@ -139,7 +139,7 @@ export async function getTaxStats() {
     };
 
     const paidByQuarter: Record<string, number> = {};
-    taxPayments.forEach(tx => {
+    taxPayments.forEach((tx: any) => {
         const { quarter, year } = getTaxPeriod(tx);
         const key = `${year}-${quarter}`;
         paidByQuarter[key] = (paidByQuarter[key] || 0) + Math.abs(Number(tx.amount));
@@ -163,7 +163,7 @@ export async function getTaxStats() {
         monthlyIncome[monthName] = 0;
     }
 
-    incomeTransactions.forEach(tx => {
+    incomeTransactions.forEach((tx: any) => {
         const monthName = format(tx.date, "MMM");
         if (monthlyIncome[monthName] !== undefined) {
             monthlyIncome[monthName] += Number(tx.amount);
@@ -186,10 +186,10 @@ export async function getTaxStats() {
             totalTax: tax5Yearly + tax1Yearly + esvYearly,
             paid: Object.entries(paidByQuarter)
                 .filter(([key]) => key.startsWith(`${now.getFullYear()}-`))
-                .reduce((sum, [_, val]) => sum + val, 0)
+                .reduce((sum: number, [_, val]: [string, any]) => sum + val, 0)
         },
         quarterly: {
-            income: incomeTransactions.filter(tx => tx.date >= quarterStart && tx.date <= quarterEnd).reduce((sum, tx) => sum + Number(tx.amount), 0),
+            income: incomeTransactions.filter((tx: any) => tx.date >= quarterStart && tx.date <= quarterEnd).reduce((sum: number, tx: any) => sum + Number(tx.amount), 0),
             taxableIncome: quarterlyTaxableIncome,
             tax5: tax5Quarterly,
             tax1: tax1Quarterly,
@@ -215,8 +215,8 @@ export async function getTaxStats() {
                 : [];
 
             const prevTaxable = prevIncomeTxs
-                .filter(tx => tx.category?.name !== "Внутрішній переказ")
-                .reduce((sum, tx) => sum + Number(tx.amount), 0);
+                .filter((tx: any) => tx.category?.name !== "Внутрішній переказ")
+                .reduce((sum: number, tx: any) => sum + Number(tx.amount), 0);
 
             const qNum = Math.floor(prevQDate.getMonth() / 3) + 1;
             const yNum = prevQDate.getFullYear();
@@ -243,8 +243,8 @@ export async function getTaxStats() {
             gap: taxGap,
             accountId: taxAccount?.id || null
         },
-        paidByQuarter: [1, 2, 3, 4].map(q => paidByQuarter[`${now.getFullYear()}-${q}`] || 0),
-        payments: taxPayments.map(p => {
+        paidByQuarter: [1, 2, 3, 4].map((q: number) => paidByQuarter[`${now.getFullYear()}-${q}`] || 0),
+        payments: taxPayments.map((p: any) => {
             const { quarter, year } = getTaxPeriod(p);
             return {
                 id: p.id,
@@ -280,7 +280,7 @@ export async function moveToTaxReserve(amount: number, fromAccountId: string) {
     }
 
     // Виконуємо трансфер
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: any) => {
         // 1. Списуємо з основного
         await tx.financeAccount.update({
             where: { id: fromAccountId },

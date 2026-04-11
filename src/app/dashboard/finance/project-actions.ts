@@ -28,7 +28,7 @@ export async function getProjectsProfitability() {
         orderBy: { updatedAt: 'desc' }
     });
 
-    const projectMetrics = await Promise.all(projects.map(async (project) => {
+    const projectMetrics = await Promise.all(projects.map(async (project: any) => {
         // 1. Транзакції
         const transactions = await prisma.transaction.aggregate({
             where: { projectId: project.id, userId: user.id },
@@ -88,7 +88,7 @@ export async function getProjectsProfitability() {
         };
     }));
 
-    return projectMetrics.sort((a, b) => b.profit - a.profit);
+    return projectMetrics.sort((a: any, b: any) => b.profit - a.profit);
 }
 
 /**
@@ -100,7 +100,7 @@ export async function getClientsProfitability() {
 
     const clientStats: Record<string, any> = {};
 
-    projectMetrics.forEach(p => {
+    projectMetrics.forEach((p: any) => {
         const clientName = p.client || "Приватний";
         if (!clientStats[clientName]) {
             clientStats[clientName] = {
@@ -126,5 +126,5 @@ export async function getClientsProfitability() {
         ...c,
         margin: c.income > 0 ? (c.profit / c.income) * 100 : 0,
         hourlyRate: c.totalHours > 0 ? c.profit / c.totalHours : 0
-    })).sort((a, b) => b.profit - a.profit);
+    })).sort((a: any, b: any) => b.profit - a.profit);
 }

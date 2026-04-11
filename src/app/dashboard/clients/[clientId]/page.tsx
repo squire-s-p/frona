@@ -68,7 +68,7 @@ export default async function ClientPage({
   ]);
 
   const activeCount = clientProjects.reduce(
-    (acc, p) => acc + (p.status === "active" ? 1 : 0),
+    (acc: number, p: any) => acc + (p.status === "active" ? 1 : 0),
     0
   );
 
@@ -179,7 +179,7 @@ export default async function ClientPage({
             <ClientProjectsPicker
                 clientId={client.id}
                 allProjects={allProjects}
-                selectedProjectIds={clientProjects.map((p) => p.id)}
+                selectedProjectIds={clientProjects.map((p: any) => p.id)}
             />
 
           </div>
@@ -188,7 +188,7 @@ export default async function ClientPage({
         {/* BOTTOM FULL WIDTH — Detailed Projects Table */}
         <div className="mt-5">
             <ClientProjectsTable
-                projects={clientProjects.map((p) => ({
+                projects={clientProjects.map((p: any) => ({
                     id: p.id,
                     name: p.name,
                     status: p.status,

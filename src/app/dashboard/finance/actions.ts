@@ -27,7 +27,7 @@ export async function getFinanceAccounts() {
         orderBy: { createdAt: "asc" },
     });
 
-    return accounts.map(a => ({
+    return accounts.map((a: any) => ({
         id: a.id,
         userId: a.userId,
         name: a.name,
@@ -143,7 +143,7 @@ export async function getRecentTransactions(limit = 10, offset = 0, filters?: {
 
     // 3. Об'єднуємо та нормалізуємо
     const merged = [
-        ...txs.map(t => ({
+        ...txs.map((t: any) => ({
             id: t.id,
             userId: t.userId,
             accountId: t.accountId,
@@ -255,7 +255,7 @@ export async function getProjects() {
         orderBy: { name: "asc" }
     });
 
-    return projects.map(p => ({
+    return projects.map((p: any) => ({
         ...p,
         cost: p.cost ? Number(p.cost) : null,
         createdAt: p.createdAt.toISOString(),
@@ -335,7 +335,7 @@ export async function getSpendingAnalytics() {
         dailyData[format(d, "yyyy-MM-dd")] = 0;
     }
 
-    txs.forEach(t => {
+    txs.forEach((t: any) => {
         const day = format(new Date(t.date), "yyyy-MM-dd");
         if (dailyData[day] !== undefined) {
             dailyData[day] += Number(t.amount);
@@ -426,7 +426,7 @@ export async function getBudgets() {
         include: { category: true }
     });
 
-    const budgetsWithProgress = await Promise.all(budgets.map(async (b) => {
+    const budgetsWithProgress = await Promise.all(budgets.map(async (b: any) => {
         const spent = await prisma.transaction.aggregate({
             where: {
                 userId: user.id,
@@ -450,7 +450,7 @@ export async function getBudgets() {
         };
     }));
 
-    return budgetsWithProgress.sort((a, b) => b.percentage - a.percentage);
+    return budgetsWithProgress.sort((a: any, b: any) => b.percentage - a.percentage);
 }
 
 /**
@@ -488,7 +488,7 @@ export async function getFinancialStats(period: "month" | "year" = "month") {
         }
     });
 
-    const categoryStats = await Promise.all(expensesByCategory.map(async (item) => {
+    const categoryStats = await Promise.all(expensesByCategory.map(async (item: any) => {
         const category = await prisma.category.findUnique({
             where: { id: item.categoryId }
         });
@@ -881,11 +881,11 @@ export async function getPlanningData() {
     });
 
     return {
-        goals: goals.map(g => {
+        goals: goals.map((g: any) => {
             // Якщо ціль прив'язана до рахунку, її поточна сума береться з балансу рахунку
             let current = Number(g.currentAmount);
             if (g.accountId) {
-                const linkedAccount = accounts.find(a => a.id === g.accountId);
+                const linkedAccount = accounts.find((a: any) => a.id === g.accountId);
                 if (linkedAccount) {
                     current = Number(linkedAccount.balance);
                 }
@@ -906,7 +906,7 @@ export async function getPlanningData() {
                 updatedAt: g.updatedAt
             };
         }),
-        payments: payments.map(p => ({
+        payments: payments.map((p: any) => ({
             id: p.id,
             userId: p.userId,
             accountId: p.accountId,
@@ -922,7 +922,7 @@ export async function getPlanningData() {
             createdAt: p.createdAt,
             updatedAt: p.updatedAt
         })),
-        shoppingItems: shoppingItems.map(i => ({
+        shoppingItems: shoppingItems.map((i: any) => ({
             id: i.id,
             userId: i.userId,
             name: i.name,
@@ -930,7 +930,7 @@ export async function getPlanningData() {
             status: i.status,
             createdAt: i.createdAt,
             updatedAt: i.updatedAt,
-            links: i.links.map(l => ({
+            links: i.links.map((l: any) => ({
                 id: l.id,
                 itemId: l.itemId,
                 url: l.url,

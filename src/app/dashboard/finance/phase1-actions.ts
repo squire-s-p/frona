@@ -117,7 +117,7 @@ export async function getAccountHistory(
         },
     });
 
-    return transactions.map((t) => ({
+    return transactions.map((t: any) => ({
         ...t,
         amount: Number(t.amount),
     }));
@@ -156,7 +156,7 @@ export async function createTransfer(data: {
     }
 
     // Створюємо переказ
-    const transfer = await prisma.$transaction(async (tx) => {
+    const transfer = await prisma.$transaction(async (tx: any) => {
         // Створюємо запис трансферу
         const newTransfer = await (tx as any).transfer.create({
             data: {
@@ -381,7 +381,7 @@ export async function createTransactionWithTags(data: {
 }) {
     const user = await requireUser();
 
-    const transaction = await prisma.$transaction(async (tx) => {
+    const transaction = await prisma.$transaction(async (tx: any) => {
         // Створюємо транзакцію
         const newTx = await tx.transaction.create({
             data: {
@@ -461,7 +461,7 @@ export async function createFullSplitTransaction(data: {
 }) {
     const user = await requireUser();
 
-    const transaction = await prisma.$transaction(async (tx) => {
+    const transaction = await prisma.$transaction(async (tx: any) => {
         // 1. Створюємо головну транзакцію (батьківську)
         const parentTx = await tx.transaction.create({
             data: {
@@ -545,7 +545,7 @@ export async function updateTransaction(data: {
 
     if (!oldTx) throw new Error("Transaction not found");
 
-    const transaction = await prisma.$transaction(async (tx) => {
+    const transaction = await prisma.$transaction(async (tx: any) => {
         // 1. Повертаємо баланс назад
         const oldBalanceChange = oldTx.type === "income" ? -Number(oldTx.amount) : Number(oldTx.amount);
         await tx.financeAccount.update({
@@ -599,7 +599,7 @@ export async function deleteTransaction(id: string) {
 
     if (!transaction) throw new Error("Transaction not found");
 
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: any) => {
         // Коригуємо баланс
         const balanceChange = transaction.type === "income" ? -Number(transaction.amount) : Number(transaction.amount);
         await tx.financeAccount.update({
@@ -637,7 +637,7 @@ export async function processRecurringPayments() {
     });
 
     for (const payment of pending) {
-        await prisma.$transaction(async (tx) => {
+        await prisma.$transaction(async (tx: any) => {
             // Створюємо транзакцію
             await tx.transaction.create({
                 data: {

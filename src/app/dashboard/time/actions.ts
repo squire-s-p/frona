@@ -524,7 +524,7 @@ export async function createManualWorkEntry(input: z.infer<typeof manualWorkSche
   let syncEnd: Date | null = null;
   let syncTitle: string = "Робота";
 
-  await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx: any) => {
     await punchThroughOverlaps(tx, user.id, startAt, endAt);
 
     const created = await tx.timeEntry.create({
@@ -592,7 +592,7 @@ export async function createManualBreakEntry(input: z.infer<typeof manualBreakSc
   const durationSec = secondsBetween(startAt, endAt);
   if (durationSec < MIN_ENTRY_SECONDS) return { ok: true, skipped: true };
 
-  await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx: any) => {
     await punchThroughOverlaps(tx, user.id, startAt, endAt);
 
     await tx.timeEntry.create({
@@ -883,7 +883,7 @@ export async function getRelevantTasks() {
     take: 30,
   });
 
-  const mapped = tasks.map(t => {
+  const mapped = tasks.map((t: any) => {
     const taskDate = t.startAt || t.dueAt;
     let group: "overdue" | "today" | "tomorrow" | "later" | "no-date" = "no-date";
     if (taskDate) {
@@ -906,7 +906,7 @@ export async function getRelevantTasks() {
 
   // Sort by date: overdue first, then today, tomorrow, etc. 
   // Tasks without date at the very end.
-  return mapped.sort((a, b) => {
+  return mapped.sort((a: any, b: any) => {
     if (!a.dueAt && !b.dueAt) return 0;
     if (!a.dueAt) return 1;
     if (!b.dueAt) return -1;
