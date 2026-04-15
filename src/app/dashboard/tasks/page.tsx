@@ -1,3 +1,9 @@
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Завдання',
+};
+
 import { redirect } from "next/navigation";
 import { getAuthSession } from "@/lib/auth-session";
 import { listProjects, listTasks, listTags } from "@/server/tasks/queries";

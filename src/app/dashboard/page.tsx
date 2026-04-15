@@ -2,6 +2,11 @@ import { getFullDashboardData } from "@/app/dashboard/actions";
 import { getAuthSession } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import { DashboardPageClient } from "@/components/dashboard/overview/dashboard-page-client";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Огляд",
+};
 
 export default async function DashboardPage() {
   const session = await getAuthSession();

@@ -114,9 +114,9 @@ export function DashboardTopbar({
   return (
     <div className="flex h-14 items-center gap-2 px-3 md:px-4">
       {/* ✅ Trigger sidebar (працює і на мобілці, і на десктопі) */}
-      <SidebarTrigger className="rounded-xl" />
+      <SidebarTrigger className="rounded-xl h-10 w-10 [&_svg]:size-5" />
 
-      <div className="ml-2 text-sm font-medium text-foreground sm:block">
+      <div className="ml-2 text-base font-semibold tracking-tight text-foreground sm:block">
         {currentTitle}
       </div>
 

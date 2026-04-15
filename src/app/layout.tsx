@@ -16,7 +16,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Frona — Next-gen Business OS",
+  title: {
+    template: "%s | Frona",
+    default: "Frona — Next-gen Business OS",
+  },
   description: "Організуйте свої проекти, фінанси та час в одному професійному просторі.",
   icons: {
     icon: "/favicon.svg",

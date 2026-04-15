@@ -1,3 +1,9 @@
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Клієнти',
+};
+
 import { prisma } from "@/lib/prisma";
 import { getAuthSession } from "@/lib/auth-session";
 

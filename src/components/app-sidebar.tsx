@@ -103,7 +103,7 @@ export function AppSidebar({
       {/* ================= CONTENT ================= */}
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Platform</SidebarGroupLabel>
+          <div className="h-2" /> {/* Відступ замість тексту Platform */}
 
           <SidebarMenu>
             {navMain.map((item) => {

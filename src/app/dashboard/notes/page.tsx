@@ -1,3 +1,9 @@
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Нотатки',
+};
+
 import { getFolders, getNotes, getTags } from "@/app/dashboard/notes/actions";
 import { NotesExplorer } from "@/components/notes/notes-explorer";
 import { GraphView } from "@/components/notes/graph-view";

@@ -1,3 +1,9 @@
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Проєкти',
+};
+
 import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";

@@ -1,3 +1,9 @@
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Час',
+};
+
 import TimePageClient from "@/components/time/time-page-client";
 import { getTimeDayData, getRelevantTasks } from "./actions";
 

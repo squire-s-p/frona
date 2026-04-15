@@ -57,7 +57,11 @@ export const WIDGET_CATALOG: { type: WidgetType; label: string; description: str
 ];
 
 function formatCurrency(amount: number, currency = "UAH") {
-  return new Intl.NumberFormat("uk-UA", { style: "currency", currency, maximumFractionDigits: 0 }).format(amount);
+  const num = new Intl.NumberFormat("uk-UA", { maximumFractionDigits: 0 }).format(amount);
+  if (currency === "UAH") return `${num} ₴`;
+  if (currency === "USD") return `$${num}`;
+  if (currency === "EUR") return `€${num}`;
+  return `${num} ${currency}`;
 }
 
 function WidgetContainer({ icon: Icon, label, size, children, action, className = "", footer }: { icon: React.ElementType; label: string; size: WidgetLayout["size"]; children: React.ReactNode; action?: string; className?: string; footer?: string }) {
