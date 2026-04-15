@@ -924,16 +924,19 @@ export async function getRelevantTasks() {
 /**
  * Returns work seconds for each of the last 7 days (including today)
  */
-export async function getWeeklySummary() {
+export async function getWeeklySummary(targetDateISO?: string) {
   const user = await requireUser();
   const tz = user.timezone || "Europe/Kyiv";
-  const now = new Date();
+  
+  // Якщо вибрана дата, беремо її середину по UTC, щоб безпечно віднімати дні. 
+  // Якщо ні — використовуємо поточний час.
+  const anchorDate = targetDateISO ? new Date(`${targetDateISO}T12:00:00Z`) : new Date();
 
   // Last 7 days in user's timezone.
   const dayBuckets: Array<{ dateISO: string; start: Date; end: Date; workSec: number }> = [];
 
   for (let i = 6; i >= 0; i--) {
-    const d = new Date(now.getTime() - i * 24 * 3600 * 1000);
+    const d = new Date(anchorDate.getTime() - i * 24 * 3600 * 1000);
     // YYYY-MM-DD in the target timezone
     const iso = new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(d);
     const { start, end } = getUtcDayRange(iso, tz);

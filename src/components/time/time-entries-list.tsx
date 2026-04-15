@@ -435,7 +435,8 @@ export default function TimeEntriesList({
       setActiveProjectId(activeTimer?.project?.id ?? null);
       setActiveTaskId(activeTimer?.task?.id ?? null);
     }
-  }, [activeEditOpen, activeTimer]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeEditOpen]);
 
   // Load tasks when project changes
   React.useEffect(() => {

@@ -14,27 +14,31 @@ type Props = {
     data: DayData[];
     maxSeconds?: number;
     className?: string;
+    selectedDateISO?: string;
 };
 
-export function WeeklySparkline({ data, maxSeconds = 8 * 3600, className }: Props) {
+export function WeeklySparkline({ data, maxSeconds = 8 * 3600, className, selectedDateISO }: Props) {
     const limit = Math.max(maxSeconds, ...data.map((d) => d.workSec), 1);
 
     return (
         <div className={cn("flex items-end gap-3 px-2", className)}>
             {data.map((day, i) => {
                 const heightPct = Math.min(100, (day.workSec / limit) * 100);
-                const isToday = i === data.length - 1;
-                const dateObj = parseISO(day.dateISO);
+                const isSelected = selectedDateISO ? day.dateISO === selectedDateISO : i === data.length - 1;
 
                 const hours = (day.workSec / 3600).toFixed(1);
 
                 return (
-                    <div key={day.dateISO} className="flex flex-col items-center gap-1 group">
+                    <div 
+                        key={day.dateISO} 
+                        className="flex flex-col items-center gap-1 group animate-in fade-in zoom-in-95 slide-in-from-bottom-1"
+                        style={{ animationDuration: '300ms', animationDelay: `${i * 30}ms`, animationFillMode: 'both' }}
+                    >
                         {/* Value Label */}
                         <span className={cn(
                             "text-[9px] font-bold tabular-nums transition-opacity",
                             day.workSec > 0 ? "opacity-100" : "opacity-0 group-hover:opacity-40",
-                            isToday ? "text-primary" : "text-muted-foreground/60"
+                            isSelected ? "text-primary" : "text-muted-foreground/60"
                         )}>
                             {hours}г
                         </span>
@@ -42,7 +46,7 @@ export function WeeklySparkline({ data, maxSeconds = 8 * 3600, className }: Prop
                         <div
                             className={cn(
                                 "w-3 rounded-[3px] transition-all duration-500",
-                                isToday
+                                isSelected
                                     ? "bg-primary shadow-[0_0_12px_rgba(var(--primary-rgb),0.3)]"
                                     : "bg-muted-foreground/15 group-hover:bg-muted-foreground/25"
                             )}

@@ -164,8 +164,8 @@ export default function TimePageClient({
   const [weeklyData, setWeeklyData] = React.useState<any[]>([]);
 
   React.useEffect(() => {
-    getWeeklySummary().then(setWeeklyData);
-  }, []);
+    getWeeklySummary(dateISO).then(setWeeklyData);
+  }, [dateISO]);
 
   const isRunning = !!hydratedActiveTimer;
 
@@ -213,7 +213,25 @@ export default function TimePageClient({
 
   // Adjustable Daily Goal (default 8h)
   const [goalHours, setGoalHours] = React.useState(8);
+  
+  // Load goal from localStorage on mount
+  React.useEffect(() => {
+    const saved = localStorage.getItem("frona_daily_goal_hours");
+    if (saved) {
+      const parsed = parseInt(saved, 10);
+      if (!isNaN(parsed) && parsed >= 2 && parsed <= 24) {
+        setGoalHours(parsed);
+      }
+    }
+  }, []);
+
   const GOAL_SEC = goalHours * 3600;
+
+  const handleGoalChange = () => {
+    const next = goalHours >= 12 ? 4 : goalHours + 2;
+    setGoalHours(next);
+    localStorage.setItem("frona_daily_goal_hours", next.toString());
+  };
 
   // Audio Notification Logic
   const playBeep = React.useCallback((freq = 440, duration = 0.2) => {
@@ -597,7 +615,7 @@ export default function TimePageClient({
           <div className="ml-auto flex items-end gap-8">
             {/* Weekly Activity Block */}
             <div className="hidden lg:flex pb-1">
-              <WeeklySparkline data={weeklyData} />
+              <WeeklySparkline data={weeklyData} selectedDateISO={dateISO} />
             </div>
 
             <div className="text-right">
@@ -607,10 +625,7 @@ export default function TimePageClient({
                   <Button
                     variant="ghost"
                     className="h-auto p-0 text-[10px] uppercase font-bold text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 group"
-                    onClick={() => {
-                      const next = goalHours >= 12 ? 4 : goalHours + 2;
-                      setGoalHours(next);
-                    }}
+                    onClick={handleGoalChange}
                     title="Змінити ціль"
                   >
                     Денна ціль: {goalHours} год
