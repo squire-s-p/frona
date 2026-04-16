@@ -11,8 +11,25 @@ const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12; // 96-bit IV for GCM
 const TAG_LENGTH = 16;
 
+import fs from "fs";
+import path from "path";
+
 function getKey(): Buffer {
-    const secret = process.env.BANK_TOKEN_SECRET;
+    let secret = process.env.BANK_TOKEN_SECRET;
+
+    // Hot-reload fallback if server wasn't restarted
+    if (!secret) {
+        try {
+            const envContent = fs.readFileSync(path.resolve(process.cwd(), ".env"), "utf8");
+            const match = envContent.match(/^BANK_TOKEN_SECRET=([^\n\r]+)/m);
+            if (match && match[1]) {
+                secret = match[1].replace(/["']/g, "").trim();
+            }
+        } catch (e) {
+            // Ignore
+        }
+    }
+
     if (!secret) {
         throw new Error(
             "BANK_TOKEN_SECRET env variable is not set. " +
