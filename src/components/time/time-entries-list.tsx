@@ -533,6 +533,8 @@ export default function TimeEntriesList({
       )}
 
       <Card className={cn("overflow-hidden border shadow-sm py-0 gap-0", className)}>
+        <div className="overflow-x-auto">
+        <div className="min-w-[720px]">
         {/* Toolbar */}
         <div className="flex items-center gap-3 border-b px-4 py-2.5 bg-muted/40">
           <div className="w-10 flex justify-center shrink-0">
@@ -699,8 +701,7 @@ export default function TimeEntriesList({
                 rows.push(
                   <div
                     key={item.id}
-                    className={cn(
-                      "group flex items-center h-14 transition-all hover:bg-muted/40 border-l-4 border-l-transparent",
+                    className={cn("group flex items-center cursor-pointer h-14 transition-all hover:bg-muted/40 border-l-4 border-l-transparent",
                       selectedIds[item.id] && "bg-muted/40 border-l-foreground",
                       !isWork && "bg-muted/5 italic text-muted-foreground h-10"
                     )}
@@ -778,6 +779,8 @@ export default function TimeEntriesList({
               })}
             </>
           )}
+        </div>
+        </div>
         </div>
       </Card>
 

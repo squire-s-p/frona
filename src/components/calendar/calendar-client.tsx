@@ -496,7 +496,8 @@ function DayView({
   const currentTop = ((now.getHours() * 60 + now.getMinutes()) / 60) * hourPx;
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 w-full">
+    <div className="flex-1 min-h-0 w-full overflow-x-auto">
+    <div className="flex flex-col min-h-0 w-full min-w-[680px]">
       <div className="shrink-0 bg-muted/20 border-b border-border/50">
         <div className="grid grid-cols-[60px_1fr] border-b border-border/50">
           <div className="p-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground flex items-end justify-center pb-1">Час</div>
@@ -609,6 +610,7 @@ function DayView({
         </div>
       </div>
     </div>
+    </div>
   );
 }
 
@@ -639,7 +641,8 @@ function WeekView({
   const currentTop = ((now.getHours() * 60 + now.getMinutes()) / 60) * hourPx;
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 w-full">
+    <div className="flex-1 min-h-0 w-full overflow-x-auto">
+    <div className="flex flex-col min-h-0 w-full min-w-[980px]">
       <div className="shrink-0 bg-muted/20 border-b border-border/50">
         <div className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-border/50">
           <div className="p-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground flex items-end justify-center pb-1">Час</div>
@@ -776,6 +779,7 @@ function WeekView({
         </div>
       </div>
     </div>
+    </div>
   );
 }
 
@@ -789,7 +793,8 @@ function MonthView({ anchor, events, onCreateAt, onEventClick }: { anchor: Date;
   const now = new Date();
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 w-full">
+    <div className="flex-1 min-h-0 w-full overflow-x-auto">
+    <div className="flex flex-col min-h-0 w-full min-w-[760px]">
       <div className="shrink-0 grid grid-cols-7 border-b border-border/50 bg-muted/20">
         {["ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ", "НД"].map((x) => (
           <div key={x} className="p-2 text-center text-[10px] md:text-xs font-semibold tracking-wider text-muted-foreground">
@@ -858,6 +863,7 @@ function MonthView({ anchor, events, onCreateAt, onEventClick }: { anchor: Date;
           );
         })}
       </div>
+    </div>
     </div>
   );
 }
@@ -1144,7 +1150,7 @@ function EventDetailsDialog({
           </div>
           
           {event.completed && (
-            <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-green-500/10 text-green-600 border-green-500/20">
+            <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-green-500/10 text-emerald-500 border-green-500/20">
               Виконано
             </div>
           )}

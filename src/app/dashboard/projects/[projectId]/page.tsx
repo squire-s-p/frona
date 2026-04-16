@@ -190,7 +190,7 @@ export default async function ProjectDetailsPage({
             <h2 className="text-base font-bold tracking-tight text-foreground">Фінансовий звіт</h2>
           </div>
           <div className="p-5">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="rounded-xl border border-border/40 bg-muted/10 p-4">
                 <p className="text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider mb-1">Бюджет</p>
                 <p className="text-xl font-bold text-foreground">

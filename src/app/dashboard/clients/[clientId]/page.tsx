@@ -160,7 +160,7 @@ export default async function ClientPage({
           <div className="lg:col-span-5 space-y-5">
             
             {/* Stats Cards */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="rounded-2xl border bg-card p-5 shadow-sm">
                     <p className="text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider mb-2">Активні проєкти</p>
                     <div className="flex items-baseline gap-2">

@@ -223,8 +223,7 @@ function TaskItem({
     return (
         <div
             onClick={onClick}
-            className={cn(
-                "group flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors border border-transparent",
+            className={cn("group flex items-center cursor-pointer gap-3 p-2 rounded-md cursor-pointer transition-colors border border-transparent",
                 isSelected ? "bg-accent/50 border-accent" : "hover:bg-accent/20",
                 task.isPinned && "bg-yellow-500/5 hover:bg-yellow-500/10"
             )}

@@ -26,15 +26,15 @@ export default async function WhiteboardListPage() {
 
     return (
         <div className="space-y-6 flex flex-col h-full">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Дошки</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Дошки</h1>
                     <p className="text-zinc-500 dark:text-zinc-400 mt-1">
                         Візуалізуйте свої ідеї та плани
                     </p>
                 </div>
                 <form action={handleCreate}>
-                    <Button type="submit">
+                    <Button type="submit" className="w-full sm:w-auto">
                         <Plus className="h-4 w-4 mr-2" />
                         Нова дошка
                     </Button>

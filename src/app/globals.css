@@ -131,6 +131,17 @@
   * {
     @apply border-border outline-ring/50;
   }
+
+  /* Force pointer cursor on known interactive standard shadcn elements if missed */
+  [role="button"],
+  [role="tab"],
+  [role="menuitem"],
+  [role="switch"],
+  [role="checkbox"],
+  table tbody tr[class*="hover:"],
+  [class*="cursor-pointer"] {
+    cursor: pointer;
+  }
 }
 
 /* Global Scrollbar Styling */

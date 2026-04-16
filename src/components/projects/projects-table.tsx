@@ -30,7 +30,7 @@ type ProjectRow = {
 
 const statusConfig = {
   active: { label: "Активний", className: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" },
-  completed: { label: "Завершений", className: "bg-blue-500/10 text-blue-600 border-blue-500/20" },
+  completed: { label: "Завершений", className: "bg-blue-500/10 text-primary border-blue-500/20" },
   archived: { label: "Архів", className: "bg-slate-500/10 text-slate-600 border-slate-500/20" },
 };
 
@@ -156,7 +156,7 @@ export default function ProjectsTable({ projects }: { projects: ProjectRow[] }) 
 
       {/* Desktop View: Table */}
       <div className="hidden flex-1 md:flex flex-col min-h-0 h-full overflow-hidden">
-        <div className="flex-1 overflow-y-auto w-full relative min-h-0 scrollbar-hide rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-sm">
+        <div className="flex-1 overflow-auto w-full relative min-h-0 scrollbar-hide rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-sm">
           <Table className="relative min-w-[800px]">
             <TableHeader className="relative z-30">
               <TableRow className="hover:bg-transparent border-b-0">

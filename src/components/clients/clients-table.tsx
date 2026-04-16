@@ -106,7 +106,7 @@ export default function ClientsTable({ clients }: { clients: ClientRow[] }) {
 
       {/* Desktop View: Table */}
       <div className="hidden flex-1 md:flex flex-col min-h-0 h-full overflow-hidden">
-        <div className="flex-1 overflow-y-auto w-full relative min-h-0 scrollbar-hide rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-sm">
+        <div className="flex-1 overflow-auto w-full relative min-h-0 scrollbar-hide rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-sm">
           <Table className="relative min-w-[800px]">
             <TableHeader className="relative z-30">
               <TableRow className="hover:bg-transparent border-b-0">

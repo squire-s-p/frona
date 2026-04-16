@@ -1,7 +1,14 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
-import { WidgetLayout, DEFAULT_LAYOUT, WIDGET_CATALOG, renderWidget } from "./widgets";
+import React, { useEffect, useState, useTransition } from "react";
+import {
+  WidgetLayout,
+  DEFAULT_LAYOUT,
+  WIDGET_CATALOG,
+  DASHBOARD_PRESETS,
+  DashboardPresetId,
+  renderWidget,
+} from "./widgets";
 import {
   DndContext,
   closestCenter,
@@ -20,7 +27,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import { updateDashboardActivityLayoutAction } from "@/app/dashboard/actions";
 import { toast } from "sonner";
-import { Loader2, Edit3, Check, GripHorizontal, X, Plus, Maximize2, Minimize2 } from "lucide-react";
+import { Loader2, Check, GripHorizontal, X, Plus, Maximize2, Minimize2, Search } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -28,6 +35,9 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const SIZE_LABELS: Record<WidgetLayout["size"], string> = {
   sm: "S",
@@ -42,6 +52,46 @@ const SIZE_CLASSES: Record<WidgetLayout["size"], string> = {
   md: "col-span-2 aspect-[2.1/1]",
   lg: "col-span-2 aspect-square",
 };
+
+function serializeLayout(layout: WidgetLayout[]) {
+  return JSON.stringify(layout.map((item) => ({ id: item.id, type: item.type, size: item.size })));
+}
+
+type WidgetCategory = "ALL" | "TASKS" | "TIME" | "PROJECTS" | "FINANCE" | "NOTES" | "META" | "OTHER";
+
+const WIDGET_CATEGORY_LABELS: Record<WidgetCategory, string> = {
+  ALL: "Усі",
+  TASKS: "Завдання",
+  TIME: "Час",
+  PROJECTS: "Проєкти",
+  FINANCE: "Фінанси",
+  NOTES: "Нотатки",
+  META: "Огляд",
+  OTHER: "Інше",
+};
+
+const WIDGET_CATEGORY_ORDER: WidgetCategory[] = ["ALL", "TASKS", "TIME", "PROJECTS", "FINANCE", "NOTES", "META", "OTHER"];
+const PRESET_ORDER: DashboardPresetId[] = ["BALANCED", "FOCUS", "OPERATIONS", "FINANCE"];
+
+function getWidgetCategory(type: WidgetLayout["type"]): WidgetCategory {
+  const prefix = type.split("_")[0];
+  if (prefix === "TASKS") return "TASKS";
+  if (prefix === "TIME") return "TIME";
+  if (prefix === "PROJECTS") return "PROJECTS";
+  if (prefix === "FINANCE") return "FINANCE";
+  if (prefix === "NOTES") return "NOTES";
+  if (prefix === "META") return "META";
+  return "OTHER";
+}
+
+function materializePreset(presetId: DashboardPresetId): WidgetLayout[] {
+  const preset = DASHBOARD_PRESETS[presetId];
+  return preset.layout.map((item, idx) => ({
+    id: `preset-${presetId.toLowerCase()}-${idx}-${item.type.toLowerCase()}`,
+    type: item.type,
+    size: item.size,
+  }));
+}
 
 function SortableWidget({ item, isEditing, onRemove, onResize, children }: {
   item: WidgetLayout;
@@ -135,19 +185,32 @@ function SortableWidget({ item, isEditing, onRemove, onResize, children }: {
   );
 }
 
-export function DashboardGrid({ initialLayout, data, isEditing, setIsEditing }: { 
+export function DashboardGrid({ initialLayout, data, isEditing, setIsEditing, onDirtyChange }: { 
   initialLayout: any; 
   data: any;
   isEditing: boolean;
   setIsEditing: (val: boolean) => void;
+  onDirtyChange?: (isDirty: boolean) => void;
 }) {
-  const [items, setItems] = useState<WidgetLayout[]>(
+  const resolvedInitialLayout: WidgetLayout[] =
     Array.isArray(initialLayout) && initialLayout.length > 0
       ? initialLayout
-      : DEFAULT_LAYOUT
+      : DEFAULT_LAYOUT;
+
+  const [items, setItems] = useState<WidgetLayout[]>(
+    resolvedInitialLayout
   );
+  const [lastSavedItems, setLastSavedItems] = useState<WidgetLayout[]>(resolvedInitialLayout);
   const [isPending, startTransition] = useTransition();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeCategory, setActiveCategory] = useState<WidgetCategory>("ALL");
+  const [selectedPreset, setSelectedPreset] = useState<DashboardPresetId>("BALANCED");
+  const hasUnsavedChanges = serializeLayout(items) !== serializeLayout(lastSavedItems);
+
+  useEffect(() => {
+    onDirtyChange?.(isEditing && hasUnsavedChanges);
+  }, [isEditing, hasUnsavedChanges, onDirtyChange]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -184,20 +247,64 @@ export function DashboardGrid({ initialLayout, data, isEditing, setIsEditing }: 
     setSheetOpen(false);
   };
 
+  const handleSheetOpenChange = (open: boolean) => {
+    setSheetOpen(open);
+    if (!open) {
+      setSearchQuery("");
+      setActiveCategory("ALL");
+    }
+  };
+
   const handleSave = () => {
+    if (!hasUnsavedChanges) {
+      setIsEditing(false);
+      onDirtyChange?.(false);
+      return;
+    }
+
     setIsEditing(false);
     startTransition(async () => {
       const res = await updateDashboardActivityLayoutAction(items);
       if (res.error) toast.error(res.error);
-      else toast.success("Макет збережено");
+      else {
+        setLastSavedItems(items);
+        onDirtyChange?.(false);
+        toast.success("Макет збережено");
+      }
     });
   };
 
   const handleCancel = () => {
+    setItems(lastSavedItems);
+    onDirtyChange?.(false);
     setIsEditing(false);
   };
 
+  const handleResetToDefault = () => {
+    setItems(DEFAULT_LAYOUT);
+    toast.info("Застосовано стандартний набір віджетів");
+  };
+
+  const handleApplyPreset = (presetId: DashboardPresetId) => {
+    setSelectedPreset(presetId);
+    setItems(materializePreset(presetId));
+    toast.info(`Застосовано пресет: ${DASHBOARD_PRESETS[presetId].label}`);
+  };
+
   const existingTypes = items.map((i) => i.type);
+  const availableWidgets = WIDGET_CATALOG.filter((widget) => !existingTypes.includes(widget.type));
+  const filteredCatalog = WIDGET_CATALOG.filter((widget) => {
+    const category = getWidgetCategory(widget.type);
+    const isCategoryMatch = activeCategory === "ALL" || category === activeCategory;
+    const query = searchQuery.trim().toLowerCase();
+    const isTextMatch =
+      query.length === 0 ||
+      widget.label.toLowerCase().includes(query) ||
+      widget.description.toLowerCase().includes(query) ||
+      widget.type.toLowerCase().includes(query);
+
+    return isCategoryMatch && isTextMatch;
+  });
 
   return (
     <div className="space-y-4">
@@ -207,24 +314,105 @@ export function DashboardGrid({ initialLayout, data, isEditing, setIsEditing }: 
           <div className="flex items-center gap-3">
             <span className="text-sm font-semibold">Налаштування віджетів</span>
             <span className="text-xs text-muted-foreground hidden sm:inline">Перетягуйте для зміни порядку</span>
+            {hasUnsavedChanges && (
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-700 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-full dark:text-amber-300 dark:bg-amber-500/10 dark:border-amber-500/30">
+                Незбережені зміни
+              </span>
+            )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            <div className="hidden lg:flex items-center gap-2 mr-1">
+              <span className="text-[11px] text-muted-foreground whitespace-nowrap">Пресет</span>
+              <Select value={selectedPreset} onValueChange={(value) => handleApplyPreset(value as DashboardPresetId)}>
+                <SelectTrigger size="sm" className="w-[190px] rounded-xl text-xs">
+                  <SelectValue placeholder="Оберіть пресет" />
+                </SelectTrigger>
+                <SelectContent align="end">
+                  {PRESET_ORDER.map((presetId) => (
+                    <SelectItem key={presetId} value={presetId}>
+                      {DASHBOARD_PRESETS[presetId].label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Add widget button */}
-            <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+            <Sheet open={sheetOpen} onOpenChange={handleSheetOpenChange}>
               <SheetTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-1.5 rounded-xl text-xs h-8">
                   <Plus className="h-3.5 w-3.5" />
                   Додати
                 </Button>
               </SheetTrigger>
-              <SheetContent className="w-[360px] sm:w-[420px] flex flex-col h-full">
+              <SheetContent className="w-[95vw] max-w-[420px] flex flex-col h-full">
                 <SheetHeader className="shrink-0 pb-4 border-b">
-                  <SheetTitle>Бібліотека віджетів</SheetTitle>
+                  <SheetTitle className="flex items-center justify-between gap-3">
+                    <span>Бібліотека віджетів</span>
+                    <span className="text-xs font-medium text-muted-foreground">
+                      Доступно: {availableWidgets.length}
+                    </span>
+                  </SheetTitle>
                 </SheetHeader>
+                <div className="pt-4 space-y-3 shrink-0">
+                  <div className="rounded-xl border border-border/60 bg-muted/20 p-3">
+                    <p className="text-[11px] text-muted-foreground mb-1">Пресет макета</p>
+                    <Select value={selectedPreset} onValueChange={(value) => handleApplyPreset(value as DashboardPresetId)}>
+                      <SelectTrigger className="h-8 text-xs rounded-lg w-full">
+                        <SelectValue placeholder="Оберіть пресет" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PRESET_ORDER.map((presetId) => (
+                          <SelectItem key={presetId} value={presetId}>
+                            {DASHBOARD_PRESETS[presetId].label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-[11px] text-muted-foreground mt-2">
+                      {DASHBOARD_PRESETS[selectedPreset].description}
+                    </p>
+                  </div>
+
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Пошук віджетів..."
+                      className="h-9 pl-8 text-sm"
+                    />
+                  </div>
+
+                  <Tabs value={activeCategory} onValueChange={(v) => setActiveCategory(v as WidgetCategory)}>
+                    <TabsList className="grid grid-cols-4 h-auto p-1">
+                      {WIDGET_CATEGORY_ORDER.slice(0, 4).map((category) => (
+                        <TabsTrigger key={category} value={category} className="text-[11px] px-2 py-1.5">
+                          {WIDGET_CATEGORY_LABELS[category]}
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                    <TabsList className="grid grid-cols-4 h-auto p-1 mt-1.5">
+                      {WIDGET_CATEGORY_ORDER.slice(4).map((category) => (
+                        <TabsTrigger key={category} value={category} className="text-[11px] px-2 py-1.5">
+                          {WIDGET_CATEGORY_LABELS[category]}
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                  </Tabs>
+                </div>
+
                 <div className="flex-1 overflow-y-auto mt-4 pr-1 space-y-2 pb-8 scrollbar-hide">
-                  {WIDGET_CATALOG.map((widget) => {
+                  {filteredCatalog.length === 0 && (
+                    <div className="rounded-xl border border-dashed p-4 text-center text-xs text-muted-foreground">
+                      За запитом нічого не знайдено
+                    </div>
+                  )}
+
+                  {filteredCatalog.map((widget) => {
                     const alreadyAdded = existingTypes.includes(widget.type);
+                    const category = getWidgetCategory(widget.type);
                     return (
                       <button
                         key={widget.type}
@@ -235,6 +423,9 @@ export function DashboardGrid({ initialLayout, data, isEditing, setIsEditing }: 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-medium">{widget.label}</span>
+                            <span className="text-[10px] font-semibold bg-muted text-muted-foreground rounded-full px-2 py-0.5">
+                              {WIDGET_CATEGORY_LABELS[category]}
+                            </span>
                             {alreadyAdded && (
                               <span className="text-[10px] font-semibold bg-muted text-muted-foreground rounded-full px-2 py-0.5">додано</span>
                             )}
@@ -252,14 +443,19 @@ export function DashboardGrid({ initialLayout, data, isEditing, setIsEditing }: 
             </Sheet>
 
             {/* Cancel */}
-            <Button onClick={handleCancel} variant="ghost" size="sm" className="rounded-xl text-xs h-8">
+            <Button onClick={handleCancel} variant="ghost" size="sm" className="rounded-xl text-xs h-8" disabled={isPending}>
               Скасувати
+            </Button>
+
+            {/* Reset to default */}
+            <Button onClick={handleResetToDefault} variant="outline" size="sm" className="rounded-xl text-xs h-8" disabled={isPending}>
+              Скинути
             </Button>
 
             {/* Save */}
             <Button
               onClick={handleSave}
-              disabled={isPending}
+              disabled={isPending || !hasUnsavedChanges}
               size="sm"
               className="gap-1.5 rounded-xl text-xs h-8"
             >
@@ -277,7 +473,7 @@ export function DashboardGrid({ initialLayout, data, isEditing, setIsEditing }: 
         onDragEnd={handleDragEnd}
       >
         <SortableContext items={items.map((i) => i.id)} strategy={rectSortingStrategy}>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
             {items.map((item) => (
               <SortableWidget
                 key={item.id}

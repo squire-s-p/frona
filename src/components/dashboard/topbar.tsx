@@ -116,14 +116,14 @@ export function DashboardTopbar({
       {/* ✅ Trigger sidebar (працює і на мобілці, і на десктопі) */}
       <SidebarTrigger className="rounded-xl h-10 w-10 [&_svg]:size-5" />
 
-      <div className="ml-2 text-base font-semibold tracking-tight text-foreground sm:block">
+      <div className="ml-1 sm:ml-2 text-sm sm:text-base font-semibold tracking-tight text-foreground max-w-[120px] sm:max-w-none truncate">
         {currentTitle}
       </div>
 
       <div className="flex-1" />
 
       {/* Actions */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5 sm:gap-2">
 
         {/* Search (Command popup button) */}
         <SearchCommand />
@@ -136,7 +136,7 @@ export function DashboardTopbar({
           className={cn(
             "relative flex items-center justify-center rounded-xl transition-all duration-500 h-9 overflow-hidden group border focus-visible:ring-0",
             activeTimer 
-              ? "w-[100px] sm:w-[110px] bg-primary/10 border-primary/20 text-primary hover:bg-primary/20 px-2" 
+              ? "w-[84px] sm:w-[110px] bg-primary/10 border-primary/20 text-primary hover:bg-primary/20 px-1.5 sm:px-2" 
               : "w-9 border-input hover:bg-accent hover:text-accent-foreground px-0"
           )}
           title={activeTimer ? "Зупинити таймер" : "Почати таймер"}
@@ -145,7 +145,7 @@ export function DashboardTopbar({
             "flex items-center gap-1.5 transition-all duration-500",
             activeTimer ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-10"
           )}>
-            <span className="text-xs sm:text-sm font-semibold tabular-nums font-mono whitespace-nowrap">
+            <span className="text-[10px] sm:text-sm font-semibold tabular-nums font-mono whitespace-nowrap">
               {elapsed}
             </span>
             <Square className="h-3 sm:h-3.5 w-3 sm:w-3.5 fill-current" />
@@ -164,7 +164,7 @@ export function DashboardTopbar({
         <Button 
           variant="outline" 
           size="icon" 
-          className="rounded-xl" 
+          className="rounded-xl hidden sm:inline-flex" 
           onClick={() => setTaskDialogOpen(true)}
           title="Нове завдання"
         >
@@ -179,9 +179,13 @@ export function DashboardTopbar({
           tags={tags}
         />
 
-        <SoundPopover />
+        <div className="hidden sm:block">
+          <SoundPopover />
+        </div>
         <NotificationsSheet />
-        <ThemeToggle />
+        <div className="hidden sm:block">
+          <ThemeToggle />
+        </div>
 
         {/* User menu */}
         <DropdownMenu>
@@ -191,7 +195,7 @@ export function DashboardTopbar({
                 <AvatarImage src={user.image ?? ""} alt={user.name ?? "User"} />
                 <AvatarFallback>{initials(user.name)}</AvatarFallback>
               </Avatar>
-              <span className="hidden max-w-[180px] truncate text-sm md:inline">
+              <span className="hidden max-w-[180px] truncate text-sm lg:inline">
                 {user.name ?? "Користувач"}
               </span>
             </Button>
