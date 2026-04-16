@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 type Entry = {
   id: string;
@@ -163,6 +164,7 @@ export default function TimeTimeline({
   }, [mounted, activeTimer, dateISO, dayStartMs, rangeMs]);
 
   const ticks = React.useMemo(() => Array.from({ length: 24 }, (_, i) => i), []);
+  const mobileTicks = React.useMemo(() => [0, 3, 6, 9, 12, 15, 18, 21], []);
 
   // ===== Selection (drag) + popup =====
   const barRef = React.useRef<HTMLDivElement | null>(null);
@@ -370,35 +372,41 @@ export default function TimeTimeline({
             >
               <div className="flex items-center gap-1 rounded-md border bg-background p-1 shadow-sm">
                 {onSelectWorkRangeAction ? (
-                  <button
+                  <Button
                     type="button"
-                    className="rounded px-2 py-1 text-xs hover:bg-muted"
+                    variant="secondary"
+                    size="sm"
+                    className="h-7 px-2 text-xs"
                     onClick={(e) => {
                       e.stopPropagation();
                       applyWork();
                     }}
                   >
                     + Робота
-                  </button>
+                  </Button>
                 ) : null}
 
                 {onSelectBreakRangeAction ? (
-                  <button
+                  <Button
                     type="button"
-                    className="rounded px-2 py-1 text-xs hover:bg-muted"
+                    variant="secondary"
+                    size="sm"
+                    className="h-7 px-2 text-xs"
                     onClick={(e) => {
                       e.stopPropagation();
                       applyBreak();
                     }}
                   >
                     + Перерва
-                  </button>
+                  </Button>
                 ) : null}
 
 
-                <button
+                <Button
                   type="button"
-                  className="rounded px-2 py-1 text-xs text-muted-foreground hover:bg-muted"
+                  variant="ghost"
+                  size="icon-sm"
+                  className="h-7 w-7 text-muted-foreground"
                   onClick={(e) => {
                     e.stopPropagation();
                     clearPending();
@@ -406,7 +414,7 @@ export default function TimeTimeline({
                   aria-label="Закрити"
                 >
                   ✕
-                </button>
+                </Button>
               </div>
             </div>
           </>
@@ -476,8 +484,15 @@ export default function TimeTimeline({
         )}
       </div>
 
-      <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+      <div className="mt-2 hidden sm:flex items-center justify-between text-xs text-muted-foreground">
         {ticks.map((h) => (
+          <div key={h} className="tabular-nums">
+            {String(h).padStart(2, "0")}:00
+          </div>
+        ))}
+      </div>
+      <div className="mt-2 flex sm:hidden items-center justify-between text-[10px] text-muted-foreground">
+        {mobileTicks.map((h) => (
           <div key={h} className="tabular-nums">
             {String(h).padStart(2, "0")}:00
           </div>

@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Volume2, VolumeX, Music, Coffee, Wind } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { buttonVariants } from "@/components/ui/button";
 
 export function SoundsForm() {
   const { state, setEnabled, setVolume, setSelectedMode } = useSound();
@@ -69,8 +70,10 @@ export function SoundsForm() {
               ].map((mode) => (
                 <button
                   key={mode.id}
+                  type="button"
                   onClick={() => setSelectedMode(mode.id as any)}
                   className={cn(
+                    buttonVariants({ variant: "outline" }),
                     "relative flex flex-col items-center gap-3 rounded-xl p-4 border transition-all text-center group",
                     state.selectedModeId === mode.id 
                       ? "border-primary bg-primary/5 shadow-inner" 

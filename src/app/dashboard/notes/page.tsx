@@ -7,8 +7,9 @@ export const metadata: Metadata = {
 import { getFolders, getNotes, getTags } from "@/app/dashboard/notes/actions";
 import { NotesExplorer } from "@/components/notes/notes-explorer";
 import { GraphView } from "@/components/notes/graph-view";
-import { Card } from "@/components/ui/card";
-import { FileText } from "lucide-react";
+import { FileText, PanelLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 export default async function NotesPage({
     searchParams
@@ -22,9 +23,28 @@ export default async function NotesPage({
 
     return (
         <div className="flex flex-1 h-full -m-4 md:-m-6 bg-background overflow-hidden relative">
-            <NotesExplorer folders={folders} notes={notes} tags={tags} view={view} />
+            <div className="hidden md:flex">
+                <NotesExplorer folders={folders} notes={notes} tags={tags} view={view} />
+            </div>
 
             <main className="flex-1 h-full min-w-0 relative bg-zinc-50 dark:bg-zinc-950 flex flex-col overflow-hidden">
+                <div className="md:hidden h-12 px-3 border-b border-zinc-200 dark:border-zinc-800 flex items-center">
+                    <Sheet>
+                        <SheetTrigger asChild>
+                            <Button variant="outline" size="sm" className="h-8 rounded-lg gap-2">
+                                <PanelLeft className="h-3.5 w-3.5" />
+                                Провідник
+                            </Button>
+                        </SheetTrigger>
+                        <SheetContent side="left" className="w-[88vw] max-w-[340px] p-0">
+                            <SheetHeader className="px-4 py-3 border-b">
+                                <SheetTitle className="text-sm">Нотатки</SheetTitle>
+                            </SheetHeader>
+                            <NotesExplorer folders={folders} notes={notes} tags={tags} view={view} className="w-full border-r-0" />
+                        </SheetContent>
+                    </Sheet>
+                </div>
+
                 {view === "graph" ? (
                     <div className="flex-1 w-full h-full relative min-h-[500px]">
                         <GraphView />

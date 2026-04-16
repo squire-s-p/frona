@@ -32,7 +32,7 @@ import {
   type CalendarListItem,
 } from "@/app/dashboard/calendar/actions";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -549,7 +549,10 @@ function DayView({
               </div>
               <button
                 type="button"
-                className="min-h-12 border-b border-border/50 text-left outline-none hover:bg-muted/10 transition-colors"
+                className={cn(
+                  buttonVariants({ variant: "ghost" }),
+                  "min-h-12 h-auto w-full rounded-none border-b border-border/50 px-0 py-0 justify-start text-left hover:bg-muted/10"
+                )}
                 style={{ height: hourPx }}
                 onClick={() => {
                   const dt = setMinutes(setHours(new Date(day), h), 0);
@@ -711,7 +714,10 @@ function WeekView({
                 <button
                   key={d.toISOString() + h}
                   type="button"
-                  className="min-h-12 border-b border-l border-border/50 text-left outline-none hover:bg-muted/10 transition-colors"
+                  className={cn(
+                    buttonVariants({ variant: "ghost" }),
+                    "min-h-12 h-auto w-full rounded-none border-b border-l border-border/50 px-0 py-0 justify-start text-left hover:bg-muted/10"
+                  )}
                   style={{ height: hourPx }}
                   onClick={() => {
                     const dt = setMinutes(setHours(new Date(d), h), 0);

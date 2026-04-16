@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { buttonVariants } from "@/components/ui/button";
 
 interface Header {
     level: number;
@@ -50,9 +51,11 @@ export function NoteOutline({ content }: { content: string }) {
                 {headers.map((header, index) => (
                     <button
                         key={`${header.id}-${index}`}
+                        type="button"
                         onClick={() => scrollToHeader(header.id)}
                         className={cn(
-                            "group text-left text-[13px] py-1.5 px-3 rounded-lg transition-all relative overflow-hidden",
+                            buttonVariants({ variant: "ghost" }),
+                            "group h-auto text-left text-[13px] py-1.5 px-3 rounded-lg transition-all relative overflow-hidden",
                             "truncate w-full block",
                             header.level === 1 && "font-bold text-zinc-900 dark:text-zinc-100",
                             header.level === 2 && "pl-8 text-zinc-600 dark:text-zinc-400 font-medium",

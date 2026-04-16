@@ -12,6 +12,8 @@ import {
 import { FileText, Search, Plus, Calendar } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { searchNotes, createNote } from "@/app/dashboard/notes/actions";
+import { cn } from "@/lib/utils";
+import { buttonVariants } from "@/components/ui/button";
 
 export function NotesSearch() {
     const [open, setOpen] = React.useState(false);
@@ -51,7 +53,7 @@ export function NotesSearch() {
         <>
             <button
                 onClick={() => setOpen(true)}
-                className="flex items-center gap-2 p-1.5 text-zinc-400 hover:text-foreground hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-lg transition-all"
+                className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "text-zinc-400 hover:text-foreground")}
                 title="Пошук (Ctrl+K)"
             >
                 <Search className="h-3.5 w-3.5" />

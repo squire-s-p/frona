@@ -19,7 +19,7 @@ import {
 import { cn } from "@/lib/utils";
 
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
@@ -321,6 +321,7 @@ export default function TimeEntriesList({
 }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = React.useTransition();
+  const [isMobile, setIsMobile] = React.useState(false);
   const [selectedIds, setSelectedIds] = React.useState<Record<string, boolean>>({});
   const [hideBreaks, setHideBreaks] = React.useState(false);
   const [expandedGroups, setExpandedGroups] = React.useState<Record<string, boolean>>({});
@@ -482,6 +483,13 @@ export default function TimeEntriesList({
   const projectItems = React.useMemo(() => projects.map(p => ({ value: p.id, label: p.name })), [projects]);
   const taskItems = React.useMemo(() => tasks.map(t => ({ value: t.id, label: t.title })), [tasks]);
 
+  React.useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
   return (
     <div className="relative font-sans text-sm">
       {/* Floating Bulk Actions */}
@@ -533,6 +541,110 @@ export default function TimeEntriesList({
       )}
 
       <Card className={cn("overflow-hidden border shadow-sm py-0 gap-0", className)}>
+        {isMobile ? (
+          <div className="divide-y bg-background">
+            <div className="flex items-center gap-3 border-b px-3 py-2.5 bg-muted/40">
+              <Checkbox
+                checked={allSelected}
+                onCheckedChange={(v) => toggleAll(Boolean(v))}
+                aria-label="Вибрати всі"
+              />
+              <div className="ml-auto">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuCheckboxItem checked={hideBreaks} onCheckedChange={setHideBreaks}>
+                      Приховати перерви
+                    </DropdownMenuCheckboxItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+
+            {activeTimer && activeTimer.mode === "work" ? (
+              <div className="p-3 bg-primary/[0.04] border-l-4 border-l-primary">
+                <div className="flex items-start gap-2">
+                  <div className="mt-1 h-2.5 w-2.5 rounded-full bg-primary animate-pulse shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold truncate">{activeTitle}</p>
+                    <p className="text-xs text-muted-foreground truncate">{activeProjectName || "Без проєкту"}</p>
+                  </div>
+                  <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={() => onStopActiveAction?.()}>
+                    <Square className="h-4 w-4 fill-current" />
+                  </Button>
+                </div>
+                <p className="mt-2 text-xs font-medium text-foreground">{formatDurationUa(activeDurationSec)}</p>
+              </div>
+            ) : null}
+
+            <div className="p-2 space-y-2">
+              {(ordered.length === 0 && !activeTimer) ? (
+                <div className="p-10 text-center flex flex-col items-center justify-center text-muted-foreground gap-2">
+                  <Briefcase className="h-8 w-8 opacity-20" />
+                  <p>За цей день записів ще немає</p>
+                </div>
+              ) : (
+                ordered.map((item) => {
+                  const isWork = item.type === "work";
+                  if (!isWork && hideBreaks) return null;
+
+                  return (
+                    <div
+                      key={item.id}
+                      className={cn(
+                        "rounded-xl border p-3 transition-colors",
+                        selectedIds[item.id] ? "bg-muted/40 border-foreground/20" : "bg-card border-border/60",
+                        !isWork && "bg-muted/10 text-muted-foreground"
+                      )}
+                      onClick={() => isWork && onEditWorkEntryAction?.(item.id)}
+                    >
+                      <div className="flex items-start gap-2">
+                        {isWork ? (
+                          <Checkbox
+                            checked={selectedIds[item.id]}
+                            onCheckedChange={(v) => toggleOne(item.id, Boolean(v))}
+                            onClick={(e) => e.stopPropagation()}
+                            className="mt-0.5"
+                          />
+                        ) : (
+                          <Coffee className="h-4 w-4 mt-0.5 shrink-0" />
+                        )}
+
+                        <div className="min-w-0 flex-1">
+                          <p className={cn("text-sm font-medium truncate", !isWork && "italic")}>{getTitle(item)}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {formatTimeRange(item.startAt, item.endAt)} • {formatDurationUa(computeDurationSec(item))}
+                          </p>
+                          {item.project?.name ? (
+                            <p className="text-xs text-muted-foreground truncate mt-0.5">{item.project.name}</p>
+                          ) : null}
+                        </div>
+
+                        {isWork && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 shrink-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onResumeWorkAction?.(item);
+                            }}
+                          >
+                            <Play className="h-3.5 w-3.5 fill-current" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        ) : (
         <div className="overflow-x-auto">
         <div className="min-w-[720px]">
         {/* Toolbar */}
@@ -782,6 +894,7 @@ export default function TimeEntriesList({
         </div>
         </div>
         </div>
+        )}
       </Card>
 
       <AlertDialog open={deleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
@@ -794,7 +907,7 @@ export default function TimeEntriesList({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isPending}>Скасувати</AlertDialogCancel>
-            <AlertDialogAction onClick={(e) => { e.preventDefault(); performBulkDelete(); }} disabled={isPending} className="bg-destructive hover:bg-destructive/90">
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); performBulkDelete(); }} disabled={isPending} className={buttonVariants({ variant: "destructive" })}>
               {isPending ? "Видалення..." : "Видалити"}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -803,4 +916,3 @@ export default function TimeEntriesList({
     </div>
   );
 }
-

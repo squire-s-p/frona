@@ -134,13 +134,16 @@ function SortableWidget({ item, isEditing, onRemove, onResize, children }: {
         {isEditing && (
           <>
             {/* Remove button */}
-            <button
+            <Button
+              type="button"
+              variant="destructive"
+              size="icon-sm"
               onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => { e.stopPropagation(); onRemove(); }}
-              className="absolute -top-2.5 -left-2.5 z-30 h-6 w-6 rounded-full bg-destructive text-white flex items-center justify-center shadow-md hover:scale-110 transition-transform"
+              className="absolute -top-2.5 -left-2.5 z-30 h-6 w-6 rounded-full shadow-md hover:scale-110 transition-transform"
             >
               <X className="h-3.5 w-3.5" />
-            </button>
+            </Button>
 
             {/* Grip indicator */}
             <div className="absolute inset-x-0 top-1 flex justify-center z-10 pointer-events-none">
@@ -155,23 +158,29 @@ function SortableWidget({ item, isEditing, onRemove, onResize, children }: {
               className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1 bg-background border border-border rounded-full px-1.5 py-0.5 shadow-md"
               onPointerDown={(e) => e.stopPropagation()}
             >
-              <button
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
                 onClick={(e) => { e.stopPropagation(); canShrink && onResize(SIZE_ORDER[currentSizeIdx - 1]); }}
                 disabled={!canShrink}
-                className="h-4 w-4 flex items-center justify-center rounded-full hover:bg-muted disabled:opacity-30 transition-colors"
+                className="h-5 w-5 rounded-full disabled:opacity-30"
               >
                 <Minimize2 className="h-2.5 w-2.5" />
-              </button>
+              </Button>
               <span className="text-[10px] font-bold text-foreground/70 min-w-[16px] text-center">
                 {SIZE_LABELS[item.size]}
               </span>
-              <button
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
                 onClick={(e) => { e.stopPropagation(); canGrow && onResize(SIZE_ORDER[currentSizeIdx + 1]); }}
                 disabled={!canGrow}
-                className="h-4 w-4 flex items-center justify-center rounded-full hover:bg-muted disabled:opacity-30 transition-colors"
+                className="h-5 w-5 rounded-full disabled:opacity-30"
               >
                 <Maximize2 className="h-2.5 w-2.5" />
-              </button>
+              </Button>
             </div>
           </>
         )}
@@ -414,11 +423,13 @@ export function DashboardGrid({ initialLayout, data, isEditing, setIsEditing, on
                     const alreadyAdded = existingTypes.includes(widget.type);
                     const category = getWidgetCategory(widget.type);
                     return (
-                      <button
+                      <Button
                         key={widget.type}
                         disabled={alreadyAdded}
+                        type="button"
+                        variant="outline"
                         onClick={() => handleAddWidget(widget.type)}
-                        className="w-full flex items-start gap-3 p-3 rounded-xl border border-border/50 hover:border-border hover:bg-muted/40 transition-all text-left disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="w-full h-auto items-start justify-start gap-3 p-3 rounded-xl border-border/50 hover:bg-muted/40 text-left disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
@@ -435,7 +446,7 @@ export function DashboardGrid({ initialLayout, data, isEditing, setIsEditing, on
                         <span className="text-[10px] font-semibold bg-muted text-muted-foreground rounded-md px-1.5 py-0.5 shrink-0">
                           {SIZE_LABELS[widget.defaultSize]}
                         </span>
-                      </button>
+                      </Button>
                     );
                   })}
                 </div>

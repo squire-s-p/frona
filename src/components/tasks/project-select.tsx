@@ -3,6 +3,7 @@
 import * as React from "react";
 import { createProjectQuick } from "@/server/tasks/actions";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 
@@ -89,8 +90,7 @@ function CreateProjectInline({
   return (
     <div className="p-3 space-y-2">
       <div className="text-sm">Проєкт не знайдено — створити?</div>
-      <input
-        className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+      <Input
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Назва проєкту"

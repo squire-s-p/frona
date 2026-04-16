@@ -135,14 +135,16 @@ export function TagSelect({
           {selectedTags.map((tag) => (
             <Badge key={tag.id} variant="secondary" className="gap-1.5 pr-1 py-1 px-2.5 bg-foreground/5 text-foreground/80 border-0 hover:bg-foreground/10 transition-colors rounded-lg font-semibold text-[11px]">
               {tag.name}
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon-sm"
                 onClick={() => handleToggleTag(tag.id)}
                 disabled={disabled}
-                className="ml-0.5 rounded-full hover:bg-foreground/20 p-0.5 transition-colors"
+                className="ml-0.5 h-5 w-5 rounded-full p-0 hover:bg-foreground/20"
               >
                 <X className="h-3 w-3" />
-              </button>
+              </Button>
             </Badge>
           ))}
         </div>

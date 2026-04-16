@@ -10,6 +10,7 @@ import mermaid from "mermaid";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { buttonVariants } from "@/components/ui/button";
 
 import { Info, AlertTriangle, CheckCircle2, XCircle, Lightbulb, HelpCircle, Flame, StickyNote } from "lucide-react";
 
@@ -139,7 +140,10 @@ function processLinks(
                         onClick={() => {
                             router.push(`/dashboard/notes/${note.id}${header ? `#${header}` : ""}`);
                         }}
-                        className="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer font-medium decoration-blue-500/30 underline-offset-2"
+                        className={cn(
+                            buttonVariants({ variant: "link" }),
+                            "h-auto p-0 text-blue-600 dark:text-blue-400 decoration-blue-500/30 underline-offset-2"
+                        )}
                     >
                         {alias || title}
                     </button>
@@ -156,7 +160,10 @@ function processLinks(
                                 toast.error(`Нотатка "${title}" не знайдена`);
                             }
                         }}
-                        className="text-red-400 dark:text-red-500/70 hover:underline cursor-pointer font-medium decoration-red-500/20 underline-offset-2 italic"
+                        className={cn(
+                            buttonVariants({ variant: "link" }),
+                            "h-auto p-0 text-red-400 dark:text-red-500/70 decoration-red-500/20 underline-offset-2 italic"
+                        )}
                         title="Натисніть, щоб створити"
                     >
                         {alias || title}

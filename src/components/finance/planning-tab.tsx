@@ -195,9 +195,15 @@ export function PlanningTab({ payments, shoppingItems = [], accounts, onRefresh 
                                     <React.Fragment key={item.id}>
                                         <TableRow className="group hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
                                             <TableCell>
-                                                <button onClick={() => handleToggleShopStatus(item)} className="text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-50 transition-colors">
-                                                    {item.status === "BOUGHT" ? <CheckCircle2 className="w-4 h-4 text-zinc-900 dark:text-zinc-50" /> : <Circle className="w-4 h-4" />}
-                                                </button>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon-sm"
+                                                    onClick={() => handleToggleShopStatus(item)}
+                                                    className="h-7 w-7 text-zinc-400 hover:text-foreground"
+                                                >
+                                                    {item.status === "BOUGHT" ? <CheckCircle2 className="w-4 h-4 text-foreground" /> : <Circle className="w-4 h-4" />}
+                                                </Button>
                                             </TableCell>
                                             <TableCell>
                                                 <div className={cn("font-medium text-sm cursor-pointer hover:underline decoration-zinc-400", item.status === "BOUGHT" && "line-through text-zinc-400")} onClick={() => setExpandedItemId(expandedItemId === item.id ? null : item.id)}>
@@ -264,7 +270,7 @@ export function PlanningTab({ payments, shoppingItems = [], accounts, onRefresh 
                     <AlertDialogHeader><AlertDialogTitle>Видалити?</AlertDialogTitle><AlertDialogDescription>Ця дія незворотна.</AlertDialogDescription></AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Ні</AlertDialogCancel>
-                        <AlertDialogAction onClick={confirmDelete} className="bg-zinc-900 text-zinc-50 hover:bg-zinc-800">Так</AlertDialogAction>
+                        <AlertDialogAction onClick={confirmDelete}>Так</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

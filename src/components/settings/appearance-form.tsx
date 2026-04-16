@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Check, Sun, Moon, Laptop } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
 
 export function AppearanceForm() {
   const { theme, setTheme } = useTheme();
@@ -47,9 +48,11 @@ export function AppearanceForm() {
             ].map((th) => (
               <button
                 key={th.id}
+                type="button"
                 onClick={() => setTheme(th.id)}
                 className={cn(
-                  "group flex flex-col items-center gap-3 rounded-2xl p-3 border-2 transition-all hover:bg-muted/40",
+                  buttonVariants({ variant: "outline" }),
+                  "group h-auto w-full flex-col items-center gap-3 rounded-2xl p-3 border-2 transition-all hover:bg-muted/40",
                   theme === th.id ? "border-primary bg-primary/5" : "border-transparent"
                 )}
               >
@@ -99,8 +102,12 @@ export function AppearanceForm() {
               ].map((acc) => (
                 <button
                   key={acc.id}
+                  type="button"
                   onClick={() => setAccent(acc.id)}
-                  className="group flex flex-col items-center gap-2"
+                  className={cn(
+                    buttonVariants({ variant: "ghost", size: "sm" }),
+                    "group h-auto flex-col items-center gap-2 px-0 py-0"
+                  )}
                 >
                   <div className={cn(
                     "w-10 h-10 rounded-full border-2 flex items-center justify-center transition-transform hover:scale-110",

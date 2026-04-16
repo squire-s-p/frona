@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Trash2, DownloadCloud, AlertTriangle, FileJson, FileSpreadsheet, Loader2 } from "lucide-react";
 import { exportDataAction, hardResetDataAction, deleteAccountAction } from "@/app/dashboard/settings/actions";
@@ -164,7 +164,7 @@ export function DangerZoneForm() {
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel className="rounded-xl">Скасувати</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleReset} className="rounded-xl bg-amber-500 text-white hover:bg-amber-600">
+                    <AlertDialogAction onClick={handleReset} className={buttonVariants({ variant: "destructive", className: "rounded-xl" })}>
                       Підтвердити очищення
                     </AlertDialogAction>
                   </AlertDialogFooter>
@@ -206,7 +206,7 @@ export function DangerZoneForm() {
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel className="rounded-xl">Скасувати</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete} className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    <AlertDialogAction onClick={handleDelete} className={buttonVariants({ variant: "destructive", className: "rounded-xl" })}>
                       Видалити безповоротно
                     </AlertDialogAction>
                   </AlertDialogFooter>

@@ -209,15 +209,18 @@ export function GraphView() {
                     <div className="p-4 space-y-6">
                         {/* Display Section */}
                         <div className="space-y-3">
-                            <button
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
                                 onClick={() => setIsDisplayExpanded(!isDisplayExpanded)}
-                                className="w-full flex items-center justify-between text-[11px] font-bold uppercase tracking-widest text-zinc-400 hover:text-foreground transition-colors"
+                                className="w-full justify-between px-0 text-[11px] font-bold uppercase tracking-widest text-zinc-400 hover:text-foreground"
                             >
                                 <div className="flex items-center gap-2">
                                     {isDisplayExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
                                     Відображення
                                 </div>
-                            </button>
+                            </Button>
 
                             {isDisplayExpanded && (
                                 <div className="space-y-5 pt-2 px-1 animate-in fade-in slide-in-from-top-2">
@@ -266,8 +269,9 @@ export function GraphView() {
                                     </div>
 
                                     <Button
+                                        type="button"
                                         onClick={handleReheat}
-                                        className="w-full h-9 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl text-xs font-bold shadow-lg shadow-indigo-500/20 gap-2"
+                                        className="w-full h-9 rounded-xl text-xs font-bold gap-2"
                                     >
                                         <Play className="h-3.5 w-3.5 fill-current" />
                                         Анімувати
@@ -279,15 +283,18 @@ export function GraphView() {
                         <div className="h-px bg-zinc-100 dark:bg-zinc-900" />
 
                         <div className="space-y-3">
-                            <button
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
                                 onClick={() => setIsForcesExpanded(!isForcesExpanded)}
-                                className="w-full flex items-center justify-between text-[11px] font-bold uppercase tracking-widest text-zinc-400 hover:text-foreground transition-colors"
+                                className="w-full justify-between px-0 text-[11px] font-bold uppercase tracking-widest text-zinc-400 hover:text-foreground"
                             >
                                 <div className="flex items-center gap-2">
                                     {isForcesExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
                                     Сили
                                 </div>
-                            </button>
+                            </Button>
 
                             {isForcesExpanded && (
                                 <div className="space-y-5 pt-2 px-1 animate-in fade-in slide-in-from-top-2">

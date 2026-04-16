@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { CreditCard, Webhook, Plus, AlertCircle, Loader2, Calendar } from "lucide-react";
 import { toast } from "sonner";
@@ -111,7 +111,7 @@ export function IntegrationsForm({
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel className="rounded-xl">Скасувати</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleDisconnect} className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                          <AlertDialogAction onClick={handleDisconnect} className={buttonVariants({ variant: "destructive", className: "rounded-xl" })}>
                             Відключити
                           </AlertDialogAction>
                         </AlertDialogFooter>
@@ -176,7 +176,7 @@ export function IntegrationsForm({
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel className="rounded-xl">Скасувати</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleGoogleDisconnect} className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                          <AlertDialogAction onClick={handleGoogleDisconnect} className={buttonVariants({ variant: "destructive", className: "rounded-xl" })}>
                             Відключити
                           </AlertDialogAction>
                         </AlertDialogFooter>

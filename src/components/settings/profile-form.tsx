@@ -104,7 +104,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
         <CardContent className="p-6 space-y-8">
           <div className="flex flex-col sm:flex-row items-center gap-8 border-b border-dashed pb-8">
             <div className="relative group">
-              <input 
+              <Input 
                 type="file" 
                 ref={fileInputRef} 
                 onChange={handleFileSelect} 

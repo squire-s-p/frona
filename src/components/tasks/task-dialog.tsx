@@ -804,31 +804,33 @@ export function TaskDialog({
                 {(dateSuggestion || prioritySuggestion) && (
                   <div className="absolute top-full left-0 mt-1 z-10 w-full flex flex-col gap-1 animate-in fade-in slide-in-from-top-1">
                     {dateSuggestion && (
-                      <button
+                      <Button
                         type="button"
                         onClick={applyDateSuggestion}
-                        className="flex items-center gap-2 p-2 text-xs bg-primary/10 text-primary border border-primary/20 rounded-md shadow-sm hover:bg-primary/20 transition-colors w-full text-left"
+                        variant="outline"
+                        className="h-auto w-full justify-start gap-2 p-2 text-xs bg-primary/10 text-primary border-primary/20 shadow-sm hover:bg-primary/20"
                       >
                         <Wand2 className="h-3 w-3" />
                         <span>
                           Виявлено дату: <strong>{formatSmartDateSuggestion(dateSuggestion.date)}</strong>
                         </span>
                         <span className="ml-auto opacity-70">Натисніть, щоб застосувати</span>
-                      </button>
+                      </Button>
                     )}
 
                     {prioritySuggestion && (
-                      <button
+                      <Button
                         type="button"
                         onClick={applyPrioritySuggestion}
-                        className="flex items-center gap-2 p-2 text-xs bg-orange-500/10 text-orange-600 border border-orange-500/20 rounded-md shadow-sm hover:bg-orange-500/20 transition-colors w-full text-left"
+                        variant="outline"
+                        className="h-auto w-full justify-start gap-2 p-2 text-xs bg-orange-500/10 text-orange-600 border-orange-500/20 shadow-sm hover:bg-orange-500/20"
                       >
                         <Wand2 className="h-3 w-3" />
                         <span>
                           Виявлено пріоритет: <strong>{priorityLabel(prioritySuggestion.priority)}</strong>
                         </span>
                         <span className="ml-auto opacity-70">Натисніть, щоб застосувати</span>
-                      </button>
+                      </Button>
                     )}
                   </div>
                 )}
@@ -903,11 +905,13 @@ export function TaskDialog({
                   <div className="space-y-2">
                     {subtasks.map((subtask) => (
                       <div key={subtask.id} className="flex items-center gap-2 group">
-                        <button
+                        <Button
                           type="button"
+                          variant="ghost"
+                          size="icon-sm"
                           onClick={() => onToggleSubtask(subtask.id, !subtask.isDone)}
                           className={cn(
-                            "flex-shrink-0 text-muted-foreground hover:text-primary transition-colors",
+                            "h-8 w-8 flex-shrink-0 text-muted-foreground hover:text-primary",
                             subtask.isDone && "text-primary"
                           )}
                         >
@@ -916,7 +920,7 @@ export function TaskDialog({
                           ) : (
                             <Circle className="h-5 w-5" />
                           )}
-                        </button>
+                        </Button>
                         <span className={cn(
                           "flex-grow text-sm transition-all",
                           subtask.isDone && "line-through text-muted-foreground"
@@ -1102,7 +1106,7 @@ export function TaskDialog({
               {/* Завантаження */}
               {!fieldsDisabled && (
                 <div>
-                  <input
+                  <Input
                     ref={fileInputRef}
                     type="file"
                     className="hidden"

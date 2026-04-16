@@ -22,7 +22,7 @@ import {
     Check,
     X
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
     DropdownMenu,
@@ -74,9 +74,10 @@ interface NotesExplorerProps {
     notes: any[];
     tags: any[];
     view?: string;
+    className?: string;
 }
 
-export function NotesExplorer({ folders, notes, tags = [], view }: NotesExplorerProps) {
+export function NotesExplorer({ folders, notes, tags = [], view, className }: NotesExplorerProps) {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
@@ -228,7 +229,7 @@ export function NotesExplorer({ folders, notes, tags = [], view }: NotesExplorer
     const allTags = tags;
 
     return (
-        <div className="flex flex-col h-full w-64 border-r border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/50">
+        <div className={cn("flex flex-col h-full w-64 border-r border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/50", className)}>
             <div className="px-4 pt-4 pb-2 space-y-3">
                 <div className="flex items-center justify-between">
                     <h2 className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">Провідник</h2>
@@ -542,7 +543,7 @@ export function NotesExplorer({ folders, notes, tags = [], view }: NotesExplorer
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Скасувати</AlertDialogCancel>
-                        <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+                        <AlertDialogAction onClick={confirmDelete} className={buttonVariants({ variant: "destructive" })}>
                             Видалити
                         </AlertDialogAction>
                     </AlertDialogFooter>
@@ -558,9 +559,12 @@ function FolderItem({ folder, notes, expanded, onToggle, onCreateNote, onCreateF
     return (
         <div className="space-y-0.5">
             <div className="group flex items-center h-8 px-2 rounded-md hover:bg-zinc-100/80 dark:hover:bg-zinc-900/80 cursor-pointer">
-                <button
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
                     onClick={onToggle}
-                    className="flex items-center flex-1 text-[13px] font-medium text-zinc-600 dark:text-zinc-400 gap-2 overflow-hidden"
+                    className="flex-1 justify-start gap-2 overflow-hidden px-0 text-[13px] font-medium text-zinc-600 hover:bg-transparent dark:text-zinc-400"
                 >
                     <div className="w-4 h-4 flex items-center justify-center">
                         {expanded ? <ChevronDown className="h-3 w-3 shrink-0" /> : <ChevronRight className="h-3 w-3 shrink-0" />}
@@ -570,7 +574,7 @@ function FolderItem({ folder, notes, expanded, onToggle, onCreateNote, onCreateF
                         expanded ? "text-blue-500 fill-blue-500/10" : "text-zinc-400"
                     )} />
                     <span className="truncate">{folder.name}</span>
-                </button>
+                </Button>
                 <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5">
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -616,16 +620,19 @@ function NoteItem({ note, isActive, onDelete, onRename }: any) {
                 <div className="absolute left-0 w-0.5 h-4 bg-blue-500 rounded-full" />
             )}
 
-            <button
+            <Button
+                type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => router.push(`/dashboard/notes/${note.id}`)}
                 className={cn(
-                    "flex-1 flex items-center h-8 px-2 text-[13px] gap-2 transition-colors overflow-hidden",
+                    "flex-1 justify-start h-8 px-2 text-[13px] gap-2 overflow-hidden hover:bg-transparent",
                     active ? "text-blue-600 dark:text-blue-400 font-semibold" : "text-zinc-600 dark:text-zinc-400"
                 )}
             >
                 <FileText className={cn("h-3.5 w-3.5 shrink-0 transition-colors", active ? "text-blue-500" : "text-zinc-400 group-hover:text-zinc-500")} />
                 <span className="truncate">{note.title || "Без назви"}</span>
-            </button>
+            </Button>
 
             {onDelete && onRename && (
                 <div className="opacity-0 group-hover:opacity-100 shrink-0 transition-opacity">
@@ -645,4 +652,3 @@ function NoteItem({ note, isActive, onDelete, onRename }: any) {
         </div>
     );
 }
-

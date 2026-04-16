@@ -26,6 +26,7 @@ import { TaskDetailView } from "./task-detail-view";
 import { TaskDialog } from "@/components/tasks/task-dialog";
 import { cn } from "@/lib/utils";
 import { formatSmartDateSuggestion } from "@/lib/smart-date";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 export default function TasksLayoutInner({
     allTasks,
@@ -60,6 +61,99 @@ export default function TasksLayoutInner({
     const selectedTask = React.useMemo(() =>
         allTasks.find((t: any) => t.id === selectedTaskId) || null
         , [allTasks, selectedTaskId]);
+    const [isMobile, setIsMobile] = React.useState(false);
+    const [mobileSidebarOpen, setMobileSidebarOpen] = React.useState(false);
+
+    React.useEffect(() => {
+        const check = () => setIsMobile(window.innerWidth < 1024);
+        check();
+        window.addEventListener("resize", check);
+        return () => window.removeEventListener("resize", check);
+    }, []);
+
+    if (isMobile) {
+        return (
+            <div className="absolute inset-0 flex flex-col bg-background overflow-hidden border-0">
+                <div className="h-14 px-3 border-b flex items-center gap-2 shrink-0">
+                    <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
+                        <SheetTrigger asChild>
+                            <Button variant="outline" size="icon" className="h-9 w-9 rounded-xl">
+                                <Layers className="h-4 w-4" />
+                            </Button>
+                        </SheetTrigger>
+                        <SheetContent side="left" className="w-[88vw] max-w-[320px] p-0">
+                            <SheetHeader className="px-4 py-3 border-b">
+                                <SheetTitle className="text-sm">Фільтри</SheetTitle>
+                            </SheetHeader>
+                            <TasksSidebar
+                                className="w-full h-full border-r-0"
+                                selectedFilter={selectedFilter}
+                                onSelectFilter={(f) => {
+                                    setSelectedFilter(f);
+                                    setMobileSidebarOpen(false);
+                                }}
+                                projects={projects}
+                                tags={tags}
+                                counts={counts}
+                            />
+                        </SheetContent>
+                    </Sheet>
+
+                    <div className="relative flex-1 flex items-center group min-w-0">
+                        <Plus className="absolute left-3 h-3.5 w-3.5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                        <Input
+                            value={quickAddValue}
+                            onChange={(e) => setQuickAddValue(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    onQuickAdd();
+                                }
+                            }}
+                            disabled={quickAddPending}
+                            placeholder="Швидке завдання..."
+                            className="pl-9 h-9 w-full bg-muted/40 border-0 shadow-none focus-visible:ring-0 focus-visible:bg-muted/60 transition-all font-medium text-[13px]"
+                        />
+                    </div>
+
+                    <Button variant="default" size="icon" className="h-9 w-9 rounded-xl shrink-0" onClick={() => setDialogOpen(true)}>
+                        <Plus className="h-4 w-4" />
+                    </Button>
+                </div>
+
+                <TaskListView
+                    tasks={filteredTasks}
+                    selectedTaskId={selectedTaskId}
+                    onSelectTask={(task: any) => setSelectedTaskId(task.id)}
+                    onToggleStatus={onToggleStatus}
+                    groupBy={groupBy}
+                />
+
+                {selectedTaskId && (
+                    <div className="absolute inset-0 z-20 bg-background">
+                        <TaskDetailView
+                            task={selectedTask}
+                            projects={projects}
+                            tags={tags}
+                            onClose={() => setSelectedTaskId(null)}
+                            onToggleStatus={onToggleStatus}
+                            onUpdate={() => { }}
+                        />
+                    </div>
+                )}
+
+                <TaskDialog
+                    open={dialogOpen}
+                    onOpenChange={setDialogOpen}
+                    task={null}
+                    projects={projects}
+                    tags={tags}
+                    defaultProjectId={projects.find((p: any) => p.id === selectedFilter)?.id}
+                    defaultStartDate={selectedFilter === "today" ? new Date() : null}
+                />
+            </div>
+        );
+    }
 
     return (
         <div className="absolute inset-0 flex flex-col bg-background overflow-hidden border-0">
