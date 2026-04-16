@@ -291,7 +291,7 @@ export async function updateTransactionDetails(transactionId: string, data: { ca
 
     try {
         const updateData: any = {};
-        if (data.categoryId) updateData.categoryId = data.categoryId;
+        if (data.categoryId !== undefined) updateData.categoryId = data.categoryId === "none" ? null : data.categoryId;
         if (data.projectId !== undefined) updateData.projectId = data.projectId === "none" ? null : data.projectId;
         if (data.note !== undefined) updateData.note = data.note;
 

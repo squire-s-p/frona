@@ -72,11 +72,26 @@ export async function connectMonobank(plainToken: string): Promise<{
 
         for (const monoAccount of clientInfo.accounts) {
             const meta = mapMonoAccountMeta(monoAccount);
+            
+            // 1. Create native BankAccount
             await upsertBankAccount(user.id, {
                 ...meta,
                 monoToken: encryptedToken,
                 name: buildAccountName(monoAccount),
             });
+            
+            // 2. Ensure FinanceAccount exists for the Overview tab
+            const currency = monoAccount.currencyCode === 980 ? "UAH"
+                : monoAccount.currencyCode === 840 ? "USD"
+                : monoAccount.currencyCode === 978 ? "EUR" : "UAH";
+
+            await ensureFinanceAccount(user.id, monoAccount.id, {
+                name: buildAccountName(monoAccount),
+                currency,
+                balance: Number(monoAccount.balance) / 100,
+                type: monoAccount.type,
+            });
+
             created++;
         }
 

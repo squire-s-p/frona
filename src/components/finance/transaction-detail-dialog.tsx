@@ -64,7 +64,7 @@ export function TransactionDetailDialog({
 
     React.useEffect(() => {
         if (transaction) {
-            setSelectedCategoryId(transaction.category?.id || transaction.categoryId || "");
+            setSelectedCategoryId(transaction.category?.id || transaction.categoryId || "none");
             setSelectedProjectId(transaction.projectId || "none");
             setNote(transaction.note || transaction.description || "");
             setApplyToAll(false);
@@ -202,6 +202,7 @@ export function TransactionDetailDialog({
                                         <SelectValue placeholder="Категорія" />
                                     </SelectTrigger>
                                     <SelectContent className="rounded-xl border-zinc-100 dark:border-zinc-800">
+                                        <SelectItem value="none" className="rounded-lg text-xs">Без категорії</SelectItem>
                                         {displayCategories.map((cat) => (
                                             <SelectItem key={cat.id} value={cat.id} className="rounded-lg text-xs">
                                                 {cat.name}
