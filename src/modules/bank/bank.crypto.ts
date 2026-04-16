@@ -16,30 +16,34 @@ import path from "path";
 
 function getKey(): Buffer {
     let secret = process.env.BANK_TOKEN_SECRET;
+    let dbg = `(cwd: ${process.cwd()}) `;
 
-    // Hot-reload fallback if server wasn't restarted
     if (!secret) {
         try {
             const envContent = fs.readFileSync(path.resolve(process.cwd(), ".env"), "utf8");
+            dbg += "[Read .env OK] ";
             const match = envContent.match(/^BANK_TOKEN_SECRET=([^\n\r]+)/m);
             if (match && match[1]) {
                 secret = match[1].replace(/["']/g, "").trim();
+                dbg += `[Found Match length: ${secret.length}] `;
+            } else {
+                dbg += "[No Match in regex] ";
             }
-        } catch (e) {
-            // Ignore
+        } catch (e: any) {
+            dbg += `[FS Error: ${e.message}] `;
         }
     }
 
     if (!secret) {
         throw new Error(
-            "BANK_TOKEN_SECRET env variable is not set. " +
-            "Generate one with: openssl rand -hex 32"
+            `BANK_TOKEN_SECRET env variable is not set. Debug: ${dbg}`
         );
     }
+    
     // Derive a 32-byte key from the secret (hex string → buffer)
     const key = Buffer.from(secret, "hex");
     if (key.length !== 32) {
-        throw new Error("BANK_TOKEN_SECRET must be a 64-character hex string (32 bytes)");
+        throw new Error(`BANK_TOKEN_SECRET must be a 64-character hex string (32 bytes). Derivated key length: ${key.length}. Secret length: ${secret.length}`);
     }
     return key;
 }
