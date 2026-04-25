@@ -83,7 +83,7 @@ export default function ProjectDetailsCard({
 
   const [pending, startTransition] = React.useTransition();
 
-  const readOnly = status === "archived";
+  const readOnly = status === "completed" || status === "archived";
   const canComment = !readOnly;
 
   const [name, setName] = React.useState(initial.name);
@@ -223,7 +223,7 @@ export default function ProjectDetailsCard({
   }
 
   const statusText =
-    status === "completed" ? "Завершено" : status === "archived" ? "Архів" : "Активний";
+    status === "completed" || status === "archived" ? "Завершено" : "Активний";
 
   // ✅ Якщо архівний — навіть якщо edit=1, показуємо view
   const showEditUI = isEditing && !readOnly;
@@ -335,7 +335,7 @@ export default function ProjectDetailsCard({
 
             {!canComment ? (
               <div className="text-[11px] text-muted-foreground italic">
-                Архівний проєкт — коментарі вимкнено.
+                Завершений проєкт — коментарі вимкнено.
               </div>
             ) : (
               <div className="space-y-4">

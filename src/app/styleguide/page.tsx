@@ -1,0 +1,36 @@
+export default function StyleguidePage() {
+  return (
+    <div className="space-y-10 pr-10">
+      <div className="space-y-4">
+        <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl text-foreground">
+          Styleguide
+        </h1>
+        <p className="text-lg text-muted-foreground whitespace-pre-wrap">
+          Ця сторінка створена для уніфікації компонентів дизайну по всьому дашборду.{"\n"}
+          Тут ви можете скидати мені нові компоненти shadcn та інші елементи, які ми стандартизуємо.
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        <h2 id="installation" className="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight transition-colors first:mt-0 text-foreground">
+          Installation
+        </h2>
+        <p className="leading-7 [&:not(:first-child)]:mt-6 text-foreground/80">
+          Для завантаження нових елементів з Shadcn UI, використовуйте наступну команду:
+        </p>
+        <div className="rounded-md bg-muted/50 p-4 border border-border/40 font-mono text-sm">
+          npx shadcn@latest add [component-name]
+        </div>
+      </div>
+      
+      <div className="space-y-4">
+        <h2 id="usage" className="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight transition-colors first:mt-0 text-foreground">
+          Вступ
+        </h2>
+        <p className="leading-7 [&:not(:first-child)]:mt-6 text-foreground/80">
+          Зараз ця сторінка порожня. Передайте мені список компонентів, і я інсталюю їх (шляхом запиту команд) або додам сюди як демо версії, щоб ми могли швидко налаштувати єдиний стиль!
+        </p>
+      </div>
+    </div>
+  );
+}

@@ -1,5 +1,6 @@
-import { Folder } from "lucide-react";
+import { Folder, SearchX } from "lucide-react";
 import ProjectCard from "./project-card";
+import { Card, CardContent } from "@/components/ui/card";
 
 export type ProjectRow = {
   id: string;
@@ -16,19 +17,23 @@ export type ProjectRow = {
 export default function ProjectsGrid({ projects }: { projects: ProjectRow[] }) {
   if (!projects.length) {
     return (
-      <div className="rounded-2xl border bg-card/50 p-12 text-center backdrop-blur-sm">
-        <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-          <Folder className="h-6 w-6 text-primary" />
-        </div>
-        <h3 className="text-lg font-bold">Проєктів не знайдено</h3>
-        <p className="text-sm text-muted-foreground mt-1">Спробуйте змінити фільтри або створити новий проєкт.</p>
-      </div>
+      <Card className="rounded-2xl border-dashed bg-muted/30 p-12 text-center backdrop-blur-sm">
+        <CardContent className="flex flex-col items-center">
+          <div className="mx-auto w-16 h-16 rounded-2xl bg-primary/5 flex items-center justify-center mb-6 rotate-3">
+            <SearchX className="h-8 w-8 text-primary/40" />
+          </div>
+          <h3 className="text-xl font-extrabold tracking-tight">Проєктів не знайдено</h3>
+          <p className="text-sm text-muted-foreground mt-2 max-w-[250px] mx-auto">
+            Спробуйте змінити фільтри або створіть свій перший проєкт.
+          </p>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
     <div className="flex-1 min-h-0 overflow-y-auto pr-2 pb-10 scrollbar-hide">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
         {projects.map((p) => (
           <ProjectCard
             key={p.id}

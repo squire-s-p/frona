@@ -21,8 +21,7 @@ type ClientMini = { id: string; name: string } | null;
 
 function statusLabel(status: ProjectStatus) {
   if (status === "active") return "Активний";
-  if (status === "completed") return "Завершено";
-  return "Архів";
+  return "Завершено";
 }
 
 function StatusPill({ status }: { status: ProjectStatus }) {
@@ -39,7 +38,7 @@ function StatusPill({ status }: { status: ProjectStatus }) {
   }
 
   const cls =
-    status === "completed"
+    status === "completed" || status === "archived"
       ? "border-blue-500/30 bg-blue-500/10 text-blue-400"
       : "border-zinc-500/30 bg-zinc-500/10 text-zinc-400";
 
@@ -91,14 +90,14 @@ export default function ProjectHeader({
 
   function onArchive() {
     startTransition(async () => {
-      await archiveProject(projectId);
+      await setProjectStatus(projectId, "completed");
       router.refresh();
     });
   }
 
   function onRestore() {
     startTransition(async () => {
-      await restoreProject(projectId);
+      await setProjectStatus(projectId, "active");
       router.refresh();
     });
   }
@@ -133,11 +132,8 @@ export default function ProjectHeader({
 
         {/* Right: Actions */}
         <div className="flex flex-wrap items-center gap-3 shrink-0">
-          {!isArchived ? (
-            <>
-              {/* Status Toggle Group */}
-              <div className="flex items-center gap-1 rounded-2xl border border-border/40 p-1.5 bg-card/50 backdrop-blur-sm h-11">
-                <Button
+          <div className="flex items-center gap-1 rounded-2xl border border-border/40 p-1.5 bg-card/50 backdrop-blur-sm h-11">
+            <Button
                   type="button"
                   variant={status === "active" ? "secondary" : "ghost"}
                   size="sm"
@@ -163,30 +159,7 @@ export default function ProjectHeader({
                 >
                   Завершено
                 </Button>
-              </div>
-
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-11 rounded-2xl border-border/40 px-5 text-[11px] font-bold hover:bg-zinc-500/5"
-                onClick={onArchive}
-                disabled={pending}
-              >
-                В архів
-              </Button>
-            </>
-          ) : (
-            <Button
-              type="button"
-              variant="outline"
-              className="h-11 rounded-2xl border-border/40 px-6 text-[11px] font-bold"
-              onClick={onRestore}
-              disabled={pending}
-            >
-              Відновити з архіву
-            </Button>
-          )}
+          </div>
         </div>
       </div>
     </div>

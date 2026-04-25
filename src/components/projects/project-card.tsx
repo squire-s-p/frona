@@ -13,16 +13,22 @@ function formatUAH(value: string | null) {
     return new Intl.NumberFormat("uk-UA").format(num);
 }
 
-const statusColors = {
-    active: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
-    completed: "bg-blue-500/10 text-blue-600 border-blue-500/20",
-    archived: "bg-slate-500/10 text-slate-600 border-slate-500/20",
-};
-
-const statusLabels = {
-    active: "Активний",
-    completed: "Завершений",
-    archived: "Архів",
+const statusConfig = {
+    active: { 
+        label: "Активний", 
+        badgeVariant: "default" as const,
+        className: "bg-primary/10 text-primary border-primary/20 hover:bg-primary/15" 
+    },
+    completed: { 
+        label: "Завершений", 
+        badgeVariant: "secondary" as const,
+        className: "bg-muted text-muted-foreground border-border hover:bg-muted/80" 
+    },
+    archived: { 
+        label: "Архів", 
+        badgeVariant: "secondary" as const,
+        className: "bg-muted text-muted-foreground border-border hover:bg-muted/80" 
+    },
 };
 
 export default function ProjectCard(props: {
@@ -38,63 +44,67 @@ export default function ProjectCard(props: {
 }) {
     const cost = formatUAH(props.cost ?? null);
     const status = props.status || "active";
+    const config = statusConfig[status];
 
     return (
         <Link href={`/dashboard/projects/${props.id}`} className="group block">
-            <Card className="relative overflow-hidden rounded-2xl border-border/50 bg-card/50 p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/5 hover:border-primary/20 backdrop-blur-sm">
+            <Card className="relative overflow-hidden rounded-2xl border-border/50 bg-card/40 p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/5 hover:border-primary/30 backdrop-blur-sm">
                 {/* Status Badge */}
                 <div className="absolute right-4 top-4">
-                    <Badge variant="outline" className={cn("text-[10px] uppercase tracking-wider font-bold px-2 py-0 border", statusColors[status])}>
-                        {statusLabels[status]}
+                    <Badge 
+                        variant={config.badgeVariant} 
+                        className={cn("text-[10px] uppercase tracking-widest font-bold px-2 py-0.5 border shadow-sm transition-colors", config.className)}
+                    >
+                        {config.label}
                     </Badge>
                 </div>
 
-                <div className="flex flex-col gap-4">
-                    <div className="space-y-1">
-                        <div className="truncate pr-20 text-lg font-bold tracking-tight transition-colors group-hover:text-primary">
+                <div className="flex flex-col gap-5">
+                    <div className="space-y-1.5">
+                        <div className="truncate pr-20 text-lg font-extrabold tracking-tight transition-colors group-hover:text-primary">
                             {props.name}
                         </div>
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-                            <span className="flex items-center gap-1">
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-semibold">
+                            <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center">
                                 <User className="h-3 w-3" />
-                                {props.clientName || "Без клієнта"}
-                            </span>
+                            </div>
+                            <span>{props.clientName || "Без клієнта"}</span>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 border-t border-border/50 pt-4">
+                    <div className="grid grid-cols-2 gap-4 border-t border-border/40 pt-4">
                         <div className="space-y-1">
-                            <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground font-bold">
-                                <Calendar className="h-3 w-3" /> Створено
+                            <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-muted-foreground font-bold">
+                                <Calendar className="h-3 w-3 text-primary/50" /> Створено
                             </div>
-                            <div className="text-sm font-semibold">
+                            <div className="text-sm font-bold text-foreground/80">
                                 {format(new Date(props.createdAt), "d MMM yyyy", { locale: uk })}
                             </div>
                         </div>
 
                         <div className="space-y-1 text-right">
-                            <div className="flex items-center justify-end gap-1 text-[10px] uppercase tracking-wider text-muted-foreground font-bold">
-                                <Wallet className="h-3 w-3" /> Бюджет
+                            <div className="flex items-center justify-end gap-1.5 text-[10px] uppercase tracking-widest text-muted-foreground font-bold">
+                                <Wallet className="h-3 w-3 text-primary/50" /> Бюджет
                             </div>
-                            <div className="text-sm font-bold text-foreground">
+                            <div className="text-sm font-extrabold text-foreground">
                                 {cost ? `₴ ${cost}` : "—"}
                             </div>
                         </div>
                     </div>
 
-                    <div className="mt-1 flex items-center justify-between border-t border-border/40 pt-4 opacity-70 transition-opacity group-hover:opacity-100">
-                        <div className="flex items-center gap-2 truncate text-xs font-medium text-muted-foreground whitespace-nowrap overflow-hidden">
-                            <Globe className="h-3 w-3 shrink-0" />
-                            <span className="truncate pr-4">{props.site || "Сайт не вказано"}</span>
+                    <div className="mt-1 flex items-center justify-between border-t border-border/30 pt-4 opacity-60 transition-opacity group-hover:opacity-100">
+                        <div className="flex items-center gap-2 truncate text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                            <Globe className="h-3.3 w-3.5 shrink-0 text-primary/40" />
+                            <span className="truncate max-w-[120px]">{props.site || "Сайт не вказано"}</span>
                         </div>
-                        <div className="flex items-center gap-1 text-xs font-bold text-primary">
-                            Деталі <ExternalLink className="h-3 w-3" />
+                        <div className="flex items-center gap-1.5 text-xs font-extrabold text-primary group-hover:gap-2 transition-all">
+                            Деталі <ExternalLink className="h-3.5 w-3.5" />
                         </div>
                     </div>
                 </div>
 
-                {/* Decorative element */}
-                <div className="absolute -right-4 -bottom-4 h-24 w-24 rounded-full bg-primary/5 blur-2xl transition-all duration-500 group-hover:bg-primary/10" />
+                {/* Subtle gradient overlay on hover */}
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
             </Card>
         </Link>
     );
