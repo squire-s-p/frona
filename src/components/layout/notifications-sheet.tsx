@@ -119,7 +119,7 @@ export function NotificationsSheet() {
           )}
         </Button>
       </SheetTrigger>
-      <SheetContent hideClose={true} className="w-[350px] sm:w-[400px] p-0 flex flex-col border-l outline-none">
+      <SheetContent showCloseButton={false} className="w-[350px] sm:w-[400px] p-0 flex flex-col border-l outline-none">
         <div className="flex flex-col gap-4 p-4 pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">

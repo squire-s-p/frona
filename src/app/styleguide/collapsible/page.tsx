@@ -77,7 +77,7 @@ function CollapsibleSettings() {
   const [isOpen, setIsOpen] = React.useState(false);
 
   return (
-    <Card className="mx-auto w-full max-w-xs" size="sm">
+    <Card className="mx-auto w-full max-w-xs">
       <CardHeader>
         <CardTitle>Radius</CardTitle>
         <CardDescription>Set the corner radius of the element.</CardDescription>
@@ -190,7 +190,7 @@ function CollapsibleFileTree() {
   };
 
   return (
-    <Card className="mx-auto w-full max-w-[16rem] gap-2" size="sm">
+    <Card className="mx-auto w-full max-w-[16rem] gap-2">
       <CardHeader className="pb-2">
         <Tabs defaultValue="explorer">
           <TabsList className="w-full">

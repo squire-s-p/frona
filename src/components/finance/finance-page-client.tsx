@@ -576,7 +576,7 @@ export function FinancePageClient() {
                                                     <RechartsTooltip
                                                         contentStyle={{ backgroundColor: '#18181b', border: 'none', borderRadius: '8px', color: '#f4f4f5' }}
                                                         itemStyle={{ color: '#f4f4f5' }}
-                                                        formatter={(value: number | undefined) => value !== undefined ? [`${value} ₴`, 'Сума'] : ['', '']}
+                                                        formatter={(value: any) => value !== undefined ? [`${value} ₴`, 'Сума'] : ['', '']}
                                                         labelFormatter={(label) => {
                                                             try {
                                                                 const date = new Date(label);

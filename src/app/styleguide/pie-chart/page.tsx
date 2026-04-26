@@ -296,7 +296,7 @@ function ChartPieLabelList() {
                 className="fill-background"
                 stroke="none"
                 fontSize={12}
-                formatter={(value: string) =>
+                formatter={(value: any) =>
                   chartConfigDefault[value as keyof typeof chartConfigDefault]?.label
                 }
               />
