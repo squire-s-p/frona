@@ -67,17 +67,16 @@ function CardDemo() {
 
 function CardSmall() {
   return (
-    <Card size="sm" className="mx-auto w-full max-w-sm">
+    <Card className="mx-auto w-full max-w-sm">
       <CardHeader>
         <CardTitle>Small Card</CardTitle>
         <CardDescription>
-          This card uses the small size variant.
+          A compact version of the card.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <p className="text-sm text-muted-foreground">
-          The card component supports a size prop that can be set to
-          &quot;sm&quot; for a more compact appearance.
+          You can adjust the card's width using Tailwind classes like max-w-sm.
         </p>
       </CardContent>
       <CardFooter>
