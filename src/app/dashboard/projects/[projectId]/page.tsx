@@ -159,35 +159,38 @@ export default async function ProjectDetailsPage({
     ? Math.min(100, Math.max(0, (earned / Number(project.cost)) * 100)) 
     : 0;
 
-  // Динамічний графік для "Час роботи"
+  // Динамічний графік для "Час роботи" (Синхронізовано з ProjectTimeChart)
   let chartPath = "M0 40 L 100 40";
   let fillPath = "M0 40 L 100 40 Z";
   
   if (bucketsAll.length > 0) {
-    let cumulative = 0;
-    // bucketsAll вже хронологічний (від старого до нового)
-    const chartData = bucketsAll.map(b => {
-      cumulative += b.minutes;
-      return cumulative;
-    });
+    // Знаходимо перший та останній дні з активністю, як у великому графіку
+    const firstIdx = bucketsAll.findIndex(b => b.minutes > 0);
+    const lastIdx = bucketsAll.findLastIndex ? bucketsAll.findLastIndex(b => b.minutes > 0) : bucketsAll.map(b => b.minutes > 0).lastIndexOf(true);
     
-    // Починаємо графік з нуля
-    chartData.unshift(0);
+    let slicedBuckets = bucketsAll;
+    if (firstIdx !== -1 && lastIdx !== -1) {
+      slicedBuckets = bucketsAll.slice(firstIdx, lastIdx + 1);
+    }
 
+    const chartData = slicedBuckets.map(b => b.minutes);
     const maxChart = Math.max(...chartData, 1);
+    
     const chartPoints = chartData.map((val, i) => ({
       x: chartData.length > 1 ? (i / (chartData.length - 1)) * 100 : 50,
-      y: 40 - (val / maxChart) * 35, // 40 - низ, 5 - верх
+      y: 40 - (val / maxChart) * 35,
     }));
     
-    chartPath = `M ${chartPoints[0].x} ${chartPoints[0].y}`;
-    for (let i = 1; i < chartPoints.length; i++) {
-      const prev = chartPoints[i - 1];
-      const curr = chartPoints[i];
-      const midX = (prev.x + curr.x) / 2;
-      chartPath += ` C ${midX} ${prev.y}, ${midX} ${curr.y}, ${curr.x} ${curr.y}`;
+    if (chartPoints.length > 0) {
+      chartPath = `M ${chartPoints[0].x} ${chartPoints[0].y}`;
+      for (let i = 1; i < chartPoints.length; i++) {
+        const prev = chartPoints[i - 1];
+        const curr = chartPoints[i];
+        const midX = (prev.x + curr.x) / 2;
+        chartPath += ` C ${midX} ${prev.y}, ${midX} ${curr.y}, ${curr.x} ${curr.y}`;
+      }
+      fillPath = `${chartPath} L 100 40 L 0 40 Z`;
     }
-    fillPath = `${chartPath} L 100 40 L 0 40 Z`;
   }
 
   return (
