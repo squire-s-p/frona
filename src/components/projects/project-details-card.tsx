@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronsUpDown, Check, PencilIcon, Send, Trash2Icon as TrashIconLucide } from "lucide-react";
+import { ChevronsUpDown, Check, PencilIcon, Send, Trash2Icon as TrashIconLucide, Plus, Trash2, CornerDownLeft } from "lucide-react";
 import { updateProject, setProjectClient } from "@/app/dashboard/projects/actions";
 
 import {
@@ -241,7 +241,7 @@ export default function ProjectDetailsCard({
   );
 
   return (
-    <Card className="rounded-2xl p-0 shadow-none bg-neutral-100 dark:bg-neutral-900 border border-border/50">
+    <Card className="h-full flex flex-col rounded-2xl p-0 shadow-none bg-neutral-100 dark:bg-neutral-900 border border-border/50">
       {/* Unified section header */}
       <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-border/50">
         <h2 className="text-base font-bold tracking-tight text-foreground">Деталі</h2>
@@ -279,7 +279,7 @@ export default function ProjectDetailsCard({
 
       {/* VIEW MODE */}
       {!showEditUI ? (
-        <div className="p-5 space-y-6">
+        <div className="p-5 space-y-6 flex-1 flex flex-col">
           {/* Core Info Grid */}
           <div className="grid gap-3 grid-cols-2">
              <InfoRow label="Статус" value={statusText} />
@@ -327,7 +327,7 @@ export default function ProjectDetailsCard({
           )}
 
           {/* ✅ COMMENTS Section */}
-          <div className="pt-4 border-t border-border/50">
+          <div className="pt-4 border-t border-border/50 flex flex-col flex-1 min-h-0">
             <div className="flex items-center justify-between mb-4">
               <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Коментарі</Label>
               <Badge variant="secondary" className="px-1.5 py-0 h-4 text-[9px]">{comments.length}</Badge>
@@ -338,27 +338,30 @@ export default function ProjectDetailsCard({
                 Завершений проєкт — коментарі вимкнено.
               </div>
             ) : (
-              <div className="space-y-4">
-                <div className="flex gap-2">
+              <div className="flex flex-col flex-1 min-h-0 gap-4">
+                <div className="flex items-center gap-2 shrink-0">
                   <Input
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
                     placeholder="Ваш коментар…"
-                    className="h-9 rounded-xl text-xs bg-muted/20 border-border/50 focus:bg-background transition-all"
+                    className="h-10 flex-1 bg-neutral-200/50 dark:bg-neutral-800 border border-black/5 dark:border-white/10 rounded-[calc(var(--radius)+4px)] px-5 text-sm placeholder:text-neutral-400 dark:placeholder:text-neutral-600 transition-all focus-visible:ring-1 focus-visible:ring-black/5 dark:focus-visible:ring-white/20 shadow-none"
                     disabled={pending}
                     onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && onAddComment()}
                   />
                   <Button 
-                    size="sm" 
-                    className="h-9 w-9 rounded-xl p-0 flex items-center justify-center shrink-0"
+                    size="icon" 
+                    className={cn(
+                      "h-10 w-10 shrink-0 bg-black dark:bg-white text-white dark:text-black rounded-[calc(var(--radius)+4px)] transition-all hover:opacity-90 active:scale-95",
+                      !comment.trim() ? "opacity-50" : "opacity-100"
+                    )}
                     onClick={onAddComment} 
                     disabled={pending || !comment.trim()}
                   >
-                    <Send className="h-4 w-4" />
+                    <CornerDownLeft className="h-4 w-4" />
                   </Button>
                 </div>
 
-                <div className="space-y-3 max-h-[400px] overflow-y-auto scrollbar-hide pr-1">
+                <div className="space-y-3 flex-1 overflow-y-auto scrollbar-hide pr-1">
                   {commentsLoading ? (
                     <div className="text-[11px] text-muted-foreground animate-pulse">Завантаження...</div>
                   ) : comments.length === 0 ? (
@@ -372,7 +375,7 @@ export default function ProjectDetailsCard({
                       const isTemp = c.id.startsWith("tmp-");
 
                       return (
-                        <div key={c.id} className="group relative rounded-xl border border-border/40 bg-muted/5 p-3 hover:bg-muted/10 transition-colors">
+                        <div key={c.id} className="group relative rounded-xl border border-black/5 dark:border-white/5 bg-neutral-200/50 dark:bg-neutral-800 p-3 transition-colors">
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0">
                               <div className="flex items-center gap-2 mb-1">
@@ -387,11 +390,11 @@ export default function ProjectDetailsCard({
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="h-6 w-6 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
+                                className="h-8 w-8 rounded-xl opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all shrink-0"
                                 onClick={() => onDeleteComment(c.id)}
                                 disabled={pending}
                               >
-                                <TrashIcon className="h-3 w-3" />
+                                <Trash2 className="h-3.5 w-3.5" />
                               </Button>
                             )}
                           </div>

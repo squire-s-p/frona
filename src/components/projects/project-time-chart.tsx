@@ -25,9 +25,9 @@ function formatHMFromMinutes(totalMinutes: number) {
   const h = Math.floor(m / 60);
   const min = m % 60;
 
-  if (h <= 0) return `${min} хв`;
-  if (min <= 0) return `${h} г`;
-  return `${h} г ${min} хв`;
+  if (h <= 0) return `${min}хв`;
+  if (min <= 0) return `${h}г`;
+  return `${h}г\u00A0${min}хв`;
 }
 
 function formatHMFromHours(hours: number) {
@@ -38,11 +38,11 @@ function formatHMFromHours(hours: number) {
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="rounded-xl border border-border/50 bg-neutral-100 dark:bg-neutral-900 p-3 shadow-none">
+      <div className="rounded-xl border border-border/50 bg-neutral-200 dark:bg-neutral-800 p-3 shadow-none">
         <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-1">
           {formatLabel(String(label))}
         </p>
-        <p className="text-sm font-mono font-bold text-foreground">
+        <p className="text-sm font-bold text-foreground">
           {formatHMFromHours(payload[0].value)}
         </p>
       </div>
@@ -67,8 +67,19 @@ export default function ProjectTimeChart({ buckets }: { buckets: TimeBucket[] })
   const [range, setRange] = React.useState<RangeKey>("7");
 
   const data = React.useMemo(() => {
-    const sliced =
-      range === "all" ? buckets : buckets.slice(-Number(range as "90" | "30" | "7"));
+    let sliced = buckets;
+
+    if (range === "all") {
+      // Find first and last indices with actual time entries
+      const firstIndex = buckets.findIndex((b) => b.minutes > 0);
+      const lastIndex = buckets.findLastIndex ? buckets.findLastIndex((b) => b.minutes > 0) : buckets.map(b => b.minutes > 0).lastIndexOf(true);
+
+      if (firstIndex !== -1 && lastIndex !== -1) {
+        sliced = buckets.slice(firstIndex, lastIndex + 1);
+      }
+    } else {
+      sliced = buckets.slice(-Number(range as "90" | "30" | "7"));
+    }
 
     return sliced.map((b: any) => ({
       ...b,
@@ -92,11 +103,10 @@ export default function ProjectTimeChart({ buckets }: { buckets: TimeBucket[] })
           <span className="font-bold text-foreground">
             {formatHMFromMinutes(totalMinutes)}
           </span>
-          <span className="text-muted-foreground/40 ml-1.5">· {rangeLabel}</span>
         </div>
 
         <Select value={range} onValueChange={(v) => setRange(v as RangeKey)}>
-          <SelectTrigger className="h-8 w-[140px] rounded-xl bg-muted/30 border-border/40 text-xs font-medium">
+          <SelectTrigger className="h-8 w-[140px] rounded-xl bg-neutral-200 dark:bg-neutral-800 border-border/40 text-xs font-medium">
             <SelectValue placeholder="Період" />
           </SelectTrigger>
           <SelectContent>
@@ -111,7 +121,7 @@ export default function ProjectTimeChart({ buckets }: { buckets: TimeBucket[] })
       {/* Chart */}
       <div className="h-[260px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ left: -20, right: 0, top: 10, bottom: 0 }}>
+          <AreaChart data={data} margin={{ left: -10, right: 0, top: 10, bottom: 0 }}>
             <CartesianGrid vertical={false} strokeDasharray="3 3" strokeOpacity={0.05} />
 
             <XAxis

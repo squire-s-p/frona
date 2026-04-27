@@ -105,54 +105,46 @@ export default function ProjectHeader({
   return (
     <div className="mb-8">
       <div className="flex items-center justify-between gap-4">
-        {/* Left: Navigation and Title */}
+        {/* Left: Title */}
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="h-8 w-8 sm:h-9 sm:w-9 shrink-0 rounded-xl border-border/40 bg-neutral-100 dark:bg-neutral-900 hover:bg-muted hover:text-primary transition-all group shadow-none"
-            onClick={() => router.push("/dashboard/projects")}
-            disabled={pending}
-          >
-            <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
-          </Button>
-
           <h1 className="truncate text-xl sm:text-3xl font-extrabold tracking-tight text-foreground leading-none">
             {name}
           </h1>
-          
         </div>
 
         {/* Right: Actions */}
         <div className="flex items-center gap-3 shrink-0">
           <div className="flex items-center gap-1 rounded-2xl border border-border/40 p-1 bg-neutral-100 dark:bg-neutral-900 h-9 sm:h-11 shadow-none">
             <Button
-                  type="button"
-                  variant={status === "active" ? "secondary" : "ghost"}
-                  size="sm"
-                  className={cn(
-                    "h-7 sm:h-8 rounded-xl px-2 sm:px-4 text-[10px] sm:text-[11px] font-bold transition-all shadow-none",
-                    status === "active" ? "bg-background" : "text-muted-foreground"
-                  )}
-                  onClick={() => onToggleStatus("active")}
-                  disabled={pending}
-                >
-                  Активний
-                </Button>
-                <Button
-                  type="button"
-                  variant={status === "completed" ? "secondary" : "ghost"}
-                  size="sm"
-                  className={cn(
-                    "h-7 sm:h-8 rounded-xl px-2 sm:px-4 text-[10px] sm:text-[11px] font-bold transition-all shadow-none",
-                    status === "completed" ? "bg-background" : "text-muted-foreground"
-                  )}
-                  onClick={() => onToggleStatus("completed")}
-                  disabled={pending}
-                >
-                  Завершено
-                </Button>
+              type="button"
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "h-7 sm:h-8 rounded-xl px-2 sm:px-4 text-[10px] sm:text-[11px] font-bold transition-all shadow-none",
+                status === "active" 
+                  ? "bg-white dark:bg-neutral-800 text-foreground hover:bg-white dark:hover:bg-neutral-800" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-transparent"
+              )}
+              onClick={() => onToggleStatus("active")}
+              disabled={pending}
+            >
+              Активний
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "h-7 sm:h-8 rounded-xl px-2 sm:px-4 text-[10px] sm:text-[11px] font-bold transition-all shadow-none",
+                status === "completed" 
+                  ? "bg-white dark:bg-neutral-800 text-foreground hover:bg-white dark:hover:bg-neutral-800" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-transparent"
+              )}
+              onClick={() => onToggleStatus("completed")}
+              disabled={pending}
+            >
+              Завершено
+            </Button>
           </div>
         </div>
       </div>

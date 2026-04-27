@@ -12,6 +12,11 @@ import ProjectHeader from "@/components/projects/project-header";
 import ProjectDetailsCard from "@/components/projects/project-details-card";
 
 import ProjectTasksClient from "@/components/projects/project-tasks-client";
+import { 
+  Wallet, Clock, Coins, Banknote, 
+  Sparkles, TrendingUp, BadgePercent, DollarSign, ShoppingBag, BarChart2, Percent,
+  MoreVertical, ChevronDown, Briefcase
+} from "lucide-react";
 
 type ActiveTimer = any;
 
@@ -64,6 +69,11 @@ export default async function ProjectDetailsPage({
         orderBy: { startAt: "desc" },
         take: 500,
         select: { startAt: true, endAt: true },
+      },
+      transactions: {
+        where: { type: "income" },
+        select: { amount: true, date: true, description: true },
+        orderBy: { date: "desc" },
       },
     },
   });
@@ -123,6 +133,63 @@ export default async function ProjectDetailsPage({
 
   const bucketsAll = bucketsFromEntries(entries, daysAll);
 
+  // --- Calculations for Finance section ---
+  const totalMinutes = bucketsAll.reduce((acc, b) => acc + b.minutes, 0);
+  const workedText = (() => {
+    if (totalMinutes === 0) return "—";
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    if (h === 0) return `${m}хв`;
+    if (m === 0) return `${h}г`;
+    return `${h}г\u00A0${m}хв`;
+  })();
+
+  const earned = project.transactions.reduce((acc, t) => acc + Number(t.amount), 0);
+  const earnedText = earned > 0 ? `${earned} ₴` : "—";
+
+  const rate = (() => {
+    if (totalMinutes === 0) return "—";
+    const hours = totalMinutes / 60;
+    const baseValue = earned > 0 ? earned : Number(project.cost || 0);
+    if (baseValue === 0) return "—";
+    return `${Math.round(baseValue / hours)} ₴`;
+  })();
+
+  const earnedPercent = project.cost && Number(project.cost) > 0 
+    ? Math.min(100, Math.max(0, (earned / Number(project.cost)) * 100)) 
+    : 0;
+
+  // Динамічний графік для "Час роботи"
+  let chartPath = "M0 40 L 100 40";
+  let fillPath = "M0 40 L 100 40 Z";
+  
+  if (bucketsAll.length > 0) {
+    let cumulative = 0;
+    // bucketsAll вже хронологічний (від старого до нового)
+    const chartData = bucketsAll.map(b => {
+      cumulative += b.minutes;
+      return cumulative;
+    });
+    
+    // Починаємо графік з нуля
+    chartData.unshift(0);
+
+    const maxChart = Math.max(...chartData, 1);
+    const chartPoints = chartData.map((val, i) => ({
+      x: chartData.length > 1 ? (i / (chartData.length - 1)) * 100 : 50,
+      y: 40 - (val / maxChart) * 35, // 40 - низ, 5 - верх
+    }));
+    
+    chartPath = `M ${chartPoints[0].x} ${chartPoints[0].y}`;
+    for (let i = 1; i < chartPoints.length; i++) {
+      const prev = chartPoints[i - 1];
+      const curr = chartPoints[i];
+      const midX = (prev.x + curr.x) / 2;
+      chartPath += ` C ${midX} ${prev.y}, ${midX} ${curr.y}, ${curr.x} ${curr.y}`;
+    }
+    fillPath = `${chartPath} L 100 40 L 0 40 Z`;
+  }
+
   return (
     <div className="absolute inset-0 overflow-y-auto scrollbar-hide bg-background">
       <div className="p-4 md:p-6 pb-20 space-y-6">
@@ -135,10 +202,10 @@ export default async function ProjectDetailsPage({
         />
 
         {/* TOP ROW: Details / Tasks + Finance */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
 
           {/* LEFT — Details (full height) */}
-          <div className="lg:col-span-7">
+          <div className="lg:col-span-7 h-full">
             <ProjectDetailsCard
               projectId={project.id}
               status={project.status as any}
@@ -159,11 +226,11 @@ export default async function ProjectDetailsPage({
           </div>
 
           {/* RIGHT — Tasks + Finance */}
-          <div className="lg:col-span-5 space-y-5">
+          <div className="lg:col-span-5 flex flex-col gap-5 h-full">
 
             {/* Tasks Block */}
             {!isArchived && (
-              <div className="rounded-2xl border bg-neutral-100 dark:bg-neutral-900 shadow-none overflow-hidden">
+              <div className="rounded-2xl border bg-neutral-100 dark:bg-neutral-900 shadow-none flex flex-col flex-1 min-h-[300px] overflow-hidden">
                 <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-border/50">
                   <h2 className="text-base font-bold tracking-tight text-foreground">Список задач</h2>
                 </div>
@@ -184,31 +251,155 @@ export default async function ProjectDetailsPage({
           </div>
         </div>
 
-        {/* BOTTOM ROW: Finance — full width */}
-        <div className="rounded-2xl border bg-neutral-100 dark:bg-neutral-900 shadow-none overflow-hidden mt-5">
+        {/* BOTTOM ROW: Finance */}
+        <div className="rounded-2xl border bg-neutral-100 dark:bg-neutral-900 shadow-none overflow-hidden mt-5 w-full">
           <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-border/50">
             <h2 className="text-base font-bold tracking-tight text-foreground">Фінансовий звіт</h2>
           </div>
-          <div className="p-5">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <div className="rounded-xl border border-border/40 bg-neutral-200/50 dark:bg-neutral-800 p-4">
-                <p className="text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider mb-1">Бюджет</p>
-                <p className="text-xl font-bold text-foreground">
-                  {project.cost ? `${project.cost} ₴` : "—"}
-                </p>
+          
+          <div className="p-5 flex flex-col gap-5">
+            {/* 4 детальні картки */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+              
+              {/* 1. Оплати (Image 1 style) */}
+              <div className="rounded-2xl border border-border/40 bg-neutral-200/50 dark:bg-[#161616] p-5 flex flex-col h-[340px] overflow-hidden">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-sm font-bold text-foreground tracking-tight">Оплати по проєкту</h3>
+                  <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                </div>
+                
+                {/* Progress Bar */}
+                <div className="h-2 w-full bg-neutral-300 dark:bg-[#2a2a2a] rounded-full overflow-hidden mb-3 shrink-0">
+                  <div className="h-full bg-foreground rounded-full transition-all" style={{ width: `${earnedPercent}%` }} />
+                </div>
+                
+                {/* Legend */}
+                <div className="flex justify-between text-xs mb-6 shrink-0">
+                  <div>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <div className="w-2.5 h-2.5 rounded-sm bg-foreground" />
+                      <span className="text-foreground font-semibold">Оплачено</span>
+                    </div>
+                    <span className="text-foreground font-bold text-sm">
+                      {earned} ₴ <span className="text-muted-foreground font-medium">({Math.round(earnedPercent)}%)</span>
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <div className="flex items-center gap-1.5 mb-1 justify-end">
+                      <div className="w-2.5 h-2.5 rounded-sm bg-neutral-400 dark:bg-[#333]" />
+                      <span className="text-foreground font-semibold">Залишок</span>
+                    </div>
+                    <span className="text-foreground font-bold text-sm">
+                      {project.cost ? Number(project.cost) - earned : 0} ₴ <span className="text-muted-foreground font-medium">({100 - Math.round(earnedPercent)}%)</span>
+                    </span>
+                  </div>
+                </div>
+
+                {/* List Header */}
+                <div className="flex justify-between text-[10px] text-muted-foreground font-bold mb-3 border-b border-border/50 pb-2 shrink-0">
+                  <span className="uppercase tracking-wider">Транзакція</span>
+                  <span className="uppercase tracking-wider">Дата</span>
+                </div>
+                
+                {/* List Items */}
+                <div className="flex-1 overflow-y-auto space-y-3 pr-1 scrollbar-hide">
+                  {project.transactions.map((t, i) => (
+                    <div key={i} className="flex justify-between items-center border-b border-border/40 pb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-foreground truncate max-w-[120px]">{t.description || "Оплата"}</span>
+                      </div>
+                      <div className="flex flex-col items-end">
+                         <span className="text-[10px] text-muted-foreground">{t.date.toLocaleDateString("uk-UA")}</span>
+                         <span className="text-xs font-bold text-green-600 dark:text-green-500">+{Number(t.amount)} ₴</span>
+                      </div>
+                    </div>
+                  ))}
+                  {project.transactions.length === 0 && (
+                     <div className="text-xs text-muted-foreground text-center py-4">Немає транзакцій</div>
+                  )}
+                </div>
               </div>
-              <div className="rounded-xl border border-border/40 bg-neutral-200/50 dark:bg-neutral-800 p-4">
-                <p className="text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider mb-1">Відпрацьовано</p>
-                <p className="text-xl font-bold text-foreground">—</p>
+
+              {/* 2. Час роботи (Image 2 style) */}
+              <div className="rounded-2xl border border-border/40 bg-neutral-200/50 dark:bg-[#161616] p-5 flex flex-col h-[340px] relative overflow-hidden group">
+                <div className="flex justify-between items-start mb-2 relative z-10">
+                  <h3 className="text-base font-bold text-foreground tracking-tight">Час роботи</h3>
+                </div>
+                <p className="text-4xl font-bold text-foreground relative z-10 mb-1 tracking-tighter">{workedText}</p>
+                <p className="text-sm text-muted-foreground font-medium relative z-10">Загальний час</p>
+
+                {/* Line Chart */}
+                <div className="absolute bottom-0 left-0 right-0 h-32 opacity-80 group-hover:opacity-100 transition-opacity">
+                  <svg viewBox="0 0 100 40" className="w-full h-full preserve-3d" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="currentColor" stopOpacity="0.1" />
+                        <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
+                      </linearGradient>
+                    </defs>
+                    <path
+                      d={fillPath}
+                      fill="url(#lineGrad)"
+                      className="text-neutral-400 dark:text-neutral-500"
+                    />
+                    <path
+                      d={chartPath}
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      vectorEffect="non-scaling-stroke"
+                      className="text-neutral-400 dark:text-neutral-200"
+                    />
+                  </svg>
+                </div>
               </div>
-              <div className="rounded-xl border border-border/40 bg-neutral-200/50 dark:bg-neutral-800 p-4">
-                <p className="text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider mb-1">Ставка / год</p>
-                <p className="text-xl font-bold text-foreground">—</p>
+
+              {/* 3. Ставка / год (Image 3 style) */}
+              <div className="rounded-2xl border border-border/40 bg-neutral-200/50 dark:bg-[#161616] p-5 flex flex-col items-center h-[340px]">
+                <div className="flex justify-center mb-8 w-full mt-2">
+                  <div className="bg-background/50 border border-border/50 text-xs font-medium text-foreground rounded-lg px-3 py-1.5 flex items-center gap-2 cursor-pointer hover:bg-background transition-colors">
+                    Report <ChevronDown className="h-3 w-3" />
+                  </div>
+                </div>
+                
+                {/* Gauge Chart */}
+                <div className="relative w-40 h-24 overflow-hidden mb-6 flex-shrink-0">
+                  <svg viewBox="0 0 100 50" className="w-full h-full overflow-visible">
+                    <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="currentColor" className="text-neutral-300 dark:text-neutral-800" strokeWidth="8" strokeDasharray="3 3" strokeLinecap="round" />
+                    <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="currentColor" className="text-foreground" strokeWidth="8" strokeDasharray="3 3" strokeLinecap="round" strokeDashoffset={125.6 * (1 - earnedPercent/100)} pathLength="125.6" />
+                  </svg>
+                  <div className="absolute bottom-0 left-0 right-0 text-center flex flex-col items-center translate-y-1">
+                    <div className="text-2xl font-bold text-foreground tracking-tight">{rate}</div>
+                    <div className="text-[10px] text-muted-foreground font-medium uppercase">Ставка / год</div>
+                  </div>
+                </div>
+                
+                <p className="text-xs text-muted-foreground mb-auto">{Math.round(earnedPercent)}% Виконання</p>
               </div>
-              <div className="rounded-xl border border-border/40 bg-neutral-200/50 dark:bg-neutral-800 p-4">
-                <p className="text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider mb-1">Зароблено</p>
-                <p className="text-xl font-bold text-foreground">—</p>
+
+              {/* 4. Вартість (Image 4 style) */}
+              <div className="rounded-2xl border border-border/40 bg-neutral-200/50 dark:bg-[#161616] p-6 flex flex-col justify-center h-[340px] relative">
+                 <div className="flex justify-between items-start mb-6">
+                   <h3 className="text-base font-bold text-foreground tracking-tight">Вартість</h3>
+                   <div className="h-10 w-10 rounded-xl bg-background border border-border/50 flex items-center justify-center">
+                      <Briefcase className="h-5 w-5 text-muted-foreground" />
+                   </div>
+                 </div>
+                 
+                 <div className="flex-1 flex flex-col justify-center">
+                   <p className="text-5xl font-bold text-foreground mb-4 tracking-tighter truncate">
+                     {project.cost ? `${project.cost}` : "—"} <span className="text-2xl text-muted-foreground">₴</span>
+                   </p>
+                   
+                   <div>
+                     <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-500/10 text-green-600 dark:text-green-500 text-xs font-bold tracking-wide">
+                       <TrendingUp className="h-3.5 w-3.5" />
+                       Встановлено бюджет
+                     </span>
+                   </div>
+                 </div>
               </div>
+
             </div>
           </div>
         </div>

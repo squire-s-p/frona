@@ -9,16 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Check, Trash2, Plus } from "lucide-react";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog";
-import {
+  AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
+  AlertDialogContent,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogMedia,
@@ -131,7 +125,7 @@ export default function ProjectTasksClient({
         <div className="flex items-center gap-2">
           <Input
             placeholder="Додати нову задачу..."
-            className="h-10 flex-1 bg-neutral-100 dark:bg-neutral-900/50 border border-black/5 dark:border-white/10 rounded-[calc(var(--radius)+4px)] px-5 text-sm placeholder:text-muted-foreground/50 transition-all focus-visible:ring-1 focus-visible:ring-black/5 dark:focus-visible:ring-white/20 shadow-none"
+            className="h-10 flex-1 bg-neutral-200/50 dark:bg-neutral-800 border border-black/5 dark:border-white/10 rounded-[calc(var(--radius)+4px)] px-5 text-sm placeholder:text-neutral-400 dark:placeholder:text-neutral-600 transition-all focus-visible:ring-1 focus-visible:ring-black/5 dark:focus-visible:ring-white/20 shadow-none"
             value={taskTitle}
             onChange={(e) => setTaskTitle(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleQuickAdd()}
@@ -154,11 +148,11 @@ export default function ProjectTasksClient({
       </div>
 
       {tasks.length === 0 ? (
-        <div className="px-5 py-12 text-center">
+        <div className="px-5 py-12 text-center flex-1 flex flex-col justify-center">
           <p className="text-sm text-muted-foreground/60 font-medium">Список задач порожній</p>
         </div>
       ) : (
-        <div className="divide-y divide-border/40">
+        <div className="divide-y divide-border/40 flex-1 overflow-y-auto min-h-0">
           {tasks.map((task) => {
           const dateStr = task.endDate
             ? formatDate(task.endDate)
@@ -230,37 +224,42 @@ export default function ProjectTasksClient({
         tags={[]}
       />
 
-      <Dialog open={!!taskToDelete} onOpenChange={(open) => !open && setTaskToDelete(null)}>
-        <DialogContent size="sm" className="[&>button]:hidden">
-          <div className="grid grid-rows-[auto_1fr] place-items-center gap-1.5 text-center sm:place-items-start sm:text-left">
-            <div className="mb-2 inline-flex size-16 items-center justify-center rounded-md bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-destructive">
-              <Trash2 className="size-8" />
-            </div>
-            <DialogTitle className="text-lg font-semibold text-white">Видалити задачу?</DialogTitle>
-          </div>
-          <DialogFooter className="flex flex-row gap-3 sm:justify-center">
-            <DialogClose asChild>
-              <Button 
-                variant="outline"
-                disabled={pending}
-                className="flex-1 mt-0 bg-transparent border border-white/10 text-white hover:bg-white/5 h-11 rounded-xl font-medium transition-colors"
-              >
-                Скасувати
-              </Button>
-            </DialogClose>
-            <Button
+      <AlertDialog open={!!taskToDelete} onOpenChange={(open) => !open && setTaskToDelete(null)}>
+        <AlertDialogContent 
+          size="sm" 
+          onClickOverlay={() => !pending && setTaskToDelete(null)}
+          onInteractOutside={() => !pending && setTaskToDelete(null)}
+          onPointerDownOutside={() => !pending && setTaskToDelete(null)}
+        >
+          <AlertDialogHeader>
+            <AlertDialogMedia className="bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-destructive">
+              <Trash2 className="lucide lucide-trash2 lucide-trash-2" />
+            </AlertDialogMedia>
+            <AlertDialogTitle>Видалити задачу?</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-3 sm:justify-center">
+            <AlertDialogCancel 
+              disabled={pending}
+              variant="outline"
+              onClick={() => setTaskToDelete(null)}
+              className="flex-1 mt-0"
+            >
+              Скасувати
+            </AlertDialogCancel>
+            <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();
                 if (taskToDelete) handleDeleteTask(taskToDelete);
               }}
-              className="flex-1 bg-[#a34444] text-white hover:bg-[#b54d4d] h-11 rounded-xl font-medium transition-colors border-none shadow-none"
+              variant="destructive"
+              className="flex-1"
               disabled={pending}
             >
               {pending ? "Видалення..." : "Видалити"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

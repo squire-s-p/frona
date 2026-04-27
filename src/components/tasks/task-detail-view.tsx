@@ -12,6 +12,7 @@ import {
     Hash,
     Tag,
     Trash,
+    Trash2,
     MoreVertical,
     X,
     MessageSquare,
@@ -25,7 +26,8 @@ import {
     CalendarIcon,
     File,
     Image as ImageIcon,
-    FileText
+    FileText,
+    CornerDownLeft
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TaskRow, ProjectOption, TagOption } from "./tasks-client";
@@ -657,7 +659,7 @@ export function TaskDetailView({
                                 <div className="text-xs text-muted-foreground italic">Коментарів поки немає</div>
                             ) : (
                                 comments.map(c => (
-                                    <div key={c.id} className="group relative flex gap-4 p-4 rounded-2xl bg-muted/10 border border-transparent hover:bg-muted/20 hover:border-border/50 hover:shadow-xl hover:shadow-black/5 transition-all">
+                                    <div key={c.id} className="group relative flex gap-4 p-4 rounded-2xl bg-neutral-200/50 dark:bg-neutral-800 border border-black/5 dark:border-white/5 hover:shadow-xl hover:shadow-black/5 transition-all">
                                         <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/10 flex items-center justify-center shrink-0 shadow-inner">
                                             <span className="text-xs font-bold text-primary tracking-tighter">{c.user?.name?.[0] || 'U'}</span>
                                         </div>
@@ -672,9 +674,9 @@ export function TaskDetailView({
                                                         variant="ghost"
                                                         size="icon"
                                                         onClick={() => handleDeleteComment(c.id)}
-                                                        className="h-7 w-7 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all bg-background rounded-md shadow-xs border"
+                                                        className="h-8 w-8 rounded-xl opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all shrink-0"
                                                     >
-                                                        <Trash className="h-3 w-3" />
+                                                        <Trash2 className="h-3.5 w-3.5" />
                                                     </Button>
                                                 </div>
                                             </div>
@@ -691,28 +693,30 @@ export function TaskDetailView({
             </ScrollArea>
 
             <div className="p-4 border-t bg-background/80 backdrop-blur-md shrink-0">
-                <div className="relative group max-w-3xl mx-auto">
-                    <Textarea
-                        placeholder="Напишіть коментар..."
+                <div className="flex items-center gap-2">
+                    <Input
+                        placeholder="Ваш коментар..."
                         value={comment}
                         onChange={(e) => setComment(e.target.value)}
                         onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
+                            if (e.key === 'Enter' && comment.trim()) {
                                 e.preventDefault();
                                 handleAddComment();
                             }
                         }}
-                        className="bg-muted/40 border-border/50 focus-visible:ring-1 focus-visible:ring-primary/30 text-[14px] resize-none pr-12 min-h-[44px] max-h-[200px] rounded-2xl py-3 px-4 shadow-sm"
-                        rows={1}
+                        className="h-10 flex-1 bg-neutral-200 dark:bg-neutral-800 border border-black/5 dark:border-white/10 rounded-[calc(var(--radius)+4px)] px-5 text-sm placeholder:text-neutral-400 dark:placeholder:text-neutral-600 transition-all focus-visible:ring-1 focus-visible:ring-black/5 dark:focus-visible:ring-white/20 shadow-none"
+                        disabled={pending}
                     />
                     <Button
                         size="icon"
-                        variant="ghost"
-                        className="absolute right-2 top-1.5 h-8 w-8 text-primary opacity-0 group-focus-within:opacity-100 transition-all hover:bg-primary/10 hover:scale-105 active:scale-95"
                         onClick={handleAddComment}
-                        disabled={!comment.trim() || pending}
+                        disabled={pending || !comment.trim()}
+                        className={cn(
+                            "h-10 w-10 shrink-0 transition-all border-none bg-black dark:bg-white text-white dark:text-black hover:bg-black/90 dark:hover:bg-white/90 rounded-[calc(var(--radius)+4px)] shadow-sm",
+                            !comment.trim() ? "opacity-50 cursor-default" : "opacity-100 cursor-pointer active:scale-95"
+                        )}
                     >
-                        <ChevronRight className="h-5 w-5" />
+                        <CornerDownLeft className="h-4 w-4" />
                     </Button>
                 </div>
             </div>

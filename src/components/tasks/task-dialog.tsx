@@ -53,7 +53,7 @@ import { cn } from "@/lib/utils";
 
 import { PencilIcon } from "@/components/icons/pencil";
 import { TrashIcon } from "@/components/icons/trash";
-import { Upload, File, FileText, Image as ImageIcon, X, Calendar as CalendarIcon, Wand2, Plus, CheckCircle2, Circle, Sun, Sunrise, CalendarPlus, Moon, Clock, Bell, RotateCcw, ChevronRight } from "lucide-react";
+import { Upload, File, FileText, Image as ImageIcon, X, Calendar as CalendarIcon, Wand2, Plus, CheckCircle2, Circle, Sun, Sunrise, CalendarPlus, Moon, Clock, Bell, RotateCcw, ChevronRight, Trash2, CornerDownLeft } from "lucide-react";
 import { toast } from "sonner";
 import { RichTextEditor } from "./rich-text-editor";
 
@@ -799,6 +799,7 @@ export function TaskDialog({
                   disabled={pending}
                   onChange={handleTitleChange}
                   placeholder="Наприклад: Додати таблицю задач"
+                  className="h-10 flex-1 bg-neutral-100 dark:bg-neutral-800 border border-black/5 dark:border-white/10 rounded-[calc(var(--radius)+4px)] px-5 text-sm placeholder:text-neutral-400 dark:placeholder:text-neutral-600 transition-all focus-visible:ring-1 focus-visible:ring-black/5 dark:focus-visible:ring-white/20 shadow-none"
                 />
 
                 {(dateSuggestion || prioritySuggestion) && (
@@ -1144,15 +1145,25 @@ export function TaskDialog({
             <div className="grid gap-2">
               <Label>Коментарі</Label>
 
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
                 <Input
+                  placeholder="Написати коментар..."
+                  className="h-10 flex-1 bg-neutral-200/50 dark:bg-neutral-800 border border-black/5 dark:border-white/10 rounded-[calc(var(--radius)+4px)] px-5 text-sm placeholder:text-neutral-400 dark:placeholder:text-neutral-600 transition-all focus-visible:ring-1 focus-visible:ring-black/5 dark:focus-visible:ring-white/20 shadow-none"
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
-                  placeholder="Написати коментар..."
+                  onKeyDown={(e) => e.key === "Enter" && comment.trim() && onAddComment()}
                   disabled={pending}
                 />
-                <Button onClick={onAddComment} disabled={pending || !comment.trim()}>
-                  Додати
+                <Button
+                  size="icon"
+                  onClick={onAddComment}
+                  disabled={pending || !comment.trim()}
+                  className={cn(
+                    "h-10 w-10 shrink-0 bg-black dark:bg-white text-white dark:text-black rounded-[calc(var(--radius)+4px)] transition-all hover:opacity-90 active:scale-95",
+                    !comment.trim() ? "opacity-50" : "opacity-100"
+                  )}
+                >
+                  <CornerDownLeft className="h-4 w-4" />
                 </Button>
               </div>
 
@@ -1168,7 +1179,7 @@ export function TaskDialog({
                     const isTemp = c.id.startsWith("tmp-");
 
                     return (
-                      <div key={c.id} className="rounded-lg border bg-muted/20 p-3">
+                      <div key={c.id} className="group rounded-lg border bg-neutral-200/50 dark:bg-neutral-800 border-black/5 dark:border-white/5 p-3">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
@@ -1183,12 +1194,12 @@ export function TaskDialog({
                               type="button"
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                              className="h-8 w-8 rounded-xl opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all shrink-0"
                               onClick={() => onDeleteComment(c.id)}
                               disabled={pending}
                               aria-label="Видалити коментар"
                             >
-                              <TrashIcon className="h-4 w-4" />
+                              <Trash2 className="h-3.5 w-3.5" />
                             </Button>
                           )}
                         </div>
