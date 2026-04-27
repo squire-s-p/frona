@@ -535,7 +535,7 @@ export function FinancePageClient() {
 
                             {/* Charts grid */}
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                <Card className="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 shadow-sm">
+                                <Card className="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 shadow-none">
                                     <CardHeader>
                                         <CardTitle className="text-lg font-medium text-zinc-900 dark:text-zinc-50">Динаміка витрат</CardTitle>
                                     </CardHeader>
@@ -604,7 +604,7 @@ export function FinancePageClient() {
                                     </CardContent>
                                 </Card>
 
-                                <Card className="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 shadow-sm">
+                                <Card className="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 shadow-none">
                                     <CardHeader>
                                         <CardTitle className="text-lg font-medium text-zinc-900 dark:text-zinc-50">Доходи vs Витрати</CardTitle>
                                     </CardHeader>
@@ -652,7 +652,7 @@ export function FinancePageClient() {
 
                         <TabsContent value="history" className="flex-1 flex flex-col min-h-0 m-0 focus-visible:outline-none">
                             {/* Transactions List */}
-                            <Card className="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 h-full flex flex-col overflow-hidden gap-0 pb-0">
+                            <Card className="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 h-full flex flex-col overflow-hidden gap-0 pb-0 shadow-none">
                                 <CardHeader className="border-b border-zinc-200 dark:border-zinc-800 flex flex-row items-center justify-between space-y-0 shrink-0">
                                     <div className="flex items-center gap-2">
                                         <CardTitle className="text-lg font-medium text-zinc-900 dark:text-zinc-50">Історія операцій</CardTitle>
@@ -665,7 +665,7 @@ export function FinancePageClient() {
                                                 <Input
                                                     type="text"
                                                     placeholder="Пошук..."
-                                                    className="h-8 w-28 xl:w-40 bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-md pl-8 pr-3 text-xs focus-visible:ring-1 transition-all placeholder:text-zinc-500 shadow-sm"
+                                                    className="h-8 w-28 xl:w-40 bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-md pl-8 pr-3 text-xs focus-visible:ring-1 transition-all placeholder:text-zinc-500 shadow-none"
                                                     value={searchQuery}
                                                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
                                                 />
@@ -679,7 +679,7 @@ export function FinancePageClient() {
                                                         variant="outline"
                                                         size="sm"
                                                         className={cn(
-                                                            "h-8 text-xs justify-start text-left font-normal w-auto min-w-fit whitespace-nowrap bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 px-3 shadow-sm",
+                                                            "h-8 text-xs justify-start text-left font-normal w-auto min-w-fit whitespace-nowrap bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 px-3 shadow-none",
                                                             !dateRange?.from && "text-zinc-500"
                                                         )}
                                                     >
@@ -794,7 +794,7 @@ export function FinancePageClient() {
                                                 </SelectContent>
                                             </Select>
                                         </div>
-                                        <Button size="sm" className="h-8 text-xs px-3 shadow-sm shrink-0" onClick={() => setTransactionDialogOpen(true)}>
+                                        <Button size="sm" className="h-8 text-xs px-3 shadow-none shrink-0" onClick={() => setTransactionDialogOpen(true)}>
                                             <Plus className="h-3.5 w-3.5 mr-2" />
                                             Додати
                                         </Button>

@@ -144,7 +144,7 @@ function formatHours(seconds: number) {
 
 function WidgetContainer({ icon: Icon, label, size, children, action, className = "", footer }: { icon: React.ElementType; label: string; size: WidgetLayout["size"]; children: React.ReactNode; action?: string; className?: string; footer?: string }) {
   return (
-    <Card className={cn("overflow-hidden flex flex-col h-full border shadow-sm group", className)}>
+    <Card className={cn("overflow-hidden flex flex-col h-full border shadow-none group", className)}>
       {(size !== "sm") && (
         <CardHeader className="p-4 pb-0 flex flex-row items-center justify-between space-y-0">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">

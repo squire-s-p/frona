@@ -52,7 +52,7 @@ export default async function NotesPage({
                 ) : (
                     <div className="flex-1 flex flex-col items-center justify-center h-full px-6 bg-zinc-50/30 dark:bg-zinc-950/30">
                         <div className="max-w-md w-full text-center space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                            <div className="inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-white dark:bg-zinc-900 text-zinc-400 shadow-xl border border-zinc-200 dark:border-zinc-800 ring-8 ring-zinc-100/50 dark:ring-zinc-900/50">
+                            <div className="inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-white dark:bg-zinc-900 text-zinc-400 shadow-none border border-zinc-200 dark:border-zinc-800 ring-8 ring-zinc-100/50 dark:ring-zinc-900/50">
                                 <FileText className="h-10 w-10 text-zinc-900 dark:text-zinc-50" />
                             </div>
 
@@ -95,7 +95,7 @@ export default async function NotesPage({
 
 function ShortcutItem({ label, shortcut, desc }: { label: string; shortcut: string; desc: string }) {
     return (
-        <div className="group p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 hover:border-blue-500/50 hover:shadow-md transition-all duration-300">
+        <div className="group p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 hover:border-blue-500/50 hover:shadow-none transition-all duration-300">
             <div className="flex items-center justify-between mb-1">
                 <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">{label}</span>
                 <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-zinc-100 dark:bg-zinc-800 px-1.5 font-mono text-[10px] font-medium text-zinc-600 dark:text-zinc-400 opacity-100">

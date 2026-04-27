@@ -54,7 +54,7 @@ export function SecurityForm({ deviceSessions = [], currentSessionId, hasPasswor
 
   return (
     <div className="space-y-6">
-      <Card className="rounded-2xl border-border/50 bg-card/50 backdrop-blur-sm shadow-sm overflow-hidden text-card-foreground">
+      <Card className="rounded-2xl border-border/50 bg-card/50 backdrop-blur-sm shadow-none overflow-hidden text-card-foreground">
         <CardHeader className="border-b bg-muted/10">
           <CardTitle className="text-xl">Безпека</CardTitle>
           <CardDescription>

@@ -113,7 +113,7 @@ export default function ClientDetailsCard({ client }: { client: ClientDTO }) {
   }
 
   return (
-    <Card className="rounded-2xl border bg-card shadow-sm overflow-hidden p-0">
+    <Card className="rounded-2xl border bg-card shadow-none overflow-hidden p-0">
       {/* Unified section header */}
       <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-border/50">
         <h2 className="text-base font-bold tracking-tight text-foreground">Деталі клієнта</h2>
@@ -158,7 +158,7 @@ export default function ClientDetailsCard({ client }: { client: ClientDTO }) {
             </Button>
             <Button 
                 size="sm" 
-                className="h-9 rounded-lg px-4 text-xs font-bold shadow-sm" 
+                className="h-9 rounded-lg px-4 text-xs font-bold shadow-none" 
                 onClick={onSave} 
                 disabled={!canSave}
             >

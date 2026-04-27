@@ -17,7 +17,7 @@ export default function ClientCard(props: {
 }) {
     return (
         <Link href={`/dashboard/clients/${props.id}`} className="group block">
-            <Card className="relative overflow-hidden rounded-2xl border-border/50 bg-card/50 p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/5 hover:border-primary/20 backdrop-blur-sm">
+            <Card className="relative overflow-hidden rounded-2xl border-border/50 bg-card/50 p-4 transition-all duration-300 hover:border-primary/20 backdrop-blur-sm shadow-none">
                 <div className="flex flex-col gap-4">
                     <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3 min-w-0">

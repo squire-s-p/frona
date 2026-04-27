@@ -88,13 +88,13 @@ export default function ClientsClient({
     <div className="absolute inset-0 flex flex-col overflow-hidden bg-background">
       {/* TOP TOOLBAR - SYNCED WITH PROJECTS (p-4 pb-0) */}
       <div className="flex-none p-4 pb-0">
-        <div className="rounded-2xl border bg-card/50 shadow-sm">
+        <div className="rounded-2xl border bg-card/50 shadow-none">
           <div className="flex flex-col gap-4 p-4 lg:flex-row lg:items-center lg:justify-between">
             
             <div className="flex flex-wrap items-center gap-3">
               <Button 
                 onClick={() => setOpen(true)} 
-                className="w-full sm:w-auto rounded-xl shadow-sm shadow-primary/20 h-9 px-5 font-bold"
+                className="w-full sm:w-auto rounded-xl shadow-none h-9 px-5 font-bold"
               >
                 + Новий клієнт
               </Button>

@@ -312,7 +312,7 @@ export function NotesExplorer({ folders, notes, tags = [], view, className }: No
                     variant="ghost"
                     className={cn(
                         "w-full justify-start h-8 px-2 gap-2 text-xs font-medium transition-all group",
-                        currentView === "graph" ? "bg-blue-500/10 text-blue-500 shadow-[0_0_15px_-3px_rgba(59,130,246,0.2)]" : "text-zinc-500 hover:text-foreground"
+                        currentView === "graph" ? "bg-blue-500/10 text-blue-500 shadow-none" : "text-zinc-500 hover:text-foreground"
                     )}
                     onClick={() => router.push("/dashboard/notes?view=graph")}
                 >
@@ -356,7 +356,7 @@ export function NotesExplorer({ folders, notes, tags = [], view, className }: No
                                                 className={cn(
                                                     "h-7 rounded-full px-3 text-[10px] font-medium transition-all gap-2",
                                                     selectedTag === tag.name
-                                                        ? "bg-zinc-900 text-zinc-50 border-transparent dark:bg-zinc-50 dark:text-zinc-900 shadow-sm"
+                                                        ? "bg-zinc-900 text-zinc-50 border-transparent dark:bg-zinc-50 dark:text-zinc-900 shadow-none"
                                                         : "bg-white/5 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                                                 )}
                                             >

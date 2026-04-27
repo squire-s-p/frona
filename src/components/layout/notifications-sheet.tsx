@@ -115,7 +115,7 @@ export function NotificationsSheet() {
         <Button variant="outline" size="icon-lg" className="relative transition-all duration-300">
           <Bell className="h-4 w-4 text-muted-foreground" />
           {unreadCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-destructive shadow-[0_0_8px_rgba(239,68,68,0.4)] border border-background" />
+            <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-destructive shadow-none border border-background" />
           )}
         </Button>
       </SheetTrigger>
@@ -169,7 +169,7 @@ export function NotificationsSheet() {
                      "relative flex gap-3 p-3 rounded-md border transition-all duration-200",
                      n.isRead 
                        ? "bg-transparent border-border/40 opacity-70" 
-                       : "bg-accent/30 border-border/80 shadow-xs"
+                       : "bg-accent/30 border-border/80 shadow-none"
                    )}
                  >
                     {!n.isRead && (
@@ -178,7 +178,7 @@ export function NotificationsSheet() {
                     
                     <div className={cn(
                       "mt-0.5 h-7 w-7 rounded flex items-center justify-center shrink-0",
-                      n.isRead ? "bg-muted/50" : "bg-background border shadow-xs"
+                      n.isRead ? "bg-muted/50" : "bg-background border shadow-none"
                     )}>
                       {getIcon(n.type)}
                     </div>

@@ -94,7 +94,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
 
   return (
     <form action={dispatch} className="space-y-6">
-      <Card className="rounded-2xl border-border/50 bg-card/50 backdrop-blur-sm shadow-sm overflow-hidden text-card-foreground">
+      <Card className="rounded-2xl border-border/50 bg-card/50 backdrop-blur-sm shadow-none overflow-hidden text-card-foreground">
         <CardHeader className="border-b bg-muted/10">
           <CardTitle className="text-xl">Особиста інформація</CardTitle>
           <CardDescription>
@@ -111,7 +111,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
                 accept="image/*" 
                 className="hidden" 
               />
-              <Avatar className={`h-24 w-24 ring-4 ring-background shadow-xl transition-transform group-hover:scale-105 ${isUploading ? 'opacity-50' : ''}`}>
+              <Avatar className={`h-24 w-24 ring-4 ring-background shadow-none transition-transform group-hover:scale-105 ${isUploading ? 'opacity-50' : ''}`}>
                 <AvatarImage src={user.image ?? ""} className="object-cover" />
                 <AvatarFallback className="text-2xl font-bold bg-primary/10 text-primary">
                   {initials}
@@ -193,7 +193,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
           <Button 
             type="submit" 
             disabled={isPending}
-            className="rounded-xl px-8 shadow-md min-w-[120px]"
+            className="rounded-xl px-8 shadow-none min-w-[120px]"
           >
             {isPending ? (
               <>

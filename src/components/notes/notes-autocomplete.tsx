@@ -58,7 +58,7 @@ export function NotesAutocomplete({ notes, query, position, onSelect, onClose }:
         return (
             <div
                 ref={ref}
-                className="absolute z-50 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-xl overflow-hidden w-80"
+                className="absolute z-50 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-none overflow-hidden w-80"
                 style={{ top: position.top, left: position.left }}
             >
                 <div className="p-4 text-sm text-zinc-500 italic">

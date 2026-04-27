@@ -140,14 +140,14 @@ function SortableWidget({ item, isEditing, onRemove, onResize, children }: {
               size="icon-sm"
               onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => { e.stopPropagation(); onRemove(); }}
-              className="absolute -top-2.5 -left-2.5 z-30 h-6 w-6 rounded-full shadow-md hover:scale-110 transition-transform"
+              className="absolute -top-2.5 -left-2.5 z-30 h-6 w-6 rounded-full shadow-none hover:scale-110 transition-transform"
             >
               <X className="h-3.5 w-3.5" />
             </Button>
 
             {/* Grip indicator */}
             <div className="absolute inset-x-0 top-1 flex justify-center z-10 pointer-events-none">
-              <div className="bg-background/90 border border-border shadow-sm rounded-full px-2 py-0.5 flex items-center gap-1">
+              <div className="bg-background/90 border border-border shadow-none rounded-full px-2 py-0.5 flex items-center gap-1">
                 <GripHorizontal className="h-3 w-3 text-muted-foreground" />
                 <span className="text-[10px] text-muted-foreground">перетягнути</span>
               </div>
@@ -155,7 +155,7 @@ function SortableWidget({ item, isEditing, onRemove, onResize, children }: {
 
             {/* Size controls */}
             <div
-              className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1 bg-background border border-border rounded-full px-1.5 py-0.5 shadow-md"
+              className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1 bg-background border border-border rounded-full px-1.5 py-0.5 shadow-none"
               onPointerDown={(e) => e.stopPropagation()}
             >
               <Button

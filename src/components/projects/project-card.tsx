@@ -48,7 +48,7 @@ export default function ProjectCard(props: {
 
     return (
         <Link href={`/dashboard/projects/${props.id}`} className="group block">
-            <Card className="relative overflow-hidden rounded-2xl border-none dark:bg-neutral-800 bg-neutral-100 p-5 backdrop-blur-sm shadow-none ring-1 ring-border/40">
+            <Card className="relative rounded-2xl border border-border/60 dark:bg-neutral-900 bg-neutral-100 p-5 shadow-none transition-all hover:border-primary/40">
                 {/* Status Indicator */}
                 <div className="absolute right-4 top-4">
                     <div className={cn(

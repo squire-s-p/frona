@@ -241,7 +241,7 @@ export default function ProjectDetailsCard({
   );
 
   return (
-    <Card className="rounded-2xl overflow-hidden p-0">
+    <Card className="rounded-2xl p-0 shadow-none bg-neutral-100 dark:bg-neutral-900 border border-border/50">
       {/* Unified section header */}
       <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-border/50">
         <h2 className="text-base font-bold tracking-tight text-foreground">Деталі</h2>
@@ -567,7 +567,7 @@ export default function ProjectDetailsCard({
 
 function InfoRow({ label, value }: { label: string; value?: string | null }) {
   return (
-    <div className="rounded-xl border bg-card p-3">
+    <div className="rounded-xl border border-border/40 bg-neutral-200/50 dark:bg-neutral-800 p-3">
       <div className="text-xs text-muted-foreground">{label}</div>
       <div className={cn("mt-1 text-sm", !value?.trim() && "text-muted-foreground")}>
         {value?.trim() ? value : "—"}
@@ -578,7 +578,7 @@ function InfoRow({ label, value }: { label: string; value?: string | null }) {
 
 function InfoRowCustom({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border bg-card p-3">
+    <div className="rounded-xl border border-border/40 bg-neutral-200/50 dark:bg-neutral-800 p-3">
       <div className="text-xs text-muted-foreground">{label}</div>
       <div className="mt-1 text-sm">{children}</div>
     </div>

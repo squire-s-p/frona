@@ -112,7 +112,7 @@ export default function ProjectsTable({ projects }: { projects: ProjectRow[] }) 
         {projects.map((p) => (
           <div
             key={p.id}
-            className="rounded-2xl border border-border/50 bg-background/40 p-4 shadow-sm transition-all hover:border-primary/20"
+            className="rounded-2xl border border-border/60 bg-neutral-100 dark:bg-neutral-900 p-4 shadow-none transition-all hover:border-primary/30"
           >
             <div className="flex items-start justify-between">
               <div className="min-w-0 flex-1">

@@ -94,7 +94,7 @@ export function DangerZoneForm() {
 
   return (
     <div className="space-y-6">
-      <Card className="p-0 gap-0 rounded-2xl border-red-500/20 bg-card/50 backdrop-blur-sm shadow-sm overflow-hidden text-card-foreground">
+      <Card className="p-0 gap-0 rounded-2xl border-red-500/20 bg-card/50 backdrop-blur-sm shadow-none overflow-hidden text-card-foreground">
         <CardHeader className="p-6 pb-6 border-b border-red-500/10 bg-red-500/5">
           <CardTitle className="text-xl text-red-500 flex items-center gap-2">
             <AlertTriangle className="h-5 w-5" />

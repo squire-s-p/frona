@@ -38,7 +38,7 @@ function formatHMFromHours(hours: number) {
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="rounded-xl border border-border/50 bg-background/95 backdrop-blur-md p-3 shadow-xl ring-1 ring-white/10">
+      <div className="rounded-xl border border-border/50 bg-neutral-100 dark:bg-neutral-900 p-3 shadow-none">
         <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-1">
           {formatLabel(String(label))}
         </p>

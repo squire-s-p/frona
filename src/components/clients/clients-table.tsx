@@ -50,7 +50,7 @@ export default function ClientsTable({ clients }: { clients: ClientRow[] }) {
       {/* Mobile View: Cards */}
       <div className="grid grid-cols-1 gap-4 md:hidden overflow-y-auto flex-1 p-1 scrollbar-hide">
         {clients.map((c) => (
-          <div key={c.id} className="rounded-2xl border bg-card/50 p-4 shadow-sm backdrop-blur-sm">
+          <div key={c.id} className="rounded-2xl border bg-card/50 p-4 shadow-none backdrop-blur-sm">
             <div className="flex items-start justify-between">
               <div className="min-w-0 flex-1">
                 <Link
@@ -106,15 +106,15 @@ export default function ClientsTable({ clients }: { clients: ClientRow[] }) {
 
       {/* Desktop View: Table */}
       <div className="hidden flex-1 md:flex flex-col min-h-0 h-full overflow-hidden">
-        <div className="flex-1 overflow-auto w-full relative min-h-0 scrollbar-hide rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-sm">
+        <div className="flex-1 overflow-auto w-full relative min-h-0 scrollbar-hide rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-none">
           <Table className="relative min-w-[800px]">
             <TableHeader className="relative z-30">
               <TableRow className="hover:bg-transparent border-b-0">
-                <TableHead className="sticky top-0 z-30 font-bold text-[11px] uppercase tracking-wider pl-6 py-4 bg-background border-b border-border/50 shadow-[0_1px_0_0_rgba(0,0,0,0.1)]">Клієнт</TableHead>
-                <TableHead className="sticky top-0 z-30 w-[160px] font-bold text-[11px] uppercase tracking-wider bg-background border-b border-border/50 shadow-[0_1px_0_0_rgba(0,0,0,0.1)] text-right">Активні проєкти</TableHead>
-                <TableHead className="sticky top-0 z-30 w-[160px] font-bold text-[11px] uppercase tracking-wider bg-background border-b border-border/50 shadow-[0_1px_0_0_rgba(0,0,0,0.1)] text-right">Всього проєктів</TableHead>
-                <TableHead className="sticky top-0 z-30 w-[180px] font-bold text-[11px] uppercase tracking-wider bg-background border-b border-border/50 shadow-[0_1px_0_0_rgba(0,0,0,0.1)]">Дата створення</TableHead>
-                <TableHead className="sticky top-0 z-30 w-[80px] text-right pr-6 font-bold text-[11px] uppercase tracking-wider bg-background border-b border-border/50 shadow-[0_1px_0_0_rgba(0,0,0,0.1)]">Дії</TableHead>
+                <TableHead className="sticky top-0 z-30 font-bold text-[11px] uppercase tracking-wider pl-6 py-4 bg-background border-b border-border/50">Клієнт</TableHead>
+                <TableHead className="sticky top-0 z-30 w-[160px] font-bold text-[11px] uppercase tracking-wider bg-background border-b border-border/50 text-right">Активні проєкти</TableHead>
+                <TableHead className="sticky top-0 z-30 w-[160px] font-bold text-[11px] uppercase tracking-wider bg-background border-b border-border/50 text-right">Всього проєктів</TableHead>
+                <TableHead className="sticky top-0 z-30 w-[180px] font-bold text-[11px] uppercase tracking-wider bg-background border-b border-border/50">Дата створення</TableHead>
+                <TableHead className="sticky top-0 z-30 w-[80px] text-right pr-6 font-bold text-[11px] uppercase tracking-wider bg-background border-b border-border/50">Дії</TableHead>
               </TableRow>
             </TableHeader>
 

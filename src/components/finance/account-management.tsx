@@ -98,7 +98,7 @@ export function AccountManagement({ accounts, bankAccounts = [], onRefresh }: Ac
                     return (
                         <Card
                             key={account.id}
-                            className="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 hover:border-zinc-400 transition-all duration-300 relative overflow-hidden group shadow-sm hover:shadow-md"
+                            className="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 hover:border-zinc-400 transition-all duration-300 relative overflow-hidden group shadow-none"
                         >
                             {/* Decorative background based on type */}
                             <div
@@ -120,7 +120,7 @@ export function AccountManagement({ accounts, bankAccounts = [], onRefresh }: Ac
                                 <div className="flex items-start justify-between mb-4">
                                     <div className="flex items-center gap-3">
                                         <div className={cn(
-                                            "w-10 h-10 rounded-xl flex items-center justify-center shadow-inner",
+                                            "w-10 h-10 rounded-xl flex items-center justify-center shadow-none",
                                             account.type === 'bank' ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600" :
                                                 account.type === 'cash' ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600" :
                                                     "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400"

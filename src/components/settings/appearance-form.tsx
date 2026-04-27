@@ -32,7 +32,7 @@ export function AppearanceForm() {
 
   return (
     <div className="space-y-6">
-      <Card className="rounded-2xl border-border/50 bg-card/50 backdrop-blur-sm shadow-sm overflow-hidden">
+      <Card className="rounded-2xl border-border/50 bg-card/50 backdrop-blur-sm shadow-none overflow-hidden">
         <CardHeader className="border-b bg-muted/10">
           <CardTitle className="text-xl">Дизайн і Тема</CardTitle>
           <CardDescription>
@@ -42,9 +42,9 @@ export function AppearanceForm() {
         <CardContent className="p-6 space-y-8">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {[
-              { id: "light", label: "Світла", icon: Sun, color: "bg-white", shadow: "shadow-md" },
-              { id: "dark", label: "Темна", icon: Moon, color: "bg-slate-950", shadow: "shadow-2xl" },
-              { id: "system", label: "Системна", icon: Laptop, color: "bg-gradient-to-br from-white to-slate-900", shadow: "shadow-lg" },
+              { id: "light", label: "Світла", icon: Sun, color: "bg-white", shadow: "shadow-none" },
+              { id: "dark", label: "Темна", icon: Moon, color: "bg-slate-950", shadow: "shadow-none" },
+              { id: "system", label: "Системна", icon: Laptop, color: "bg-gradient-to-br from-white to-slate-900", shadow: "shadow-none" },
             ].map((th) => (
               <button
                 key={th.id}
@@ -63,7 +63,7 @@ export function AppearanceForm() {
                   th.id === "dark" ? "border-slate-800" : "border-slate-200"
                 )}>
                   {theme === th.id && (
-                    <div className="absolute top-2 right-2 h-5 w-5 rounded-full bg-primary flex items-center justify-center shadow-lg animate-in zoom-in-50 duration-300">
+                    <div className="absolute top-2 right-2 h-5 w-5 rounded-full bg-primary flex items-center justify-center shadow-none animate-in zoom-in-50 duration-300">
                       <Check className="h-3 w-3 text-primary-foreground stroke-[3]" />
                     </div>
                   )}

@@ -14,7 +14,7 @@ type ClientRow = {
 export default function ClientsGrid({ clients }: { clients: ClientRow[] }) {
   if (!clients.length) {
     return (
-      <div className="rounded-2xl border bg-card/50 p-12 text-center backdrop-blur-sm shadow-sm flex-1 flex flex-col items-center justify-center">
+      <div className="rounded-2xl border bg-card/50 p-12 text-center backdrop-blur-sm shadow-none flex-1 flex flex-col items-center justify-center">
         <div className="mx-auto w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-5 border border-primary/20 rotate-3">
           <User className="h-7 w-7 text-primary" />
         </div>

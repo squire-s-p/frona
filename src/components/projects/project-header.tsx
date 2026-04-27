@@ -27,7 +27,7 @@ function statusLabel(status: ProjectStatus) {
 function StatusPill({ status }: { status: ProjectStatus }) {
   if (status === "active") {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-[11px] font-bold text-emerald-400 shadow-[0_0_12px_-2px_rgba(16,185,129,0.2)]">
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-[11px] font-bold text-emerald-400">
         <span className="relative flex h-1.5 w-1.5">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
           <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
@@ -104,42 +104,36 @@ export default function ProjectHeader({
 
   return (
     <div className="mb-8">
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex items-center justify-between gap-4">
         {/* Left: Navigation and Title */}
-        <div className="min-w-0 space-y-2">
-          {/* Top row: back button + pills */}
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="h-7 w-7 shrink-0 rounded-full border-border/40 bg-card hover:bg-muted hover:text-primary transition-all group"
-              onClick={() => router.push("/dashboard/projects")}
-              disabled={pending}
-            >
-              <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" />
-            </Button>
+        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-8 w-8 sm:h-9 sm:w-9 shrink-0 rounded-xl border-border/40 bg-neutral-100 dark:bg-neutral-900 hover:bg-muted hover:text-primary transition-all group shadow-none"
+            onClick={() => router.push("/dashboard/projects")}
+            disabled={pending}
+          >
+            <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
+          </Button>
 
-            <StatusPill status={status} />
-            <ClientPill client={client ?? null} />
-          </div>
-
-          {/* Bottom row: title */}
-          <div className="flex flex-col ml-0.5">
-            <h1 className="truncate text-2xl sm:text-4xl font-extrabold tracking-tight text-foreground leading-none">{name}</h1>
-          </div>
+          <h1 className="truncate text-xl sm:text-3xl font-extrabold tracking-tight text-foreground leading-none">
+            {name}
+          </h1>
+          
         </div>
 
         {/* Right: Actions */}
-        <div className="flex flex-wrap items-center gap-3 shrink-0">
-          <div className="flex items-center gap-1 rounded-2xl border border-border/40 p-1.5 bg-card/50 backdrop-blur-sm h-11">
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-1 rounded-2xl border border-border/40 p-1 bg-neutral-100 dark:bg-neutral-900 h-9 sm:h-11 shadow-none">
             <Button
                   type="button"
                   variant={status === "active" ? "secondary" : "ghost"}
                   size="sm"
                   className={cn(
-                    "h-8 rounded-xl px-4 text-[11px] font-bold transition-all",
-                    status === "active" ? "shadow-sm bg-background" : "text-muted-foreground"
+                    "h-7 sm:h-8 rounded-xl px-2 sm:px-4 text-[10px] sm:text-[11px] font-bold transition-all shadow-none",
+                    status === "active" ? "bg-background" : "text-muted-foreground"
                   )}
                   onClick={() => onToggleStatus("active")}
                   disabled={pending}
@@ -151,8 +145,8 @@ export default function ProjectHeader({
                   variant={status === "completed" ? "secondary" : "ghost"}
                   size="sm"
                   className={cn(
-                    "h-8 rounded-xl px-4 text-[11px] font-bold transition-all",
-                    status === "completed" ? "shadow-sm bg-background" : "text-muted-foreground"
+                    "h-7 sm:h-8 rounded-xl px-2 sm:px-4 text-[10px] sm:text-[11px] font-bold transition-all shadow-none",
+                    status === "completed" ? "bg-background" : "text-muted-foreground"
                   )}
                   onClick={() => onToggleStatus("completed")}
                   disabled={pending}

@@ -129,7 +129,7 @@ export function SoundPopover() {
                     className={cn(
                         "transition-all duration-500 overflow-hidden flex items-center justify-center p-0 h-10",
                         state.enabled
-                            ? "w-28 border-primary/50 text-primary shadow-[0_0_15px_rgba(var(--primary),0.2)] bg-primary/5"
+                            ? "w-28 border-primary/50 text-primary shadow-none bg-primary/5"
                             : "text-muted-foreground"
                     )}
                     title="Звуки фокусування"
@@ -145,7 +145,7 @@ export function SoundPopover() {
                     </div>
                 </Button>
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-80 p-4 rounded-2xl shadow-xl border-border bg-popover/95 backdrop-blur-sm">
+            <PopoverContent align="end" className="w-80 p-4 rounded-2xl shadow-none border-border bg-popover/95 backdrop-blur-sm">
                 <div className="space-y-6">
                     <div className="flex items-center justify-between">
                         <div className="space-y-1">
