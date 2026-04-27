@@ -55,7 +55,7 @@ export default async function Home() {
             Next-gen Business OS
           </Badge>
           
-          <h1 className="max-w-[900px] text-4xl font-extrabold tracking-tight sm:text-6xl md:text-7xl leading-[1.2]">
+          <h1 className="max-w-[900px] text-4xl font-bold tracking-tight sm:text-6xl md:text-7xl leading-[1.2]">
             Твій новий стандарт <br />
             керування бізнесом.
           </h1>

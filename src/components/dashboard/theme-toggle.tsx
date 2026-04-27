@@ -15,7 +15,7 @@ export function ThemeToggle() {
   if (!mounted) {
     // Важливо: перший SSR/CSR рендер має бути однаковий
     return (
-      <Button variant="outline" size="icon" className="h-10 w-10 rounded-xl" aria-label="Тема" />
+      <Button variant="outline" size="icon-lg" aria-label="Тема" />
     );
   }
 
@@ -24,8 +24,7 @@ export function ThemeToggle() {
   return (
     <Button
       variant="outline"
-      size="icon"
-      className="h-10 w-10 rounded-xl"
+      size="icon-lg"
       aria-label="Перемкнути тему"
       onClick={() => setTheme(isDark ? "light" : "dark")}
     >

@@ -61,7 +61,7 @@ export default function ProjectCard(props: {
 
                 <div className="flex flex-col gap-5">
                     <div className="space-y-1.5">
-                        <div className="truncate pr-20 text-lg font-extrabold tracking-tight transition-colors group-hover:text-primary">
+                        <div className="truncate pr-20 text-lg font-bold tracking-tight transition-colors group-hover:text-primary">
                             {props.name}
                         </div>
                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-semibold">
@@ -86,7 +86,7 @@ export default function ProjectCard(props: {
                             <div className="flex items-center justify-end gap-1.5 text-[10px] uppercase tracking-widest text-muted-foreground font-bold">
                                 <Wallet className="h-3 w-3 text-primary/50" /> Бюджет
                             </div>
-                            <div className="text-sm font-extrabold text-foreground">
+                            <div className="text-sm font-bold text-foreground">
                                 {cost ? `₴ ${cost}` : "—"}
                             </div>
                         </div>
@@ -97,7 +97,7 @@ export default function ProjectCard(props: {
                             <Globe className="h-3.3 w-3.5 shrink-0 text-primary/40" />
                             <span className="truncate max-w-[120px]">{props.site || "Сайт не вказано"}</span>
                         </div>
-                        <div className="flex items-center gap-1.5 text-xs font-extrabold text-primary group-hover:gap-2 transition-all">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-primary group-hover:gap-2 transition-all">
                             Деталі <ExternalLink className="h-3.5 w-3.5" />
                         </div>
                     </div>

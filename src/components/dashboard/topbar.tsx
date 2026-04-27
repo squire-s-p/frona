@@ -14,13 +14,21 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, LogOut, User as UserIcon, Play, Square, ListPlus } from "lucide-react";
+import { Plus, LogOut, User as UserIcon, Play, Square, ListPlus, ChevronRight } from "lucide-react";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 // ✅ твої попапи
 import { SearchCommand } from "@/components/command/search-command";
 import { startWork, stopActive } from "@/app/dashboard/time/actions";
 import { useRouter, usePathname } from "next/navigation";
-import { useTransition, useState, useEffect } from "react";
+import React, { useTransition, useState, useEffect } from "react";
 import { SoundPopover } from "@/modules/sound/components/SoundPopover";
 import { TaskDialog } from "@/components/tasks/task-dialog";
 import { NotificationsSheet } from "@/components/layout/notifications-sheet";
@@ -93,31 +101,77 @@ export function DashboardTopbar({
     : "00:00:00";
 
   const pathname = usePathname();
-
-  const routeMap: Record<string, string> = {
-    "/dashboard": "Огляд",
-    "/dashboard/projects": "Проєкти",
-    "/dashboard/tasks": "Завдання",
-    "/dashboard/clients": "Клієнти",
-    "/dashboard/time": "Час",
-    "/dashboard/calendar": "Календар",
-    "/dashboard/finance": "Фінанси",
-    "/dashboard/notes": "Нотатки",
-    "/dashboard/whiteboard": "Біла дошка",
-    "/dashboard/settings": "Налаштування",
+  const pathSegments = pathname.split("/").filter(Boolean);
+  
+  // Мапа для перекладу сегментів
+  const segmentMap: Record<string, string> = {
+    dashboard: "Огляд",
+    projects: "Проєкти",
+    tasks: "Завдання",
+    clients: "Клієнти",
+    time: "Час",
+    calendar: "Календар",
+    finance: "Фінанси",
+    notes: "Нотатки",
+    whiteboard: "Біла дошка",
+    settings: "Налаштування",
   };
 
-  const currentTitle = Object.entries(routeMap).find(([route]) => 
-    pathname === route || (route !== "/dashboard" && pathname.startsWith(route))
-  )?.[1] || "Dashboard";
+  const breadcrumbs = pathSegments
+    .filter((segment) => {
+      // Якщо ми не в самому корені /dashboard, то приховуємо сегмент "dashboard"
+      if (pathSegments.length > 1 && segment === "dashboard") return false;
+      return true;
+    })
+    .map((segment, index, filteredArray) => {
+      const href = "/" + pathSegments.slice(0, pathSegments.indexOf(segment) + 1).join("/");
+      let label = segmentMap[segment] || segment;
+
+      if (segment.length > 20) { 
+        if (pathSegments[pathSegments.indexOf(segment) - 1] === "projects") {
+          const p = projects.find(p => p.id === segment);
+          if (p) label = p.name;
+        } else if (pathSegments[pathSegments.indexOf(segment) - 1] === "clients") {
+          const c = tags.find(t => t.id === segment);
+          if (c) label = c.name;
+        }
+      }
+
+      return { href, label, isLast: index === filteredArray.length - 1 };
+    });
 
   return (
     <div className="flex h-14 items-center gap-2 px-3 md:px-4">
-      {/* ✅ Trigger sidebar (працює і на мобілці, і на десктопі) */}
-      <SidebarTrigger className="rounded-xl h-10 w-10 [&_svg]:size-5" />
+      {/* ✅ Trigger sidebar */}
+      <SidebarTrigger size="icon-lg" variant="ghost" className="[&_svg]:size-5" />
 
-      <div className="ml-1 sm:ml-2 text-sm sm:text-base font-semibold tracking-tight text-foreground max-w-[120px] sm:max-w-none truncate">
-        {currentTitle}
+      <div className="ml-1 sm:ml-2">
+        <Breadcrumb>
+          <BreadcrumbList>
+            {breadcrumbs.map((bc, index) => (
+              <React.Fragment key={bc.href}>
+                <BreadcrumbItem>
+                  {bc.isLast ? (
+                    <BreadcrumbPage className="font-normal text-foreground max-w-[120px] sm:max-w-[200px] truncate">
+                      {bc.label}
+                    </BreadcrumbPage>
+                  ) : (
+                    <BreadcrumbLink asChild>
+                      <Link href={bc.href} className="text-muted-foreground hover:text-foreground transition-colors font-normal">
+                        {bc.label}
+                      </Link>
+                    </BreadcrumbLink>
+                  )}
+                </BreadcrumbItem>
+                {!bc.isLast && (
+                  <BreadcrumbSeparator className="opacity-40">
+                    <ChevronRight className="size-3.5" />
+                  </BreadcrumbSeparator>
+                )}
+              </React.Fragment>
+            ))}
+          </BreadcrumbList>
+        </Breadcrumb>
       </div>
 
       <div className="flex-1" />
@@ -131,13 +185,14 @@ export function DashboardTopbar({
         {/* Quick Start / Active Timer */}
         <Button
           variant={activeTimer ? "ghost" : "outline"}
+          size={activeTimer ? "default" : "icon-lg"}
           onClick={activeTimer ? onStopTimer : onQuickStart}
           disabled={isPending}
           className={cn(
-            "relative flex items-center justify-center rounded-xl transition-all duration-500 h-9 overflow-hidden group border focus-visible:ring-0",
+            "relative flex items-center justify-center transition-all duration-500 overflow-hidden group border focus-visible:ring-0",
             activeTimer 
-              ? "w-[84px] sm:w-[110px] bg-primary/10 border-primary/20 text-primary hover:bg-primary/20 px-1.5 sm:px-2" 
-              : "w-9 border-input hover:bg-accent hover:text-accent-foreground px-0"
+              ? "h-10 w-[110px] bg-primary/10 border-primary/20 text-primary hover:bg-primary/20 px-2" 
+              : "border-input hover:bg-accent hover:text-accent-foreground"
           )}
           title={activeTimer ? "Зупинити таймер" : "Почати таймер"}
         >
@@ -145,10 +200,10 @@ export function DashboardTopbar({
             "flex items-center gap-1.5 transition-all duration-500",
             activeTimer ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-10"
           )}>
-            <span className="text-[10px] sm:text-sm font-semibold tabular-nums font-mono whitespace-nowrap">
+            <span className="text-sm font-semibold tabular-nums font-mono whitespace-nowrap">
               {elapsed}
             </span>
-            <Square className="h-3 sm:h-3.5 w-3 sm:w-3.5 fill-current" />
+            <Square className="h-3.5 w-3.5 fill-current" />
           </div>
 
           <div className={cn(
@@ -163,8 +218,8 @@ export function DashboardTopbar({
         {/* New task modal trigger */}
         <Button 
           variant="outline" 
-          size="icon" 
-          className="rounded-xl hidden sm:inline-flex" 
+          size="icon-lg" 
+          className="hidden sm:inline-flex" 
           onClick={() => setTaskDialogOpen(true)}
           title="Нове завдання"
         >
@@ -190,7 +245,7 @@ export function DashboardTopbar({
         {/* User menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="h-10 gap-2 rounded-xl px-2">
+            <Button variant="outline" size="lg" className="h-10 gap-2 px-2">
               <Avatar className="h-7 w-7">
                 <AvatarImage src={user.image ?? ""} alt={user.name ?? "User"} />
                 <AvatarFallback>{initials(user.name)}</AvatarFallback>

@@ -2,7 +2,7 @@ export default function StyleguidePage() {
   return (
     <div className="space-y-10 pr-10">
       <div className="space-y-4">
-        <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl text-foreground">
+        <h1 className="scroll-m-20 text-4xl font-bold tracking-tight lg:text-5xl text-foreground">
           Styleguide
         </h1>
         <p className="text-lg text-muted-foreground whitespace-pre-wrap">
@@ -27,8 +27,9 @@ export default function StyleguidePage() {
         <h2 id="usage" className="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight transition-colors first:mt-0 text-foreground">
           Вступ
         </h2>
-        <p className="leading-7 [&:not(:first-child)]:mt-6 text-foreground/80">
-          Зараз ця сторінка порожня. Передайте мені список компонентів, і я інсталюю їх (шляхом запиту команд) або додам сюди як демо версії, щоб ми могли швидко налаштувати єдиний стиль!
+        <p className="leading-7 [&:not(:first-child)]:mt-6 text-foreground/80 whitespace-pre-wrap">
+          Цей гайд допомагає підтримувати візуальну чистоту додатка. Ми використовуємо сучасну палітру в просторі OKLCH для кращого сприйняття кольорів.{"\n\n"}
+          Перейдіть до розділу <strong>Design Tokens</strong>, щоб побачити актуальну нейтральну палітру, кольори бренду та систему заокруглень.
         </p>
       </div>
     </div>

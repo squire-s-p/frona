@@ -6,7 +6,7 @@ export default function TypographyPage() {
   return (
     <div className="space-y-10 pr-10 pb-20">
       <div className="space-y-4">
-        <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl text-foreground">
+        <h1 className="scroll-m-20 text-4xl font-bold tracking-tight lg:text-5xl text-foreground">
           Typography
         </h1>
         <p className="text-lg text-muted-foreground">
@@ -18,7 +18,7 @@ export default function TypographyPage() {
         <div className="space-y-4">
           <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">H1</h2>
           <div className="rounded-xl border border-border/40 bg-card p-6 shadow-sm">
-            <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl text-foreground">
+            <h1 className="scroll-m-20 text-4xl font-bold tracking-tight lg:text-5xl text-foreground">
               Taxing Laughter: The Joke Tax Chronicles
             </h1>
           </div>

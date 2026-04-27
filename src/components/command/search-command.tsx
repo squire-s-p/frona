@@ -81,9 +81,9 @@ export function SearchCommand() {
   return (
     <>
       <Button
-        size="icon"
+        size="icon-lg"
         variant="outline"
-        className="group rounded-xl border-input hover:bg-accent"
+        className="group border-input hover:bg-accent"
         onClick={() => setOpen(true)}
         title="Пошук (Ctrl+K)"
         aria-label="Пошук"

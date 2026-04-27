@@ -49,16 +49,12 @@ export default async function DashboardLayout({
 
   return (
     <SoundProvider>
-      <SidebarProvider>
+      <SidebarProvider className="h-screen overflow-hidden">
         <AppSidebar user={freshUser} />
 
-        {/* ✅ SidebarInset робимо "порожнім" контейнером без rounded/shadow */}
-        <SidebarInset className="bg-sidebar">
-          {/* ✅ TOPBAR: той самий фон що й sidebar */}
+        <SidebarInset className="bg-sidebar flex flex-col min-h-0 overflow-hidden">
+          {/* ✅ TOPBAR: фіксований */}
           <header className="flex h-14 shrink-0 items-center gap-2 bg-sidebar">
-
-
-            {/* твій існуючий topbar з іконками/діалогами */}
             <div className="min-w-0 flex-1">
               <DashboardTopbar 
                 user={freshUser} 
@@ -67,13 +63,17 @@ export default async function DashboardLayout({
                 tags={tags}
               />
             </div>
-
           </header>
 
-          {/* ✅ BOARD: тільки тут rounded + shadow */}
-          <main className="flex-1 p-2 sm:p-4 flex flex-col min-h-0">
-            <div className="flex-1 rounded-2xl bg-background shadow-sm ring-1 ring-border overflow-hidden flex flex-col">
-              <div className="p-3 sm:p-4 md:p-6 flex-1 flex flex-col min-h-0 relative">{children}</div>
+          {/* ✅ BOARD: центральна секція */}
+          <main className="flex-1 p-2 sm:p-4 flex flex-col min-h-0 overflow-hidden">
+            <div className="flex-1 rounded-2xl bg-background shadow-sm ring-1 ring-border flex flex-col min-h-0 overflow-hidden">
+              {/* Тільки цей блок буде прокручуватися */}
+              <div className="flex-1 overflow-y-auto custom-scrollbar relative">
+                <div className="p-3 sm:p-4 md:p-6 pb-20 sm:pb-24">
+                  {children}
+                </div>
+              </div>
             </div>
           </main>
         </SidebarInset>

@@ -58,7 +58,7 @@ export default function AccordionPage() {
   return (
     <div className="space-y-10 pr-10">
       <div className="space-y-4">
-        <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl text-foreground">
+        <h1 className="scroll-m-20 text-4xl font-bold tracking-tight lg:text-5xl text-foreground">
           Accordion
         </h1>
         <p className="text-lg text-muted-foreground">

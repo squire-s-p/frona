@@ -112,7 +112,7 @@ export function NotificationsSheet() {
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button variant="outline" size="icon" className="relative rounded-xl transition-all duration-300">
+        <Button variant="outline" size="icon-lg" className="relative transition-all duration-300">
           <Bell className="h-4 w-4 text-muted-foreground" />
           {unreadCount > 0 && (
             <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-destructive shadow-[0_0_8px_rgba(239,68,68,0.4)] border border-background" />

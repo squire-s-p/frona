@@ -125,11 +125,12 @@ export function SoundPopover() {
             <PopoverTrigger asChild>
                 <Button
                     variant="outline"
+                    size={state.enabled ? "default" : "icon-lg"}
                     className={cn(
-                        "rounded-xl transition-all duration-500 overflow-hidden flex items-center justify-center p-0",
+                        "transition-all duration-500 overflow-hidden flex items-center justify-center p-0 h-10",
                         state.enabled
                             ? "w-28 border-primary/50 text-primary shadow-[0_0_15px_rgba(var(--primary),0.2)] bg-primary/5"
-                            : "w-10 text-muted-foreground"
+                            : "text-muted-foreground"
                     )}
                     title="Звуки фокусування"
                 >

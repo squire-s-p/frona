@@ -1,5 +1,9 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 
 const sidebarNavItems = [
   {
@@ -20,6 +24,10 @@ const sidebarNavItems = [
       {
         title: "Typography",
         href: "/styleguide/typography",
+      },
+      {
+        title: "Design Tokens",
+        href: "/styleguide/tokens",
       },
     ],
   },
@@ -107,6 +115,10 @@ const sidebarNavItems = [
         href: "/styleguide/dropdown-menu",
       },
       {
+        title: "Form",
+        href: "/styleguide/form",
+      },
+      {
         title: "Field",
         href: "/styleguide/field",
       },
@@ -119,8 +131,24 @@ const sidebarNavItems = [
         href: "/styleguide/input",
       },
       {
+        title: "Input OTP",
+        href: "/styleguide/input-otp",
+      },
+      {
+        title: "Kbd",
+        href: "/styleguide/kbd",
+      },
+      {
+        title: "Label",
+        href: "/styleguide/label",
+      },
+      {
         title: "Menubar",
         href: "/styleguide/menubar",
+      },
+      {
+        title: "Native Select",
+        href: "/styleguide/native-select",
       },
       {
         title: "Navigation Menu",
@@ -187,6 +215,10 @@ const sidebarNavItems = [
         href: "/styleguide/table",
       },
       {
+        title: "Data Table",
+        href: "/styleguide/data-table",
+      },
+      {
         title: "Tabs",
         href: "/styleguide/tabs",
       },
@@ -195,8 +227,8 @@ const sidebarNavItems = [
         href: "/styleguide/textarea",
       },
       {
-        title: "Toast",
-        href: "/styleguide/toast",
+        title: "Time Picker",
+        href: "/styleguide/time-picker",
       },
       {
         title: "Toggle",
@@ -239,10 +271,6 @@ const sidebarNavItems = [
         title: "Radial Chart",
         href: "/styleguide/radial-chart",
       },
-      {
-        title: "Tooltip",
-        href: "/styleguide/tooltip",
-      },
     ],
   },
 ];
@@ -252,6 +280,8 @@ export default function StyleguideLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 text-foreground">
@@ -265,7 +295,10 @@ export default function StyleguideLayout({
             <nav className="flex items-center space-x-6 text-sm font-medium">
               <Link
                 href="/styleguide"
-                className="transition-colors hover:text-foreground/80 text-foreground"
+                className={cn(
+                  "transition-colors hover:text-foreground/80",
+                  pathname.startsWith("/styleguide") ? "text-foreground" : "text-foreground/60"
+                )}
               >
                 Styleguide
               </Link>
@@ -286,20 +319,28 @@ export default function StyleguideLayout({
             <div className="w-full">
               {sidebarNavItems.map((group, index) => (
                 <div key={index} className="pb-6">
-                  <h4 className="mb-2 rounded-md px-2 py-1 text-sm font-semibold tracking-tight">
+                  <h4 className="mb-2 rounded-md px-2 py-1 text-sm font-semibold tracking-tight text-foreground">
                     {group.title}
                   </h4>
                   {group.items?.length ? (
                     <div className="grid grid-flow-row auto-rows-max text-sm">
-                      {group.items.map((item, index) => (
-                        <Link
-                          key={index}
-                          href={item.href}
-                          className="group flex w-full items-center rounded-md border border-transparent px-2 py-1.5 hover:underline text-muted-foreground transition-colors hover:text-foreground"
-                        >
-                          {item.title}
-                        </Link>
-                      ))}
+                      {group.items.map((item, index) => {
+                        const active = pathname === item.href;
+                        return (
+                          <Link
+                            key={index}
+                            href={item.href}
+                            className={cn(
+                              "group flex w-full items-center rounded-md border border-transparent px-2 py-1.5 transition-colors",
+                              active 
+                                ? "bg-zinc-100 dark:bg-zinc-800 text-foreground font-semibold" 
+                                : "text-muted-foreground hover:text-foreground hover:bg-zinc-50 dark:hover:bg-zinc-900/50"
+                            )}
+                          >
+                            {item.title}
+                          </Link>
+                        );
+                      })}
                     </div>
                   ) : null}
                 </div>
