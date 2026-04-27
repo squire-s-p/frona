@@ -39,30 +39,31 @@ type ProjectRow = {
 const statusConfig = {
   active: {
     label: "Активний",
-    className: "bg-primary/10 text-primary border-primary/20",
+    dotClass: "bg-emerald-500",
+    textClass: "text-emerald-500 bg-emerald-500/10",
   },
   completed: {
     label: "Завершений",
-    className: "bg-muted text-muted-foreground border-border",
+    dotClass: "bg-blue-500",
+    textClass: "text-blue-500 bg-blue-500/10",
   },
   archived: {
     label: "Архів",
-    className: "bg-muted text-muted-foreground border-border",
+    dotClass: "bg-muted-foreground/50",
+    textClass: "text-muted-foreground bg-muted/20",
   },
 };
 
 function StatusBadge({ status }: { status: ProjectRow["status"] }) {
   const config = statusConfig[status];
   return (
-    <Badge
-      variant="outline"
-      className={cn(
-        "text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 border shadow-sm",
-        config.className
-      )}
-    >
+    <div className={cn(
+      "inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-bold tracking-tight",
+      config.textClass
+    )}>
+      <span className={cn("h-1.5 w-1.5 rounded-full", config.dotClass)} />
       {config.label}
-    </Badge>
+    </div>
   );
 }
 
@@ -105,13 +106,13 @@ export default function ProjectsTable({ projects }: { projects: ProjectRow[] }) 
   }
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col h-full overflow-hidden">
+    <div className="w-full">
       {/* Mobile View: Cards */}
-      <div className="grid grid-cols-1 gap-4 md:hidden overflow-y-auto flex-1 p-1 scrollbar-hide">
+      <div className="grid grid-cols-1 gap-4 md:hidden p-0">
         {projects.map((p) => (
-          <Card
+          <div
             key={p.id}
-            className="rounded-2xl border-border/50 bg-card/40 p-4 shadow-sm backdrop-blur-sm transition-all hover:border-primary/20"
+            className="rounded-2xl border border-border/50 bg-background/40 p-4 shadow-sm transition-all hover:border-primary/20"
           >
             <div className="flex items-start justify-between">
               <div className="min-w-0 flex-1">
@@ -121,18 +122,12 @@ export default function ProjectsTable({ projects }: { projects: ProjectRow[] }) 
                 >
                   {p.name}
                 </Link>
-                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground font-medium">
-                  <span className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    {format(new Date(p.createdAt), "d MMM yyyy", {
-                      locale: uk,
-                    })}
-                  </span>
+                <div className="mt-1 flex items-center gap-2 text-[11px] text-muted-foreground font-medium">
+                  <Calendar className="h-3 w-3" />
+                  {format(new Date(p.createdAt), "d MMM yyyy", { locale: uk })}
                 </div>
               </div>
-              <div className="ml-4 shrink-0">
-                <StatusBadge status={p.status} />
-              </div>
+              <StatusBadge status={p.status} />
             </div>
             <div className="mt-4 flex items-center justify-between border-t border-border/50 pt-3">
               <Link
@@ -143,33 +138,10 @@ export default function ProjectsTable({ projects }: { projects: ProjectRow[] }) 
               </Link>
 
               <div className="flex items-center gap-2">
-                {p.status === "completed" || p.status === "archived" ? (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 rounded-lg text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                    disabled={pendingId === p.id}
-                    onClick={() => onRestore(p.id)}
-                  >
-                    <RotateCcw className="h-4 w-4 mr-1.5" />
-                    Відновити
-                  </Button>
-                ) : (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 rounded-lg text-primary hover:bg-primary/5"
-                    disabled={pendingId === p.id}
-                    onClick={() => onComplete(p.id)}
-                  >
-                    <CheckCircle className="h-4 w-4 mr-1.5" />
-                    Завершити
-                  </Button>
-                )}
                 <Button
                   variant="ghost"
-                  size="sm"
-                  className="h-8 rounded-lg text-destructive hover:bg-destructive/10"
+                  size="icon"
+                  className="h-8 w-8 rounded-lg text-destructive hover:bg-destructive/10"
                   disabled={pendingId === p.id}
                   onClick={() => onDelete(p.id)}
                 >
@@ -177,135 +149,122 @@ export default function ProjectsTable({ projects }: { projects: ProjectRow[] }) 
                 </Button>
               </div>
             </div>
-          </Card>
-        ))}
-
-        {projects.length === 0 && (
-          <div className="py-20 text-center flex flex-col items-center">
-            <Folder className="h-10 w-10 text-muted-foreground/30 mb-2" />
-            <div className="text-sm font-medium text-muted-foreground">
-              Нічого не знайдено
-            </div>
           </div>
-        )}
+        ))}
       </div>
 
       {/* Desktop View: Table */}
-      <div className="hidden flex-1 md:flex flex-col min-h-0 h-full overflow-hidden">
-        <div className="flex-1 overflow-auto w-full relative min-h-0 scrollbar-hide rounded-2xl border border-border/50 bg-card/20 backdrop-blur-sm shadow-sm">
-          <Table className="relative min-w-[800px]">
-            <TableHeader className="relative z-30">
-              <TableRow className="hover:bg-transparent border-b-border/50">
-                <TableHead className="sticky top-0 z-30 font-bold text-[10px] uppercase tracking-widest pl-6 py-4 bg-background/80 backdrop-blur-md">
-                  Проєкт
-                </TableHead>
-                <TableHead className="sticky top-0 z-30 w-[140px] font-bold text-[10px] uppercase tracking-widest bg-background/80 backdrop-blur-md">
-                  Статус
-                </TableHead>
-                <TableHead className="sticky top-0 z-30 w-[180px] font-bold text-[10px] uppercase tracking-widest bg-background/80 backdrop-blur-md">
-                  Створено
-                </TableHead>
-                <TableHead className="sticky top-0 z-30 w-[180px] font-bold text-[10px] uppercase tracking-widest bg-background/80 backdrop-blur-md">
-                  Оновлено
-                </TableHead>
-                <TableHead className="sticky top-0 z-30 w-[120px] text-right pr-6 font-bold text-[10px] uppercase tracking-widest bg-background/80 backdrop-blur-md">
-                  Дії
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-
-            <TableBody>
-              {projects.map((p) => (
-                <TableRow
-                  key={p.id}
-                  className="group transition-colors hover:bg-primary/[0.03] border-b-border/40 cursor-pointer"
-                  onClick={() => router.push(`/dashboard/projects/${p.id}`)}
-                >
-                  <TableCell className="font-bold pl-6">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-primary/5 flex items-center justify-center group-hover:bg-primary/10 transition-all group-hover:scale-110">
-                        <Folder className="h-4 w-4 text-primary/70 group-hover:text-primary transition-colors" />
-                      </div>
-                      <span className="group-hover:text-primary transition-colors text-sm">
-                        {p.name}
-                      </span>
+      <div className="hidden md:block">
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent border-b-border/50 border-t-0">
+              <TableHead className="pl-6 h-12 font-bold text-[10px] tracking-tight text-muted-foreground/60">
+                Проєкт
+              </TableHead>
+              <TableHead className="h-12 font-bold text-[10px] tracking-tight text-muted-foreground/60">
+                Статус
+              </TableHead>
+              <TableHead className="h-12 font-bold text-[10px] tracking-tight text-muted-foreground/60">
+                Створено
+              </TableHead>
+              <TableHead className="h-12 font-bold text-[10px] tracking-tight text-muted-foreground/60">
+                Оновлено
+              </TableHead>
+              <TableHead className="pr-6 h-12 text-right font-bold text-[10px] tracking-tight text-muted-foreground/60">
+                Дії
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {projects.map((p) => (
+              <TableRow
+                key={p.id}
+                className="group border-b-border/30 hover:bg-white/[0.02] cursor-pointer transition-colors"
+                onClick={() => router.push(`/dashboard/projects/${p.id}`)}
+              >
+                <TableCell className="pl-6 py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/5 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
+                      <Folder className="h-4.5 w-4.5" />
                     </div>
-                  </TableCell>
+                    <span className="text-sm font-bold group-hover:text-primary transition-colors">
+                      {p.name}
+                    </span>
+                  </div>
+                </TableCell>
 
-                  <TableCell>
-                    <StatusBadge status={p.status} />
-                  </TableCell>
+                <TableCell>
+                  <StatusBadge status={p.status} />
+                </TableCell>
 
-                  <TableCell className="text-xs text-muted-foreground font-medium tabular-nums">
-                    {format(new Date(p.createdAt), "d MMM yyyy", {
-                      locale: uk,
-                    })}
-                  </TableCell>
+                <TableCell className="text-xs text-muted-foreground/70 font-medium tabular-nums">
+                  {format(new Date(p.createdAt), "d MMMM yyyy", { locale: uk })}
+                </TableCell>
 
-                  <TableCell className="text-xs text-muted-foreground font-medium tabular-nums">
-                    {format(new Date(p.updatedAt), "d MMM yyyy", {
-                      locale: uk,
-                    })}
-                  </TableCell>
+                <TableCell className="text-xs text-muted-foreground/70 font-medium tabular-nums">
+                  {format(new Date(p.updatedAt), "d MMMM yyyy", { locale: uk })}
+                </TableCell>
 
-                  <TableCell className="text-right pr-6">
-                    <div
-                      className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {p.status === "completed" || p.status === "archived" ? (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 rounded-lg text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                          title="Відновити"
-                          disabled={pendingId === p.id}
-                          onClick={() => onRestore(p.id)}
-                        >
-                          <RotateCcw className="h-4 w-4" />
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 rounded-lg border border-primary/20 text-primary/60 hover:text-primary hover:bg-primary/10"
-                          title="Завершити"
-                          disabled={pendingId === p.id}
-                          onClick={() => onComplete(p.id)}
-                        >
-                          <CheckCircle className="h-4 w-4" />
-                        </Button>
-                      )}
+                <TableCell className="pr-6 text-right">
+                  <div className="flex items-center justify-end gap-1 transition-opacity">
+                    {p.status === "completed" ? (
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 rounded-lg text-destructive hover:bg-destructive/10"
-                        title="Видалити"
-                        disabled={pendingId === p.id}
-                        onClick={() => onDelete(p.id)}
+                        className="h-8 w-8 rounded-lg text-emerald-600 hover:bg-emerald-500/10"
+                        title="Відновити"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRestore(p.id);
+                        }}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <RotateCcw className="h-4 w-4" />
                       </Button>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-lg text-primary hover:bg-primary/10"
+                        title="Завершити"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onComplete(p.id);
+                        }}
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(p.id);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                    <div className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground/30 group-hover:text-primary transition-colors">
+                      <ChevronRight className="h-4 w-4" />
                     </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
 
-              {projects.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={5} className="py-20 text-center">
-                    <div className="flex flex-col items-center gap-2">
-                      <Folder className="h-10 w-10 text-muted-foreground/30" />
-                      <div className="text-sm font-medium text-muted-foreground">
-                        Нічого не знайдено.
-                      </div>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+            {projects.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={5} className="h-64 text-center">
+                  <div className="flex flex-col items-center justify-center gap-3 opacity-30">
+                    <Folder className="h-12 w-12" />
+                    <p className="text-sm font-medium tracking-tight">Проєктів не знайдено</p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );

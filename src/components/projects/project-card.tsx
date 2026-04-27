@@ -16,18 +16,18 @@ function formatUAH(value: string | null) {
 const statusConfig = {
     active: { 
         label: "Активний", 
-        badgeVariant: "default" as const,
-        className: "bg-primary/10 text-primary border-primary/20 hover:bg-primary/15" 
+        dotClass: "bg-emerald-500",
+        textClass: "text-emerald-500 bg-emerald-500/10",
     },
     completed: { 
         label: "Завершений", 
-        badgeVariant: "secondary" as const,
-        className: "bg-muted text-muted-foreground border-border hover:bg-muted/80" 
+        dotClass: "bg-blue-500",
+        textClass: "text-blue-500 bg-blue-500/10",
     },
     archived: { 
         label: "Архів", 
-        badgeVariant: "secondary" as const,
-        className: "bg-muted text-muted-foreground border-border hover:bg-muted/80" 
+        dotClass: "bg-muted-foreground/50",
+        textClass: "text-muted-foreground bg-muted/20",
     },
 };
 
@@ -48,20 +48,21 @@ export default function ProjectCard(props: {
 
     return (
         <Link href={`/dashboard/projects/${props.id}`} className="group block">
-            <Card className="relative overflow-hidden rounded-2xl border-border/50 bg-card/40 p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/5 hover:border-primary/30 backdrop-blur-sm">
-                {/* Status Badge */}
+            <Card className="relative overflow-hidden rounded-2xl border-none dark:bg-neutral-800 bg-neutral-100 p-5 backdrop-blur-sm shadow-none ring-1 ring-border/40">
+                {/* Status Indicator */}
                 <div className="absolute right-4 top-4">
-                    <Badge 
-                        variant={config.badgeVariant} 
-                        className={cn("text-[10px] uppercase tracking-widest font-bold px-2 py-0.5 border shadow-sm transition-colors", config.className)}
-                    >
+                    <div className={cn(
+                        "inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-bold tracking-tight",
+                        config.textClass
+                    )}>
+                        <span className={cn("h-1.5 w-1.5 rounded-full", config.dotClass)} />
                         {config.label}
-                    </Badge>
+                    </div>
                 </div>
 
                 <div className="flex flex-col gap-5">
                     <div className="space-y-1.5">
-                        <div className="truncate pr-20 text-lg font-bold tracking-tight transition-colors group-hover:text-primary">
+                        <div className="truncate pr-20 text-lg font-bold tracking-tight dark:text-white text-neutral-900">
                             {props.name}
                         </div>
                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-semibold">
@@ -74,7 +75,7 @@ export default function ProjectCard(props: {
 
                     <div className="grid grid-cols-2 gap-4 border-t border-border/40 pt-4">
                         <div className="space-y-1">
-                            <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-muted-foreground font-bold">
+                            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-bold">
                                 <Calendar className="h-3 w-3 text-primary/50" /> Створено
                             </div>
                             <div className="text-sm font-bold text-foreground/80">
@@ -83,7 +84,7 @@ export default function ProjectCard(props: {
                         </div>
 
                         <div className="space-y-1 text-right">
-                            <div className="flex items-center justify-end gap-1.5 text-[10px] uppercase tracking-widest text-muted-foreground font-bold">
+                            <div className="flex items-center justify-end gap-1.5 text-[10px] text-muted-foreground font-bold">
                                 <Wallet className="h-3 w-3 text-primary/50" /> Бюджет
                             </div>
                             <div className="text-sm font-bold text-foreground">
@@ -92,19 +93,16 @@ export default function ProjectCard(props: {
                         </div>
                     </div>
 
-                    <div className="mt-1 flex items-center justify-between border-t border-border/30 pt-4 opacity-60 transition-opacity group-hover:opacity-100">
-                        <div className="flex items-center gap-2 truncate text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                    <div className="mt-1 flex items-center justify-between border-t border-border/30 pt-4 opacity-100">
+                        <div className="flex items-center gap-2 truncate text-[11px] font-bold text-muted-foreground">
                             <Globe className="h-3.3 w-3.5 shrink-0 text-primary/40" />
                             <span className="truncate max-w-[120px]">{props.site || "Сайт не вказано"}</span>
                         </div>
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-primary group-hover:gap-2 transition-all">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-primary">
                             Деталі <ExternalLink className="h-3.5 w-3.5" />
                         </div>
                     </div>
                 </div>
-
-                {/* Subtle gradient overlay on hover */}
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
             </Card>
         </Link>
     );

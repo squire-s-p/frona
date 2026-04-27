@@ -67,7 +67,7 @@ export default async function DashboardLayout({
 
           {/* ✅ BOARD: центральна секція */}
           <main className="flex-1 p-2 sm:p-4 flex flex-col min-h-0 overflow-hidden">
-            <div className="flex-1 rounded-2xl bg-background shadow-sm ring-1 ring-border flex flex-col min-h-0 overflow-hidden">
+            <div className="flex-1 rounded-3xl bg-background shadow-sm ring-1 ring-border flex flex-col min-h-0 overflow-hidden">
               {/* Тільки цей блок буде прокручуватися */}
               <div className="flex-1 overflow-y-auto custom-scrollbar relative">
                 <div className="p-3 sm:p-4 md:p-6 pb-20 sm:pb-24">

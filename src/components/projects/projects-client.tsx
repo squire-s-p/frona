@@ -175,211 +175,189 @@ export default function ProjectsClient({
 
   return (
     <div className="flex flex-col gap-6 h-full">
-      {/* Header Section */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between px-1">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Проєкти
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Керуйте вашими активними та завершеними проєктами.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
+      {/* Header Section: Новий проєкт + Статус + Вигляд */}
+      <div className="flex items-center justify-between px-1 gap-4">
+        <div className="flex flex-1 items-center justify-between sm:justify-start sm:gap-6">
           <ProjectCreateDialog
             clients={clients}
             onCreated={() => router.refresh()}
             trigger={
-              <Button size="lg" className="rounded-xl shadow-lg shadow-primary/20 gap-2">
-                <Plus className="h-5 w-5" />
+              <Button size="default" className="gap-2">
+                <Plus className="h-4 w-4" />
                 <span>Новий проєкт</span>
               </Button>
             }
           />
+
+          <Tabs
+            value={statusFilter}
+            onValueChange={(v) => setStatusFilter(v as StatusFilter)}
+            className="w-auto"
+          >
+            <TabsList variant="line" className="h-10 gap-6">
+              <TabsTrigger value="active" className="px-0 text-sm">
+                Активні
+              </TabsTrigger>
+              <TabsTrigger value="completed" className="px-0 text-sm">
+                Завершені
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+
+        <div className="hidden sm:flex items-center gap-2">
+          <Tabs
+            value={view}
+            onValueChange={(v) => {
+              setView(v as ViewMode);
+              saveViewMode(v as ViewMode);
+            }}
+            className="w-auto"
+          >
+            <TabsList className="h-9 p-1">
+              <TabsTrigger value="list" className="h-7 w-8 p-0" title="Список">
+                <List className="h-4 w-4" />
+              </TabsTrigger>
+              <TabsTrigger value="grid" className="h-7 w-8 p-0" title="Плитки">
+                <Grid className="h-4 w-4" />
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
       </div>
 
-      {/* Toolbar Section */}
-      <Card className="rounded-2xl border-border/50 bg-card/30 backdrop-blur-sm overflow-visible">
-        <CardContent className="p-4">
-          <div className="flex flex-col gap-6">
-            {/* Top row: Filter Tabs & View Mode */}
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <Tabs
-                value={statusFilter}
-                onValueChange={(v) => setStatusFilter(v as StatusFilter)}
-                className="w-full sm:w-auto"
-              >
-                <TabsList className="grid w-full grid-cols-2 sm:w-[300px]">
-                  <TabsTrigger value="active" className="gap-2">
-                    Активні
-                    <span className="ml-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">
-                      {projects.filter(p => p.status === 'active').length}
-                    </span>
-                  </TabsTrigger>
-                  <TabsTrigger value="completed" className="gap-2">
-                    Завершені
-                    <span className="ml-1 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground">
-                      {projects.filter(p => p.status !== 'active').length}
-                    </span>
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
+      {/* Toolbar Section: Пошук та Сортування */}
+      {/* Unified Projects Card */}
+      <Card className="flex-1 flex flex-col min-h-0 sm:rounded-3xl border-none shadow-none dark:shadow-none sm:ring-1 sm:ring-border/50 sm:dark:bg-neutral-900 dark:bg-transparent sm:bg-white bg-transparent backdrop-blur-none sm:backdrop-blur-sm overflow-hidden py-0">
+        {/* Filter Section: компактний рядок, прихований на мобілці */}
+        <div className="hidden sm:flex px-6 py-3 border-b border-border/50 items-center justify-between gap-4">
+          <h3 className="text-sm font-bold tracking-tight dark:text-white text-neutral-600">Фільтри</h3>
+          
+          <div className="flex items-center gap-4 flex-1 justify-end">
+            {/* Sort (тепер перший) */}
+            <Select
+              value={`${sortKey}:${sortDir}`}
+              onValueChange={(val) => {
+                const [k, d] = val.split(":");
+                setSortKey(k as SortKey);
+                setSortDir(d as SortDir);
+              }}
+            >
+              <SelectTrigger className="w-fit min-w-[140px] h-8 text-xs bg-background/40 border-border/50">
+                <ArrowUpDown className="h-3 w-3 mr-2 text-muted-foreground" />
+                <SelectValue placeholder="Сортування" />
+              </SelectTrigger>
+              <SelectContent align="start">
+                <SelectItem value="updatedAt:desc">Оновлено (нові)</SelectItem>
+                <SelectItem value="updatedAt:asc">Оновлено (старі)</SelectItem>
+                <SelectItem value="createdAt:desc">Створено (нові)</SelectItem>
+                <SelectItem value="name:asc">Назва (A-Z)</SelectItem>
+              </SelectContent>
+            </Select>
 
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-1 rounded-xl border p-1 bg-background/50">
-                  <Button
-                    variant={view === "list" ? "secondary" : "ghost"}
-                    size="sm"
-                    className="h-8 rounded-lg px-3"
-                    onClick={() => {
-                      setView("list");
-                      saveViewMode("list");
-                    }}
-                  >
-                    <List className="h-4 w-4 mr-2" />
-                    Список
-                  </Button>
-                  <Button
-                    variant={view === "grid" ? "secondary" : "ghost"}
-                    size="sm"
-                    className="h-8 rounded-lg px-3"
-                    onClick={() => {
-                      setView("grid");
-                      saveViewMode("grid");
-                    }}
-                  >
-                    <Grid className="h-4 w-4 mr-2" />
-                    Плитки
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom row: Search & Sorting */}
-            <div className="grid gap-4 md:grid-cols-[1fr,auto,auto]">
+            {/* Search */}
+            <div className="flex items-center gap-2 w-64">
               <InputGroup>
-                <InputGroupAddon>
-                  <Search className="h-4 w-4 text-muted-foreground" />
+                <InputGroupAddon className="h-8 w-8">
+                  <Search className="h-3.5 w-3.5 text-muted-foreground" />
                 </InputGroupAddon>
                 <InputGroupInput
-                  placeholder="Пошук за назвою, клієнтом або сайтом..."
+                  placeholder="Пошук..."
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
-                  className="bg-background/50"
+                  className="bg-background/40 h-8 text-xs border-border/50"
                 />
               </InputGroup>
+            </div>
 
-              <div className="flex items-center gap-3">
-                <Select
-                  value={`${sortKey}:${sortDir}`}
-                  onValueChange={(val) => {
-                    const [k, d] = val.split(":");
-                    setSortKey(k as SortKey);
-                    setSortDir(d as SortDir);
-                  }}
-                >
-                  <SelectTrigger className="w-full md:w-[180px] rounded-xl bg-background/50 border-border/50">
-                    <ArrowUpDown className="h-4 w-4 mr-2 text-muted-foreground" />
-                    <SelectValue placeholder="Сортування" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="updatedAt:desc">Оновлено (спочатку нові)</SelectItem>
-                    <SelectItem value="updatedAt:asc">Оновлено (спочатку старі)</SelectItem>
-                    <SelectItem value="createdAt:desc">Створено (спочатку нові)</SelectItem>
-                    <SelectItem value="name:asc">Назва (A-Z)</SelectItem>
-                    <SelectItem value="name:desc">Назва (Z-A)</SelectItem>
-                  </SelectContent>
-                </Select>
+            <div className="h-4 w-px bg-border/50" />
 
-                <div className="h-9 w-px bg-border/50" />
-
-                <Field orientation="horizontal" className="gap-2">
-                  <Switch
-                    id="group-by-client"
-                    checked={groupByClient}
-                    onCheckedChange={(checked) => {
-                      setGroupByClient(checked);
-                      saveGroupByClient(checked);
-                    }}
-                  />
-                  <FieldLabel
-                    htmlFor="group-by-client"
-                    className="text-sm font-medium cursor-pointer whitespace-nowrap"
-                  >
-                    Групувати
-                  </FieldLabel>
-                </Field>
-              </div>
+            {/* Grouping */}
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-medium tracking-wider text-muted-foreground/60">Групувати</span>
+              <Switch
+                id="group-by-client"
+                className="scale-75 origin-right"
+                checked={groupByClient}
+                onCheckedChange={(checked) => {
+                  setGroupByClient(checked);
+                  saveGroupByClient(checked);
+                }}
+              />
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Content Area */}
-      <div className="flex-1 min-h-0 overflow-y-auto pr-1 scrollbar-hide">
-        {grouped ? (
-          <div className="space-y-10 pb-20">
-            {grouped.map((g) => (
-              <div key={g.clientId ?? "none"} className="space-y-4">
-                <div className="flex items-center justify-between border-b border-border/50 pb-2">
-                  <div className="flex items-center gap-2">
-                    {g.clientId ? (
-                      <Link
-                        href={`/dashboard/clients/${g.clientId}`}
-                        className="text-lg font-bold hover:text-primary transition-colors flex items-center gap-2"
-                      >
-                        {g.title}
-                        <span className="text-xs font-normal text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                          {g.items.length}
-                        </span>
-                      </Link>
-                    ) : (
-                      <div className="text-lg font-bold flex items-center gap-2">
-                        {g.title}
-                        <span className="text-xs font-normal text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                          {g.items.length}
-                        </span>
+        {/* Content Area */}
+        <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar relative">
+          <div className="p-0">
+            {grouped ? (
+              <div className="space-y-10 p-0 pb-20">
+                {grouped.map((g) => (
+                  <div key={g.clientId ?? "none"} className="space-y-4">
+                    <div className="flex items-center justify-between border-b border-border/50 pb-2 px-6">
+                      <div className="flex items-center gap-2">
+                        {g.clientId ? (
+                          <Link
+                            href={`/dashboard/clients/${g.clientId}`}
+                            className="text-lg font-bold hover:text-primary transition-colors flex items-center gap-2"
+                          >
+                            {g.title}
+                            <span className="text-xs font-normal text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                              {g.items.length}
+                            </span>
+                          </Link>
+                        ) : (
+                          <div className="text-lg font-bold flex items-center gap-2">
+                            {g.title}
+                            <span className="text-xs font-normal text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                              {g.items.length}
+                            </span>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                </div>
+                    </div>
 
-                {view === "grid" ? (
-                  <ProjectsGrid projects={g.items} />
-                ) : (
-                  <ProjectsTable
-                    projects={g.items.map((p) => ({
-                      id: p.id,
-                      name: p.name,
-                      status: p.status,
-                      createdAt: new Date(p.createdAt),
-                      updatedAt: new Date(p.updatedAt),
-                    }))}
-                  />
-                )}
+                    <div className="px-0">
+                      {view === "grid" ? (
+                        <div className="px-6">
+                          <ProjectsGrid projects={g.items} />
+                        </div>
+                      ) : (
+                        <ProjectsTable
+                          projects={g.items.map((p) => ({
+                            id: p.id,
+                            name: p.name,
+                            status: p.status,
+                            createdAt: new Date(p.createdAt),
+                            updatedAt: new Date(p.updatedAt),
+                          }))}
+                        />
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            ) : view === "grid" ? (
+              <div className="p-0 sm:p-6 pb-20">
+                <ProjectsGrid projects={filtered} />
+              </div>
+            ) : (
+              <div className="p-0 pb-20">
+                <ProjectsTable
+                  projects={filtered.map((p) => ({
+                    id: p.id,
+                    name: p.name,
+                    status: p.status,
+                    createdAt: new Date(p.createdAt),
+                    updatedAt: new Date(p.updatedAt),
+                  }))}
+                />
+              </div>
+            )}
           </div>
-        ) : view === "grid" ? (
-          <div className="pb-20">
-            <ProjectsGrid projects={filtered} />
-          </div>
-        ) : (
-          <div className="pb-20">
-            <ProjectsTable
-              projects={filtered.map((p) => ({
-                id: p.id,
-                name: p.name,
-                status: p.status,
-                createdAt: new Date(p.createdAt),
-                updatedAt: new Date(p.updatedAt),
-              }))}
-            />
-          </div>
-        )}
-      </div>
+        </div>
+      </Card>
     </div>
   );
 }
