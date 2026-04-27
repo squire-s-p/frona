@@ -178,7 +178,7 @@ export default async function ProjectDetailsPage({
     
     const chartPoints = chartData.map((val, i) => ({
       x: chartData.length > 1 ? (i / (chartData.length - 1)) * 100 : 50,
-      y: 40 - (val / maxChart) * 35,
+      y: 34 - (val / maxChart) * 28, // 34 - низ, 6 - верх
     }));
     
     if (chartPoints.length > 0) {
@@ -329,7 +329,6 @@ export default async function ProjectDetailsPage({
                   <h3 className="text-base font-bold text-foreground tracking-tight">Час роботи</h3>
                 </div>
                 <p className="text-4xl font-bold text-foreground relative z-10 mb-1 tracking-tighter">{workedText}</p>
-                <p className="text-sm text-muted-foreground font-medium relative z-10">Загальний час</p>
 
                 {/* Line Chart */}
                 <div className="absolute bottom-0 left-0 right-0 h-32 opacity-80 group-hover:opacity-100 transition-opacity">
@@ -357,27 +356,24 @@ export default async function ProjectDetailsPage({
                 </div>
               </div>
 
-              {/* 3. Ставка / год (Image 3 style) */}
-              <div className="rounded-2xl border border-border/40 bg-neutral-200/50 dark:bg-[#161616] p-5 flex flex-col items-center h-[340px]">
-                <div className="flex justify-center mb-8 w-full mt-2">
-                  <div className="bg-background/50 border border-border/50 text-xs font-medium text-foreground rounded-lg px-3 py-1.5 flex items-center gap-2 cursor-pointer hover:bg-background transition-colors">
-                    Report <ChevronDown className="h-3 w-3" />
+              {/* 3. Ставка / год */}
+              <div className="rounded-2xl border border-border/40 bg-neutral-200/50 dark:bg-[#161616] p-5 flex flex-col h-[340px] relative overflow-hidden group">
+                <div className="flex justify-between items-start mb-2 relative z-10">
+                  <h3 className="text-base font-bold text-foreground tracking-tight">Ставка / год</h3>
+                </div>
+
+                <div className="flex-1 flex flex-col items-center justify-end mb-10">
+                  {/* Gauge Chart */}
+                  <div className="relative w-80 h-40 flex-shrink-0">
+                    <svg viewBox="0 0 100 50" className="w-full h-full overflow-visible">
+                      <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="currentColor" className="text-neutral-300 dark:text-neutral-800" strokeWidth="12" strokeLinecap="round" />
+                      <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="currentColor" className="text-foreground" strokeWidth="12" strokeLinecap="round" strokeDashoffset={125.6 * (1 - earnedPercent/100)} pathLength="125.6" />
+                    </svg>
+                    <div className="absolute bottom-0 left-0 right-0 text-center translate-y-2">
+                      <div className="text-5xl font-bold text-foreground tracking-tighter">{rate}</div>
+                    </div>
                   </div>
                 </div>
-                
-                {/* Gauge Chart */}
-                <div className="relative w-40 h-24 overflow-hidden mb-6 flex-shrink-0">
-                  <svg viewBox="0 0 100 50" className="w-full h-full overflow-visible">
-                    <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="currentColor" className="text-neutral-300 dark:text-neutral-800" strokeWidth="8" strokeDasharray="3 3" strokeLinecap="round" />
-                    <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="currentColor" className="text-foreground" strokeWidth="8" strokeDasharray="3 3" strokeLinecap="round" strokeDashoffset={125.6 * (1 - earnedPercent/100)} pathLength="125.6" />
-                  </svg>
-                  <div className="absolute bottom-0 left-0 right-0 text-center flex flex-col items-center translate-y-1">
-                    <div className="text-2xl font-bold text-foreground tracking-tight">{rate}</div>
-                    <div className="text-[10px] text-muted-foreground font-medium uppercase">Ставка / год</div>
-                  </div>
-                </div>
-                
-                <p className="text-xs text-muted-foreground mb-auto">{Math.round(earnedPercent)}% Виконання</p>
               </div>
 
               {/* 4. Вартість (Image 4 style) */}
