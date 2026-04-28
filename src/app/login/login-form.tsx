@@ -152,7 +152,15 @@ export default function LoginForm({
           </div>
 
           <div className="space-y-2">
-            <div className="text-sm font-medium">Пароль</div>
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-medium">Пароль</div>
+              <Link 
+                href="/auth/forgot-password" 
+                className="text-xs text-muted-foreground hover:text-primary transition-colors underline-offset-4 hover:underline"
+              >
+                Забули пароль?
+              </Link>
+            </div>
             <Input
               value={password}
               onChange={(e) => setPassword(e.target.value)}
