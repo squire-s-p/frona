@@ -7,6 +7,7 @@ import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
 import { promises as fs } from "fs";
 import path from "path";
+import { put, del } from "@vercel/blob";
 
 export async function updateProfileAction(prevState: any, formData: FormData) {
   try {
@@ -66,26 +67,32 @@ export async function uploadAvatarAction(formData: FormData) {
       return { error: "Файл занадто великий (макс. 5 МБ)" };
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const uploadDir = path.join(process.cwd(), "public/uploads/avatars");
-    
-    // Create directory if not exists
-    await fs.mkdir(uploadDir, { recursive: true });
+    // Delete old avatar if it was on Vercel Blob
+    const oldUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { image: true }
+    });
+    if (oldUser?.image?.includes("public.blob.vercel-storage.com")) {
+      try {
+        await del(oldUser.image);
+      } catch (e) {
+        console.warn("Could not delete old blob:", e);
+      }
+    }
 
-    const ext = path.extname(file.name) || ".jpg";
-    const filename = `${session.user.id}-${Date.now()}${ext}`;
-    const filePath = path.join(uploadDir, filename);
-
-    await fs.writeFile(filePath, buffer);
-    const publicUrl = `/uploads/avatars/${filename}`;
+    const filename = `avatars/${session.user.id}-${Date.now()}${path.extname(file.name) || ".jpg"}`;
+    const blob = await put(filename, file, { 
+      access: 'public',
+      addRandomSuffix: true 
+    });
 
     await prisma.user.update({
       where: { id: session.user.id },
-      data: { image: publicUrl },
+      data: { image: blob.url },
     });
 
     revalidatePath("/dashboard", "layout");
-    return { success: "Фото оновлено успішно!", url: publicUrl };
+    return { success: "Фото оновлено успішно!", url: blob.url };
   } catch (error) {
     console.error("Upload error:", error);
     return { error: "Помилка при завантаженні фото" };
@@ -102,12 +109,11 @@ export async function deleteAvatarAction() {
       select: { image: true }
     });
 
-    if (user?.image && user.image.startsWith("/uploads/avatars/")) {
-      const filePath = path.join(process.cwd(), "public", user.image);
+    if (user?.image?.includes("public.blob.vercel-storage.com")) {
       try {
-        await fs.unlink(filePath);
+        await del(user.image);
       } catch (e) {
-        // file might not exist
+        console.warn("Could not delete blob:", e);
       }
     }
 
