@@ -1,14 +1,21 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowDownAZ, ArrowUpAZ, Link2Off, Loader2, Search } from "lucide-react";
+import { format } from "date-fns";
+import { uk } from "date-fns/locale";
+import { 
+  ArrowDownAZ, 
+  ArrowUpAZ, 
+  Link2Off, 
+  Loader2, 
+  Search, 
+  Folder, 
+  ChevronRight 
+} from "lucide-react";
 
 import { setProjectClient } from "@/app/dashboard/projects/actions";
-
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -28,26 +35,39 @@ type Row = {
   updatedAt: Date;
 };
 
-const statusColors = {
-    active: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
-    completed: "bg-blue-500/10 text-blue-600 border-blue-500/20",
-    archived: "bg-slate-500/10 text-slate-600 border-slate-500/20",
-};
-
-const statusLabels = {
-    active: "Активний",
-    completed: "Завершений",
-    archived: "Архів",
-};
-
-function statusLabel(status: string) {
-  if (status === "active") return "active";
-  if (status === "completed") return "completed";
-  if (status === "archived") return "archived";
-  return status;
-}
-
 type StatusFilter = "all" | "active" | "completed" | "archived";
+
+const statusConfig = {
+    active: {
+      label: "Активний",
+      dotClass: "bg-emerald-500",
+      textClass: "text-emerald-500 bg-emerald-500/10",
+    },
+    completed: {
+      label: "Завершений",
+      dotClass: "bg-blue-500",
+      textClass: "text-blue-500 bg-blue-500/10",
+    },
+    archived: {
+      label: "Архів",
+      dotClass: "bg-muted-foreground/50",
+      textClass: "text-muted-foreground bg-muted/20",
+    },
+};
+
+function StatusBadge({ status }: { status: string }) {
+    const s = (status === "active" || status === "completed" || status === "archived") ? status : "active";
+    const config = statusConfig[s as keyof typeof statusConfig];
+    return (
+      <div className={cn(
+        "inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-bold tracking-tight",
+        config.textClass
+      )}>
+        <span className={cn("h-1.5 w-1.5 rounded-full", config.dotClass)} />
+        {config.label}
+      </div>
+    );
+}
 
 export default function ClientProjectsTable({ projects }: { projects: Row[] }) {
   const router = useRouter();
@@ -71,12 +91,7 @@ export default function ClientProjectsTable({ projects }: { projects: Row[] }) {
 
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase();
-
     let list = projects.slice();
-
-    if (status !== "all") {
-      list = list.filter((p) => p.status === status);
-    }
 
     if (q) {
       list = list.filter((p) => p.name.toLowerCase().includes(q));
@@ -89,45 +104,14 @@ export default function ClientProjectsTable({ projects }: { projects: Row[] }) {
     });
 
     return list;
-  }, [projects, query, status, sort]);
-
-  function FilterButton({
-    value,
-    label,
-    count,
-  }: {
-    value: StatusFilter;
-    label: string;
-    count: number;
-  }) {
-    const active = status === value;
-    return (
-        <Button
-          type="button"
-          variant={active ? "secondary" : "ghost"}
-          size="sm"
-          onClick={() => setStatus(value)}
-          className={cn(
-            "h-7 rounded-lg px-3 text-[10px] font-bold uppercase tracking-wider transition-all",
-            active ? "bg-primary/10 text-primary shadow-sm" : "text-muted-foreground hover:bg-muted"
-          )}
-        >
-          {label}
-          <span className={cn("ml-1.5 rounded-full px-1.5 py-0.5 text-[9px]", active ? "bg-primary/20" : "bg-muted-foreground/10")}>
-            {count}
-          </span>
-        </Button>
-    );
-  }
+  }, [projects, query, sort]);
 
   async function detach(projectId: string, projectStatus: string) {
     setError(null);
-
     if (projectStatus === "archived") {
       setError("Архівні проєкти недоступні для змін.");
       return;
     }
-
     const ok = window.confirm("Відвʼязати проєкт від цього клієнта?");
     if (!ok) return;
 
@@ -143,117 +127,111 @@ export default function ClientProjectsTable({ projects }: { projects: Row[] }) {
   }
 
   return (
-    <Card className="rounded-2xl border bg-card shadow-sm overflow-hidden p-0">
+    <Card className="rounded-2xl border bg-neutral-100 dark:bg-neutral-900 shadow-none overflow-hidden p-0 gap-0 py-0">
       {/* Unified section header */}
-      <div className="flex flex-col gap-4 px-4 pt-4 pb-3 border-b border-border/50">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-base font-bold tracking-tight text-foreground">Проєкти клієнта</h2>
+      <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-border/50">
+        <h2 className="text-base font-bold tracking-tight text-foreground">Проєкти клієнта</h2>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative w-full sm:w-[220px]">
-                <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/60" />
-                <Input
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Пошук..."
-                    className="pl-9 h-9 rounded-lg bg-background/50 border-border/50 text-xs"
-                />
-            </div>
-
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-9 rounded-lg border-border/40 px-3 text-xs font-medium"
-              onClick={() => setSort((s) => (s === "desc" ? "asc" : "desc"))}
-            >
-              {sort === "desc" ? <ArrowDownAZ className="h-3.5 w-3.5 mr-1.5" /> : <ArrowUpAZ className="h-3.5 w-3.5 mr-1.5" />}
-              {sort === "desc" ? "Новіші" : "Старіші"}
-            </Button>
+        <div className="flex items-center gap-3">
+          <div className="relative w-full sm:w-[200px]">
+              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/60" />
+              <Input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Пошук..."
+                  className="pl-9 h-8 rounded-lg bg-background/40 border-border/50 text-xs shadow-none"
+              />
           </div>
-        </div>
 
-        <div className="flex flex-wrap gap-1.5">
-          <FilterButton value="all" label="Всі" count={counts.all} />
-          <FilterButton value="active" label="Активні" count={counts.active} />
-          <FilterButton value="completed" label="Завершені" count={counts.completed} />
-          <FilterButton value="archived" label="Архів" count={counts.archived} />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-8 rounded-lg border-border/40 px-3 text-[11px] font-bold shadow-none"
+            onClick={() => setSort((s) => (s === "desc" ? "asc" : "desc"))}
+          >
+            {sort === "desc" ? <ArrowDownAZ className="h-3.5 w-3.5 mr-1.5" /> : <ArrowUpAZ className="h-3.5 w-3.5 mr-1.5" />}
+            {sort === "desc" ? "Новіші" : "Старіші"}
+          </Button>
         </div>
+      </div>
 
-        {error ? (
-          <div className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
+      {error && (
+        <div className="px-5 py-3">
+          <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-2 text-[10px] font-bold text-destructive">
             {error}
           </div>
-        ) : null}
-      </div>
+        </div>
+      )}
 
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
-            <TableRow className="hover:bg-transparent border-b-border/50 bg-muted/5">
-              <TableHead className="font-bold text-[10px] uppercase tracking-wider pl-6 py-3">Проєкт</TableHead>
-              <TableHead className="w-[140px] font-bold text-[10px] uppercase tracking-wider py-3">Статус</TableHead>
-              <TableHead className="w-[180px] text-right font-bold text-[10px] uppercase tracking-wider py-3">Оновлено</TableHead>
-              <TableHead className="w-[120px] text-right pr-6 font-bold text-[10px] uppercase tracking-wider py-3">Дії</TableHead>
+            <TableRow className="hover:bg-transparent border-b-border/50 border-t-0">
+              <TableHead className="pl-6 h-12 font-bold text-[10px] tracking-tight text-muted-foreground/60">Проєкт</TableHead>
+              <TableHead className="h-12 font-bold text-[10px] tracking-tight text-muted-foreground/60">Статус</TableHead>
+              <TableHead className="h-12 text-right font-bold text-[10px] tracking-tight text-muted-foreground/60">Оновлено</TableHead>
+              <TableHead className="pr-6 h-12 text-right font-bold text-[10px] tracking-tight text-muted-foreground/60">Дії</TableHead>
             </TableRow>
           </TableHeader>
 
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="py-12 text-center text-muted-foreground italic text-sm">
-                  {projects.length === 0
-                    ? "У цього клієнта поки немає проєктів"
-                    : "Нічого не знайдено за вашим запитом"}
+                <TableCell colSpan={4} className="h-48 text-center">
+                  <div className="flex flex-col items-center justify-center gap-3 opacity-30">
+                    <Folder className="h-10 w-10" />
+                    <p className="text-sm font-medium tracking-tight">Проєктів не знайдено</p>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (
               filtered.map((p) => {
                 const isRowPending = pendingId === p.id;
                 const isArchived = p.status === "archived";
-                const pStatus = statusLabel(p.status) as "active" | "completed" | "archived";
 
                 return (
-                  <TableRow key={p.id} className="group hover:bg-primary/[0.02] border-b-border/40 transition-colors">
-                    <TableCell className="font-bold pl-6">
-                      <Link
-                        href={`/dashboard/projects/${p.id}`}
-                        className="hover:text-primary transition-colors underline-offset-4 decoration-primary/30"
-                      >
-                        {p.name}
-                      </Link>
+                  <TableRow key={p.id} className="group border-b-border/30 hover:bg-white/[0.02] cursor-pointer transition-colors" onClick={() => router.push(`/dashboard/projects/${p.id}`)}>
+                    <TableCell className="pl-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/5 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
+                          <Folder className="h-4.5 w-4.5" />
+                        </div>
+                        <span className="text-sm font-bold group-hover:text-primary transition-colors">
+                          {p.name}
+                        </span>
+                      </div>
                     </TableCell>
 
                     <TableCell>
-                      <Badge variant="outline" className={cn("text-[10px] uppercase tracking-wider font-bold px-2 py-0 border", statusColors[pStatus] || statusColors.active)}>
-                        {statusLabels[pStatus] || pStatus}
-                      </Badge>
+                      <StatusBadge status={p.status} />
                     </TableCell>
 
-                    <TableCell className="text-right text-muted-foreground text-xs font-medium tabular-nums px-4">
-                      {new Intl.DateTimeFormat("uk-UA", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                      }).format(new Date(p.updatedAt))}
+                    <TableCell className="text-right text-xs text-muted-foreground/70 font-medium tabular-nums px-4">
+                      {format(new Date(p.updatedAt), "d MMM yyyy", { locale: uk })}
                     </TableCell>
 
                     <TableCell className="text-right pr-6">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 rounded-lg text-slate-400 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity p-0 flex items-center justify-center ml-auto"
-                        onClick={() => detach(p.id, p.status)}
-                        disabled={isRowPending || isArchived}
-                        title={isArchived ? "Архівні проєкти недоступні для змін" : "Відвʼязати від клієнта"}
-                      >
-                        {isRowPending ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <Link2Off className="h-3.5 w-3.5" />
-                        )}
-                      </Button>
+                      <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all shadow-none"
+                          onClick={() => detach(p.id, p.status)}
+                          disabled={isRowPending || isArchived}
+                          title={isArchived ? "Архівні проєкти недоступні для змін" : "Відвʼязати від клієнта"}
+                        >
+                          {isRowPending ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Link2Off className="h-3.5 w-3.5" />
+                          )}
+                        </Button>
+                        <div className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground/30 group-hover:text-primary transition-colors">
+                          <ChevronRight className="h-4 w-4" />
+                        </div>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );

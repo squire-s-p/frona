@@ -8,6 +8,7 @@ import { setProjectStatus, deleteProject } from "@/app/dashboard/projects/action
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import DeleteProjectDialog from "@/components/projects/delete-project-dialog";
 import {
   Table,
   TableBody,
@@ -91,20 +92,6 @@ export default function ProjectsTable({ projects }: { projects: ProjectRow[] }) 
     }
   }
 
-  async function onDelete(id: string) {
-    if (!confirm("Видалити цей проєкт назавжди?")) return;
-
-    try {
-      setPendingId(id);
-      await deleteProject(id);
-      router.refresh();
-    } catch (err) {
-      alert("Помилка при видаленні");
-    } finally {
-      setPendingId(null);
-    }
-  }
-
   return (
     <div className="w-full">
       {/* Mobile View: Cards */}
@@ -137,16 +124,12 @@ export default function ProjectsTable({ projects }: { projects: ProjectRow[] }) 
                 Відкрити <ChevronRight className="h-3 w-3" />
               </Link>
 
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 rounded-lg text-destructive hover:bg-destructive/10"
-                  disabled={pendingId === p.id}
-                  onClick={() => onDelete(p.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+              <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                <DeleteProjectDialog 
+                   projectId={p.id} 
+                   projectName={p.name} 
+                   onDeleted={() => router.refresh()}
+                />
               </div>
             </div>
           </div>
@@ -206,17 +189,14 @@ export default function ProjectsTable({ projects }: { projects: ProjectRow[] }) 
                 </TableCell>
 
                 <TableCell className="pr-6 text-right">
-                  <div className="flex items-center justify-end gap-1 transition-opacity">
+                  <div className="flex items-center justify-end gap-1 transition-opacity" onClick={(e) => e.stopPropagation()}>
                     {p.status === "completed" ? (
                       <Button
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 rounded-lg text-emerald-600 hover:bg-emerald-500/10"
                         title="Відновити"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onRestore(p.id);
-                        }}
+                        onClick={() => onRestore(p.id)}
                       >
                         <RotateCcw className="h-4 w-4" />
                       </Button>
@@ -226,25 +206,25 @@ export default function ProjectsTable({ projects }: { projects: ProjectRow[] }) 
                         size="icon"
                         className="h-8 w-8 rounded-lg text-primary hover:bg-primary/10"
                         title="Завершити"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onComplete(p.id);
-                        }}
+                        onClick={() => onComplete(p.id)}
                       >
                         <CheckCircle className="h-4 w-4" />
                       </Button>
                     )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDelete(p.id);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <DeleteProjectDialog 
+                       projectId={p.id} 
+                       projectName={p.name} 
+                       onDeleted={() => router.refresh()}
+                       trigger={
+                         <Button
+                           variant="ghost"
+                           size="icon"
+                           className="h-8 w-8 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                         >
+                           <Trash2 className="h-4 w-4" />
+                         </Button>
+                       }
+                    />
                     <div className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground/30 group-hover:text-primary transition-colors">
                       <ChevronRight className="h-4 w-4" />
                     </div>

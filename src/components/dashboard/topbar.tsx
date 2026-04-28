@@ -62,12 +62,14 @@ export function DashboardTopbar({
   user, 
   activeTimer, 
   projects = [], 
-  tags = [] 
+  tags = [],
+  clients = []
 }: { 
   user: User; 
   activeTimer?: any; 
   projects?: any[]; 
-  tags?: any[] 
+  tags?: any[];
+  clients?: any[];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -132,7 +134,7 @@ export function DashboardTopbar({
           const p = projects.find(p => p.id === segment);
           if (p) label = p.name;
         } else if (pathSegments[pathSegments.indexOf(segment) - 1] === "clients") {
-          const c = tags.find(t => t.id === segment);
+          const c = clients.find(cl => cl.id === segment);
           if (c) label = c.name;
         }
       }

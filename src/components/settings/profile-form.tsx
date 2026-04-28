@@ -24,6 +24,7 @@ interface ProfileFormProps {
     name?: string | null;
     email?: string | null;
     image?: string | null;
+    targetHourlyRate?: number;
   };
 }
 
@@ -180,6 +181,20 @@ export function ProfileForm({ user }: ProfileFormProps) {
                   value={user.email ?? ""}
                   disabled
                   className="rounded-xl h-11 pl-10 bg-muted/20 cursor-not-allowed border-dashed opacity-70"
+                />
+              </div>
+            </div>
+            <div className="space-y-3">
+              <Label htmlFor="targetHourlyRate" className="text-sm font-medium px-1">Цільова ставка (₴/год)</Label>
+              <div className="relative">
+                <span className="absolute left-3.5 top-3.5 h-4 w-4 text-muted-foreground font-bold text-xs">₴</span>
+                <Input
+                  id="targetHourlyRate"
+                  name="targetHourlyRate"
+                  type="number"
+                  defaultValue={user.targetHourlyRate ?? 0}
+                  placeholder="Наприклад, 1000"
+                  className="rounded-xl h-11 pl-10 bg-background/50 focus:bg-background transition-all"
                 />
               </div>
             </div>

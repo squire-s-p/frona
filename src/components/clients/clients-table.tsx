@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { deleteClient } from "@/app/dashboard/clients/actions";
+import { DeleteClientDialog } from "./delete-client-dialog";
 
 type ClientRow = {
   id: string;
@@ -29,69 +30,56 @@ type ClientRow = {
 
 export default function ClientsTable({ clients }: { clients: ClientRow[] }) {
   const router = useRouter();
-  const [pendingId, setPendingId] = React.useState<string | null>(null);
-
-  async function onDelete(id: string) {
-    if (!confirm("Видалити цього клієнта? Це також може вплинути на пов'язані проєкти.")) return;
-    
-    try {
-      setPendingId(id);
-      await deleteClient(id);
-      router.refresh();
-    } catch (err) {
-      alert("Помилка при видаленні");
-    } finally {
-      setPendingId(null);
-    }
-  }
 
   return (
     <div className="flex-1 min-h-0 flex flex-col h-full overflow-hidden">
       {/* Mobile View: Cards */}
-      <div className="grid grid-cols-1 gap-4 md:hidden overflow-y-auto flex-1 p-1 scrollbar-hide">
+      <div className="grid grid-cols-1 gap-4 md:hidden p-0">
         {clients.map((c) => (
-          <div key={c.id} className="rounded-2xl border bg-card/50 p-4 shadow-none backdrop-blur-sm">
+          <div key={c.id} className="rounded-2xl border border-border/60 bg-neutral-100 dark:bg-neutral-900 p-4 shadow-none transition-all hover:border-primary/30">
             <div className="flex items-start justify-between">
-              <div className="min-w-0 flex-1">
-                <Link
-                  href={`/dashboard/clients/${c.id}`}
-                  className="block truncate text-lg font-bold hover:text-primary transition-colors"
-                >
-                  {c.name}
-                </Link>
-                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground font-medium">
-                  <span className="flex items-center gap-1">
-                    Створено: {format(new Date(c.createdAt), "d MMM yyyy", { locale: uk })}
-                  </span>
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="w-9 h-9 rounded-xl bg-primary/5 border border-primary/10 flex items-center justify-center shrink-0">
+                  <User className="h-4.5 w-4.5 text-primary/70" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <Link
+                    href={`/dashboard/clients/${c.id}`}
+                    className="block truncate text-lg font-bold hover:text-primary transition-colors"
+                  >
+                    {c.name}
+                  </Link>
+                  <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium">
+                    <Calendar className="h-3 w-3" />
+                    {format(new Date(c.createdAt), "d MMM yyyy", { locale: uk })}
+                  </div>
                 </div>
               </div>
             </div>
             
             <div className="mt-4 grid grid-cols-2 gap-4 border-t border-border/50 pt-3">
-                <div className="text-center p-2 rounded-xl bg-muted/30">
-                    <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-0.5">Активні</div>
-                    <div className="font-bold">{c.activeProjects}</div>
+                <div className="space-y-1">
+                    <div className="text-[10px] uppercase font-bold text-muted-foreground/50 tracking-wider">Активні</div>
+                    <div className="text-sm font-bold text-emerald-600">{c.activeProjects} проєктів</div>
                 </div>
-                <div className="text-center p-2 rounded-xl bg-muted/30">
-                    <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-0.5">Всього</div>
-                    <div className="font-bold">{c.totalProjects}</div>
+                <div className="space-y-1 text-right">
+                    <div className="text-[10px] uppercase font-bold text-muted-foreground/50 tracking-wider">Всього</div>
+                    <div className="text-sm font-bold text-foreground">{c.totalProjects} проєктів</div>
                 </div>
             </div>
 
             <div className="mt-4 flex items-center justify-between border-t border-border/50 pt-3">
-               <Link href={`/dashboard/clients/${c.id}`} className="text-xs font-bold text-primary flex items-center gap-1">
+               <Link href={`/dashboard/clients/${c.id}`} className="text-xs font-bold text-primary flex items-center gap-1 hover:underline underline-offset-4">
                   Відкрити <ChevronRight className="h-3 w-3" />
                </Link>
 
-               <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 rounded-lg text-destructive hover:bg-destructive/10"
-                    disabled={pendingId === c.id}
-                    onClick={() => onDelete(c.id)}
-                >
-                    <Trash2 className="h-4 w-4" />
-                </Button>
+               <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                 <DeleteClientDialog 
+                    clientId={c.id} 
+                    clientName={c.name} 
+                    onDeleted={() => router.refresh()} 
+                 />
+               </div>
             </div>
           </div>
         ))}
@@ -105,88 +93,92 @@ export default function ClientsTable({ clients }: { clients: ClientRow[] }) {
       </div>
 
       {/* Desktop View: Table */}
-      <div className="hidden flex-1 md:flex flex-col min-h-0 h-full overflow-hidden">
-        <div className="flex-1 overflow-auto w-full relative min-h-0 scrollbar-hide rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-none">
-          <Table className="relative min-w-[800px]">
-            <TableHeader className="relative z-30">
-              <TableRow className="hover:bg-transparent border-b-0">
-                <TableHead className="sticky top-0 z-30 font-bold text-[11px] uppercase tracking-wider pl-6 py-4 bg-background border-b border-border/50">Клієнт</TableHead>
-                <TableHead className="sticky top-0 z-30 w-[160px] font-bold text-[11px] uppercase tracking-wider bg-background border-b border-border/50 text-right">Активні проєкти</TableHead>
-                <TableHead className="sticky top-0 z-30 w-[160px] font-bold text-[11px] uppercase tracking-wider bg-background border-b border-border/50 text-right">Всього проєктів</TableHead>
-                <TableHead className="sticky top-0 z-30 w-[180px] font-bold text-[11px] uppercase tracking-wider bg-background border-b border-border/50">Дата створення</TableHead>
-                <TableHead className="sticky top-0 z-30 w-[80px] text-right pr-6 font-bold text-[11px] uppercase tracking-wider bg-background border-b border-border/50">Дії</TableHead>
+      <div className="hidden md:block">
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent border-b-border/50 border-t-0">
+              <TableHead className="pl-6 h-12 font-bold text-[10px] tracking-tight text-muted-foreground/60">
+                Клієнт
+              </TableHead>
+              <TableHead className="h-12 font-bold text-[10px] tracking-tight text-muted-foreground/60 text-right">
+                Активні проєкти
+              </TableHead>
+              <TableHead className="h-12 font-bold text-[10px] tracking-tight text-muted-foreground/60 text-right">
+                Всього проєктів
+              </TableHead>
+              <TableHead className="h-12 font-bold text-[10px] tracking-tight text-muted-foreground/60">
+                Дата створення
+              </TableHead>
+              <TableHead className="pr-6 h-12 text-right font-bold text-[10px] tracking-tight text-muted-foreground/60">
+                Дії
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+
+          <TableBody>
+            {clients.map((c) => (
+              <TableRow 
+                key={c.id} 
+                className="group border-b-border/30 hover:bg-white/[0.02] cursor-pointer transition-colors"
+                onClick={() => router.push(`/dashboard/clients/${c.id}`)}
+              >
+                <TableCell className="pl-6 py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/5 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
+                      <User className="h-4.5 w-4.5" />
+                    </div>
+                    <span className="text-sm font-bold group-hover:text-primary transition-colors">
+                      {c.name}
+                    </span>
+                  </div>
+                </TableCell>
+
+                <TableCell className="text-right">
+                  <Badge variant="secondary" className="rounded-lg tabular-nums font-bold min-w-[40px] justify-center bg-emerald-500/5 text-emerald-600 border-emerald-500/10">
+                      {c.activeProjects}
+                  </Badge>
+                </TableCell>
+
+                <TableCell className="text-right">
+                  <Badge variant="outline" className="rounded-lg tabular-nums font-bold min-w-[40px] justify-center text-muted-foreground/70">
+                      {c.totalProjects}
+                  </Badge>
+                </TableCell>
+
+                <TableCell className="text-xs text-muted-foreground/70 font-medium tabular-nums">
+                  {format(new Date(c.createdAt), "d MMMM yyyy", { locale: uk })}
+                </TableCell>
+
+                <TableCell className="text-right pr-6">
+                  <div 
+                    className="flex justify-end gap-1 items-center transition-opacity"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <DeleteClientDialog 
+                       clientId={c.id} 
+                       clientName={c.name} 
+                       onDeleted={() => router.refresh()} 
+                    />
+                    <div className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground/30 group-hover:text-primary transition-colors">
+                      <ChevronRight className="h-4 w-4" />
+                    </div>
+                  </div>
+                </TableCell>
               </TableRow>
-            </TableHeader>
+            ))}
 
-            <TableBody>
-              {clients.map((c) => (
-                <TableRow 
-                  key={c.id} 
-                  className="group transition-colors hover:bg-primary/[0.02] border-b-border/40 cursor-pointer"
-                  onClick={() => router.push(`/dashboard/clients/${c.id}`)}
-                >
-                  <TableCell className="font-bold pl-6">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-lg bg-primary/5 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-                        <User className="h-4 w-4 text-primary/70 group-hover:text-primary transition-colors" />
-                      </div>
-                      <span className="group-hover:text-primary transition-colors">
-                        {c.name}
-                      </span>
-                    </div>
-                  </TableCell>
-
-                  <TableCell className="text-right">
-                    <Badge variant="secondary" className="rounded-lg tabular-nums font-bold min-w-[40px] justify-center bg-emerald-500/5 text-emerald-600 border-emerald-500/10">
-                        {c.activeProjects}
-                    </Badge>
-                  </TableCell>
-
-                  <TableCell className="text-right">
-                    <Badge variant="outline" className="rounded-lg tabular-nums font-bold min-w-[40px] justify-center text-muted-foreground/70">
-                        {c.totalProjects}
-                    </Badge>
-                  </TableCell>
-
-                  <TableCell className="text-xs text-muted-foreground font-medium tabular-nums">
-                    {format(new Date(c.createdAt), "d MMM yyyy", { locale: uk })}
-                  </TableCell>
-
-                  <TableCell className="text-right pr-6">
-                    <div 
-                      className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 rounded-lg text-destructive hover:bg-destructive/10"
-                          title="Видалити"
-                          disabled={pendingId === c.id}
-                          onClick={() => onDelete(c.id)}
-                      >
-                          <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-
-              {clients.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={5} className="py-20 text-center">
-                    <div className="flex flex-col items-center gap-2">
-                      <User className="h-10 w-10 text-muted-foreground/30" />
-                      <div className="text-sm font-medium text-muted-foreground">
-                        Клієнтів не знайдено.
-                      </div>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+            {clients.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={5} className="h-64 text-center">
+                  <div className="flex flex-col items-center justify-center gap-3 opacity-30">
+                    <User className="h-12 w-12" />
+                    <p className="text-sm font-medium tracking-tight">Клієнтів не знайдено</p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );

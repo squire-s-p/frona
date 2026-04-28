@@ -38,10 +38,14 @@ export default async function DashboardLayout({
 
   const freshUser = { ...session.user, ...dbUser };
 
-  const [activeTimer, projects, tags] = await Promise.all([
+  const [activeTimer, projects, tags, clients] = await Promise.all([
     getActiveTimer(),
     listProjects(session.user.id),
     listTags(session.user.id),
+    prisma.client.findMany({
+      where: { userId: session.user.id },
+      select: { id: true, name: true }
+    }),
   ]);
 
   const isTimerRunning = !!activeTimer;
@@ -61,6 +65,7 @@ export default async function DashboardLayout({
                 activeTimer={activeTimer} 
                 projects={projects}
                 tags={tags}
+                clients={clients}
               />
             </div>
           </header>

@@ -94,71 +94,73 @@ export default function NewClientDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[640px]">
-        <DialogHeader>
-          <DialogTitle>Новий клієнт</DialogTitle>
+      <DialogContent className="rounded-2xl sm:max-w-[640px] p-0 flex flex-col max-h-[95vh] sm:max-h-[90vh] overflow-hidden border-none shadow-2xl">
+        <DialogHeader className="p-6 pb-2">
+          <DialogTitle className="text-xl font-bold">Новий клієнт</DialogTitle>
         </DialogHeader>
 
-        <div className="grid gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="client-name">Назва / Ім'я *</Label>
-            <Input
-              id="client-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Наприклад: test / Іван Петренко"
-              autoFocus
-            />
-          </div>
-
-          <div className="grid gap-2 sm:grid-cols-2">
+        <div className="flex-1 overflow-y-auto px-6 py-2 custom-scrollbar min-h-0">
+          <div className="grid gap-5 pb-4">
             <div className="grid gap-2">
-              <Label htmlFor="taxId">ЄДРПОУ або ІПН</Label>
+              <Label htmlFor="client-name">Назва / Ім'я *</Label>
               <Input
-                id="taxId"
-                value={taxId}
-                onChange={(e) => setTaxId(e.target.value)}
-                placeholder="12345678"
+                id="client-name"
+                className="rounded-lg bg-neutral-100 dark:bg-input/30"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Наприклад: test / Іван Петренко"
+                autoFocus
+              />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-2">
+                <Label htmlFor="taxId">ЄДРПОУ або ІПН</Label>
+                <Input
+                  id="taxId"
+                  className="rounded-lg bg-neutral-100 dark:bg-input/30"
+                  value={taxId}
+                  onChange={(e) => setTaxId(e.target.value)}
+                  placeholder="12345678"
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="email">Електронна пошта</Label>
+                <Input
+                  id="email"
+                  className="rounded-lg bg-neutral-100 dark:bg-input/30"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="mail@example.com"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="address">Адреса</Label>
+              <Input
+                id="address"
+                className="rounded-lg bg-neutral-100 dark:bg-input/30"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Місто, вулиця, будинок"
               />
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="email">Електронна пошта</Label>
-              <Input
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="mail@example.com"
+              <Label htmlFor="contactInfo">Контактні дані</Label>
+              <Textarea
+                id="contactInfo"
+                value={contactInfo}
+                onChange={(e) => setContactInfo(e.target.value)}
+                placeholder="Телефон, Telegram, відповідальна особа, посилання..."
+                className="min-h-[96px] rounded-lg bg-neutral-100 dark:bg-input/30"
               />
             </div>
-          </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="address">Адреса</Label>
-            <Input
-              id="address"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="Місто, вулиця, будинок"
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="contactInfo">Контактні дані</Label>
-            <Textarea
-              id="contactInfo"
-              value={contactInfo}
-              onChange={(e) => setContactInfo(e.target.value)}
-              placeholder="Телефон, Telegram, відповідальна особа, посилання..."
-              className="min-h-[96px]"
-            />
-          </div>
-
-          {/* ✅ в quick-режимі проєкти не показуємо */}
-          {mode === "full" ? (
-            <>
-              <Separator />
-
+            {/* ✅ в quick-режимі проєкти не показуємо */}
+            {mode === "full" ? (
               <div className="grid gap-2">
                 <Label>Проєкти</Label>
                 <ProjectMultiSelect
@@ -166,34 +168,36 @@ export default function NewClientDialog({
                   value={projectIds}
                   onChange={setProjectIds}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Можна вибрати кілька. Обрані проєкти отримають цього клієнта.
-                </p>
               </div>
-            </>
-          ) : null}
+            ) : null}
 
-          {error ? (
-            <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
-              {error}
-            </div>
-          ) : null}
-
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="ghost" onClick={() => onClose(false)} disabled={isPending}>
-              Скасувати
-            </Button>
-            <Button onClick={onSubmit} disabled={!canSubmit}>
-              {isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Створення...
-                </>
-              ) : (
-                "Створити"
-              )}
-            </Button>
+            {error ? (
+              <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm">
+                {error}
+              </div>
+            ) : null}
           </div>
+        </div>
+
+        <div className="p-6 pt-2 flex justify-end gap-3 border-t border-border/50 bg-muted/5">
+          <Button 
+            variant="outline" 
+            size="lg"
+            className="flex-1 sm:flex-none bg-neutral-100 dark:bg-transparent"
+            onClick={() => onClose(false)} 
+            disabled={isPending}
+          >
+            Скасувати
+          </Button>
+          <Button 
+            variant="default"
+            size="lg"
+            className="flex-1 sm:flex-none font-bold"
+            onClick={onSubmit} 
+            disabled={!canSubmit}
+          >
+            {isPending ? "Створюю…" : "Створити клієнта"}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

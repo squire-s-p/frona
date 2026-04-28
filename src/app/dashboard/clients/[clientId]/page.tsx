@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getAuthSession } from "@/lib/auth-session";
 
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Receipt, FolderPlus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -75,51 +75,31 @@ export default async function ClientPage({
   return (
     <div className="absolute inset-0 overflow-y-auto scrollbar-hide bg-background">
       <div className="p-4 md:p-6 pb-20 space-y-6">
-        
-        {/* HEADER — Identical pattern to projects */}
+
+        {/* HEADER Section */}
         <div className="mb-8">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div className="min-w-0 space-y-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <Link href="/dashboard/clients">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-7 w-7 shrink-0 rounded-full border-border/40 bg-card hover:bg-muted hover:text-primary transition-all group"
-                  >
-                    <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" />
-                  </Button>
-                </Link>
-                
-                <Badge variant="secondary" className="rounded-lg px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider bg-primary/5 text-primary border-primary/10">
-                  Клієнт
-                </Badge>
-              </div>
+          <div className="flex items-center justify-between gap-4">
+            <h1 className="truncate text-xl sm:text-3xl font-extrabold tracking-tight text-foreground leading-none">
+              {client.name}
+            </h1>
 
-              <div className="flex flex-col ml-0.5">
-                <h1 className="truncate text-2xl sm:text-4xl font-extrabold tracking-tight text-foreground leading-none">
-                  {client.name}
-                </h1>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <div className="flex items-center gap-3 shrink-0">
               <InvoiceCreateDialog
                 clientId={client.id}
                 trigger={
-                  <Button variant="outline" className="h-11 rounded-2xl border-border/40 px-5 text-[11px] font-bold hover:bg-zinc-500/5">
-                    + Новий рахунок
+                  <Button variant="outline" className="h-9 rounded-lg gap-2 px-4 text-sm font-medium transition-all shadow-none">
+                    <Receipt className="h-4 w-4" />
+                    <span>Рахунок</span>
                   </Button>
                 }
               />
-
               <ProjectCreateDialog
                 clients={clientsForProjectDialog}
                 defaultClientId={client.id}
                 trigger={
-                  <Button className="h-11 rounded-2xl px-6 text-[11px] font-bold shadow-lg shadow-primary/10">
-                    + Новий проєкт
+                  <Button className="h-9 rounded-lg gap-2 px-4 text-sm font-medium transition-all">
+                    <FolderPlus className="h-4 w-4" />
+                    <span>Проєкт</span>
                   </Button>
                 }
               />
@@ -127,10 +107,10 @@ export default async function ClientPage({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-          
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+
           {/* LEFT COLUMN — Details */}
-          <div className="lg:col-span-7 space-y-5">
+          <div className="lg:col-span-7 h-full">
             <ClientDetailsCard
               client={{
                 id: client.id,
@@ -143,43 +123,33 @@ export default async function ClientPage({
                 updatedAt: client.updatedAt,
               }}
             />
-            
-            <Card className="rounded-2xl border bg-card shadow-sm overflow-hidden">
-                <div className="px-5 pt-5 pb-4 border-b border-border/50">
-                    <h2 className="text-base font-bold tracking-tight text-foreground">Нотатки</h2>
-                </div>
-                <div className="p-5">
-                    <div className="text-sm text-muted-foreground bg-muted/20 p-4 rounded-xl border border-dashed border-border/60 text-center italic">
-                        Тут можна буде додати коментарі або чат, як у проєктах.
-                    </div>
-                </div>
-            </Card>
           </div>
 
           {/* RIGHT COLUMN — Stats & Quick Projects */}
-          <div className="lg:col-span-5 space-y-5">
-            
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="rounded-2xl border bg-card p-5 shadow-sm">
-                    <p className="text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider mb-2">Активні проєкти</p>
-                    <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-extrabold text-emerald-600">{activeCount}</span>
-                        <span className="text-xs text-muted-foreground font-medium">з {clientProjects.length}</span>
-                    </div>
+          <div className="lg:col-span-5 flex flex-col gap-5 h-full">
+
+            {/* Stats Block (Finance style) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="rounded-2xl border border-border/60 bg-neutral-100 dark:bg-neutral-900 p-5 shadow-none flex flex-col justify-between h-32">
+                <p className="text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider">Активні проєкти</p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-extrabold text-emerald-600 tracking-tighter">{activeCount}</span>
+                  <span className="text-xs text-muted-foreground font-medium">з {clientProjects.length}</span>
                 </div>
-                <div className="rounded-2xl border bg-card p-5 shadow-sm">
-                    <p className="text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider mb-2">Загалом проєктів</p>
-                    <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-extrabold text-foreground">{clientProjects.length}</span>
-                    </div>
+              </div>
+              <div className="rounded-2xl border border-border/60 bg-neutral-100 dark:bg-neutral-900 p-5 shadow-none flex flex-col justify-between h-32">
+                <p className="text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider">Загалом проєктів</p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-extrabold text-foreground tracking-tighter">{clientProjects.length}</span>
+                  <span className="text-xs text-muted-foreground font-medium">проєктів</span>
                 </div>
+              </div>
             </div>
 
             <ClientProjectsPicker
-                clientId={client.id}
-                allProjects={allProjects}
-                selectedProjectIds={clientProjects.map((p: any) => p.id)}
+              clientId={client.id}
+              allProjects={allProjects}
+              selectedProjectIds={clientProjects.map((p: any) => p.id)}
             />
 
           </div>
@@ -187,14 +157,14 @@ export default async function ClientPage({
 
         {/* BOTTOM FULL WIDTH — Detailed Projects Table */}
         <div className="mt-5">
-            <ClientProjectsTable
-                projects={clientProjects.map((p: any) => ({
-                    id: p.id,
-                    name: p.name,
-                    status: p.status,
-                    updatedAt: p.updatedAt,
-                }))}
-            />
+          <ClientProjectsTable
+            projects={clientProjects.map((p: any) => ({
+              id: p.id,
+              name: p.name,
+              status: p.status,
+              updatedAt: p.updatedAt,
+            }))}
+          />
         </div>
 
       </div>

@@ -40,7 +40,6 @@ export default function ClientProjectsPicker({
   const options = useMemo(() => {
     return (
       allProjects
-        // ✅ не даємо привʼязувати archived (таблиця нижче все одно показує їх)
         .filter((p) => p.status !== "archived")
         .slice()
         .sort((a, b) => a.name.localeCompare(b.name, "uk"))
@@ -67,39 +66,35 @@ export default function ClientProjectsPicker({
   }
 
   return (
-    <Card className="p-4 md:p-6">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="text-sm font-semibold">Проєкти клієнта</div>
-          <div className="mt-1 text-sm text-muted-foreground">
-            Привʼяжи або відвʼяжи існуючі проєкти від цього клієнта.
-          </div>
+    <Card className="rounded-2xl border bg-neutral-100 dark:bg-neutral-900 shadow-none flex flex-col flex-1 overflow-hidden p-5 space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="space-y-1">
+          <h2 className="text-base font-bold tracking-tight text-foreground leading-none">Проєкти клієнта</h2>
+          <p className="text-[10px] uppercase font-bold text-muted-foreground/40 tracking-wider">Привʼяжіть існуючі проєкти</p>
         </div>
 
-        <Button size="sm" className="gap-2" onClick={onSave} disabled={!dirty || isPending}>
+        <Button 
+            size="sm" 
+            className="rounded-xl h-8 px-3 text-[11px] font-bold shadow-none gap-1.5 transition-all active:scale-95 disabled:opacity-30" 
+            onClick={onSave} 
+            disabled={!dirty || isPending}
+        >
           {isPending ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Збереження...
-            </>
+            <Loader2 className="h-3 w-3 animate-spin" />
           ) : (
-            <>
-              <Save className="h-4 w-4" />
-              Зберегти
-            </>
+            <Save className="h-3 w-3" />
           )}
+          Зберегти
         </Button>
       </div>
 
-      <Separator className="my-4" />
-
       <ProjectMultiSelect projects={options} value={value} onChange={setValue} />
 
-      {error ? (
-        <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
-          {error}
-        </div>
-      ) : null}
+      {error && (
+          <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-[10px] font-bold text-destructive">
+              {error}
+          </div>
+      )}
     </Card>
   );
 }

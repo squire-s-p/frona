@@ -18,9 +18,14 @@ export async function updateProfileAction(prevState: any, formData: FormData) {
       return { error: "Ім'я занадто коротке" };
     }
 
+    const targetHourlyRate = Number(formData.get("targetHourlyRate") || 0);
+    
     await prisma.user.update({
       where: { id: session.user.id },
-      data: { name: name.trim() },
+      data: { 
+        name: name.trim(),
+        targetHourlyRate: targetHourlyRate
+      },
     });
 
     revalidatePath("/dashboard", "layout");

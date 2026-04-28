@@ -1,7 +1,10 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getAuthSession } from "@/lib/auth-session";
+import { cn } from "@/lib/utils";
 import { bucketsFromEntries } from "@/lib/time-entries";
+import { format } from "date-fns";
+import { uk } from "date-fns/locale";
 
 import { Card } from "@/components/ui/card";
 import ProjectTimeChart from "@/components/projects/project-time-chart";
@@ -40,43 +43,35 @@ export default async function ProjectDetailsPage({
     redirect("/dashboard/projects");
   }
 
-  const project = await prisma.project.findUnique({
-    where: { id: projectId },
-    select: {
-      id: true,
-      userId: true,
-      name: true,
-      status: true,
-
-      description: true,
-      source: true,
-      clientName: true, // legacy
-      site: true,
-      cost: true,
-      accesses: true,
-      clientContact: true, // legacy
-      notes: true,
-
-      // ✅ NEW: relation to Client
-      client: {
-        select: {
-          id: true,
-          name: true,
+  const [project, user] = await Promise.all([
+    prisma.project.findUnique({
+      where: { id: projectId },
+      include: {
+        transactions: {
+          orderBy: { date: "desc" },
+          select: {
+            id: true,
+            amount: true,
+            date: true,
+            description: true,
+          }
         },
-      },
+        timeEntries: {
+          orderBy: { startAt: "desc" }
+        },
+        client: {
+          select: { id: true, name: true }
+        }
+      }
+    }),
+    prisma.user.findUnique({
+      where: { id: userId }
+    })
+  ]);
 
-      timeEntries: {
-        orderBy: { startAt: "desc" },
-        take: 500,
-        select: { startAt: true, endAt: true },
-      },
-      transactions: {
-        where: { type: "income" },
-        select: { amount: true, date: true, description: true },
-        orderBy: { date: "desc" },
-      },
-    },
-  });
+  if (!project) {
+    redirect("/dashboard/projects");
+  }
 
   if (!project || project.userId !== userId) {
     redirect("/dashboard/projects");
@@ -147,13 +142,31 @@ export default async function ProjectDetailsPage({
   const earned = project.transactions.reduce((acc, t) => acc + Number(t.amount), 0);
   const earnedText = earned > 0 ? `${earned} ₴` : "—";
 
-  const rate = (() => {
-    if (totalMinutes === 0) return "—";
+  const rateNum = (() => {
+    if (totalMinutes === 0) return 0;
     const hours = totalMinutes / 60;
     const baseValue = earned > 0 ? earned : Number(project.cost || 0);
-    if (baseValue === 0) return "—";
-    return `${Math.round(baseValue / hours)} ₴`;
+    return baseValue / hours;
   })();
+
+  const rate = rateNum > 0 ? `${Math.round(rateNum)} ₴` : "—";
+
+  const targetRate = (user as any)?.targetHourlyRate || 0;
+  const targetRateText = targetRate > 0 ? `Ціль: ${targetRate} ₴/год` : "Ціль не встановлена";
+
+  const gaugePercent = targetRate > 0 
+    ? Math.min(100, (rateNum / targetRate) * 50)
+    : (project.cost && Number(project.cost) > 0 
+        ? Math.min(100, (earned / Number(project.cost)) * 100) 
+        : 0);
+
+  const totalHours = totalMinutes / 60;
+  const rawOptimalCost = totalHours * targetRate;
+  // Округлюємо до сотень в більшу сторону
+  const optimalCost = Math.ceil(rawOptimalCost / 100) * 100;
+  
+  const efficiency = Number(project.cost || 0) - rawOptimalCost;
+  const isProfitable = efficiency >= 0;
 
   const earnedPercent = project.cost && Number(project.cost) > 0 
     ? Math.min(100, Math.max(0, (earned / Number(project.cost)) * 100)) 
@@ -265,66 +278,68 @@ export default async function ProjectDetailsPage({
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
               
               {/* 1. Оплати (Image 1 style) */}
-              <div className="rounded-2xl border border-border/40 bg-neutral-200/50 dark:bg-[#161616] p-5 flex flex-col h-[340px] overflow-hidden">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-sm font-bold text-foreground tracking-tight">Оплати по проєкту</h3>
-                  <MoreVertical className="h-4 w-4 text-muted-foreground" />
-                </div>
-                
-                {/* Progress Bar */}
-                <div className="h-2 w-full bg-neutral-300 dark:bg-[#2a2a2a] rounded-full overflow-hidden mb-3 shrink-0">
-                  <div className="h-full bg-foreground rounded-full transition-all" style={{ width: `${earnedPercent}%` }} />
-                </div>
-                
-                {/* Legend */}
-                <div className="flex justify-between text-xs mb-6 shrink-0">
-                  <div>
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <div className="w-2.5 h-2.5 rounded-sm bg-foreground" />
-                      <span className="text-foreground font-semibold">Оплачено</span>
-                    </div>
-                    <span className="text-foreground font-bold text-sm">
-                      {earned} ₴ <span className="text-muted-foreground font-medium">({Math.round(earnedPercent)}%)</span>
-                    </span>
+              <div className="rounded-2xl border border-border/40 bg-neutral-200/50 dark:bg-neutral-800 p-5 flex flex-col min-h-[320px] overflow-hidden justify-between min-w-0">
+                <div>
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-base font-bold text-foreground tracking-tight">Оплати по проєкту</h3>
                   </div>
-                  <div className="text-right">
-                    <div className="flex items-center gap-1.5 mb-1 justify-end">
-                      <div className="w-2.5 h-2.5 rounded-sm bg-neutral-400 dark:bg-[#333]" />
-                      <span className="text-foreground font-semibold">Залишок</span>
-                    </div>
-                    <span className="text-foreground font-bold text-sm">
-                      {project.cost ? Number(project.cost) - earned : 0} ₴ <span className="text-muted-foreground font-medium">({100 - Math.round(earnedPercent)}%)</span>
-                    </span>
+                  
+                  {/* List Header */}
+                  <div className="flex justify-between text-[9px] text-muted-foreground font-black mb-3 border-b border-border/50 pb-2 uppercase tracking-widest">
+                    <span>Транзакція</span>
+                    <span>Дата</span>
                   </div>
-                </div>
-
-                {/* List Header */}
-                <div className="flex justify-between text-[10px] text-muted-foreground font-bold mb-3 border-b border-border/50 pb-2 shrink-0">
-                  <span className="uppercase tracking-wider">Транзакція</span>
-                  <span className="uppercase tracking-wider">Дата</span>
                 </div>
                 
                 {/* List Items */}
-                <div className="flex-1 overflow-y-auto space-y-3 pr-1 scrollbar-hide">
-                  {project.transactions.map((t, i) => (
-                    <div key={i} className="flex justify-between items-center border-b border-border/40 pb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-foreground truncate max-w-[120px]">{t.description || "Оплата"}</span>
+                <div className="flex-1 overflow-y-auto space-y-3 pr-1 scrollbar-hide mb-6">
+                  {project.transactions.length > 0 ? (
+                    project.transactions.map((t, i) => (
+                      <div key={t.id || i} className="flex justify-between items-start">
+                        <div className="flex flex-col min-w-0 pr-2">
+                          <span className="text-[11px] font-bold text-foreground truncate">{t.description || "Оплата"}</span>
+                          <span className="text-[10px] text-muted-foreground">{Number(t.amount)} ₴</span>
+                        </div>
+                        <span className="text-[10px] font-bold text-muted-foreground shrink-0 uppercase tracking-tighter">
+                          {format(new Date(t.date), "d MMM", { locale: uk })}
+                        </span>
                       </div>
-                      <div className="flex flex-col items-end">
-                         <span className="text-[10px] text-muted-foreground">{t.date.toLocaleDateString("uk-UA")}</span>
-                         <span className="text-xs font-bold text-green-600 dark:text-green-500">+{Number(t.amount)} ₴</span>
-                      </div>
+                    ))
+                  ) : (
+                    <div className="h-full flex items-center justify-center opacity-40">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Немає транзакцій</p>
                     </div>
-                  ))}
-                  {project.transactions.length === 0 && (
-                     <div className="text-xs text-muted-foreground text-center py-4">Немає транзакцій</div>
                   )}
                 </div>
-              </div>
 
+                <div className="space-y-4">
+                  {/* Progress Bar */}
+                  <div className="h-1.5 w-full bg-neutral-300 dark:bg-[#2a2a2a] rounded-full overflow-hidden">
+                    <div className="h-full bg-foreground rounded-full transition-all duration-500" style={{ width: `${earnedPercent}%` }} />
+                  </div>
+                  
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3 sm:gap-2">
+                    <div className="shrink-0">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <div className="w-1.5 h-1.5 rounded-full bg-foreground" />
+                        <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Оплачено</span>
+                      </div>
+                      <p className="text-3xl sm:text-4xl font-bold text-foreground tracking-tighter leading-none">
+                        {earned} <span className="text-lg font-medium">₴</span>
+                      </p>
+                    </div>
+                    <div className="sm:text-right shrink-0">
+                      <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block mb-1">Залишок</span>
+                      <p className="text-lg sm:text-xl font-bold text-foreground/50 tracking-tighter leading-none">
+                        {project.cost ? Number(project.cost) - earned : 0} ₴
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
               {/* 2. Час роботи (Image 2 style) */}
-              <div className="rounded-2xl border border-border/40 bg-neutral-200/50 dark:bg-[#161616] p-5 flex flex-col h-[340px] relative overflow-hidden group">
+              <div className="rounded-2xl border border-border/40 bg-neutral-200/50 dark:bg-neutral-800 p-5 flex flex-col min-h-[320px] relative overflow-hidden group min-w-0">
                 <div className="flex justify-between items-start mb-2 relative z-10">
                   <h3 className="text-base font-bold text-foreground tracking-tight">Час роботи</h3>
                 </div>
@@ -357,44 +372,59 @@ export default async function ProjectDetailsPage({
               </div>
 
               {/* 3. Ставка / год */}
-              <div className="rounded-2xl border border-border/40 bg-neutral-200/50 dark:bg-[#161616] p-5 flex flex-col h-[340px] relative overflow-hidden group">
+              <div className="rounded-2xl border border-border/40 bg-neutral-200/50 dark:bg-neutral-800 p-5 flex flex-col min-h-[320px] relative overflow-hidden group min-w-0">
                 <div className="flex justify-between items-start mb-2 relative z-10">
                   <h3 className="text-base font-bold text-foreground tracking-tight">Ставка / год</h3>
                 </div>
 
                 <div className="flex-1 flex flex-col items-center justify-end mb-10">
                   {/* Gauge Chart */}
-                  <div className="relative w-80 h-40 flex-shrink-0">
+                  <div className="relative w-full max-w-[280px] h-32 flex-shrink-0">
                     <svg viewBox="0 0 100 50" className="w-full h-full overflow-visible">
-                      <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="currentColor" className="text-neutral-300 dark:text-neutral-800" strokeWidth="12" strokeLinecap="round" />
-                      <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="currentColor" className="text-foreground" strokeWidth="12" strokeLinecap="round" strokeDashoffset={125.6 * (1 - earnedPercent/100)} pathLength="125.6" />
+                      <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="currentColor" className="text-neutral-300 dark:text-neutral-700" strokeWidth="12" strokeLinecap="round" />
+                      <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="currentColor" className="text-foreground" strokeWidth="12" strokeLinecap="round" strokeDasharray="125.6" strokeDashoffset={125.6 * (1 - gaugePercent/100)} pathLength="125.6" />
                     </svg>
                     <div className="absolute bottom-0 left-0 right-0 text-center translate-y-2">
-                      <div className="text-5xl font-bold text-foreground tracking-tighter">{rate}</div>
+                      <div className="text-4xl sm:text-5xl font-bold text-foreground tracking-tighter">{rate}</div>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* 4. Вартість (Image 4 style) */}
-              <div className="rounded-2xl border border-border/40 bg-neutral-200/50 dark:bg-[#161616] p-6 flex flex-col justify-center h-[340px] relative">
-                 <div className="flex justify-between items-start mb-6">
+              <div className="rounded-2xl border border-border/40 bg-neutral-200/50 dark:bg-neutral-800 p-6 flex flex-col justify-between min-h-[320px] relative min-w-0">
+                 <div className="flex justify-between items-start">
                    <h3 className="text-base font-bold text-foreground tracking-tight">Вартість</h3>
-                   <div className="h-10 w-10 rounded-xl bg-background border border-border/50 flex items-center justify-center">
-                      <Briefcase className="h-5 w-5 text-muted-foreground" />
-                   </div>
                  </div>
-                 
-                 <div className="flex-1 flex flex-col justify-center">
-                   <p className="text-5xl font-bold text-foreground mb-4 tracking-tighter truncate">
-                     {project.cost ? `${project.cost}` : "—"} <span className="text-2xl text-muted-foreground">₴</span>
+                 <div className="flex flex-col justify-end">
+                   <p className="text-4xl sm:text-5xl font-bold text-foreground mb-4 tracking-tighter truncate">
+                     {project.cost ? `${project.cost}` : "—"} <span className="text-xl sm:text-2xl text-muted-foreground">₴</span>
                    </p>
                    
-                   <div>
-                     <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-500/10 text-green-600 dark:text-green-500 text-xs font-bold tracking-wide">
-                       <TrendingUp className="h-3.5 w-3.5" />
-                       Встановлено бюджет
-                     </span>
+                   <div className="space-y-3">
+                     <div className="flex flex-wrap gap-2">
+                       <span className={cn(
+                         "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium tracking-wide uppercase transition-colors shadow-sm",
+                         "bg-black text-white dark:bg-white dark:text-black"
+                       )}>
+                         {isProfitable ? (
+                           <>
+                             <TrendingUp className="h-3.5 w-3.5" />
+                             +{Math.abs(Math.round(efficiency))} ₴ до цілі
+                           </>
+                         ) : (
+                           <>
+                             <TrendingUp className="h-3.5 w-3.5 rotate-180" />
+                             {Math.round(efficiency)} ₴ від цілі
+                           </>
+                         )}
+                       </span>
+                     </div>
+                     {!isProfitable && (
+                       <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest pl-1">
+                         Оптимально: <span className="text-foreground">{optimalCost} ₴</span>
+                       </p>
+                     )}
                    </div>
                  </div>
               </div>
