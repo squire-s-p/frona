@@ -70,7 +70,7 @@ export default async function ProjectDetailsPage({
       }),
       prisma.user.findUnique({
         where: { id: userId },
-        select: { targetHourlyRate: true }
+        select: { id: true } // Тимчасово не беремо targetHourlyRate
       })
     ]);
     project = data[0];
