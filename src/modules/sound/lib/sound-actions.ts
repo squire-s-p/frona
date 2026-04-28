@@ -1,23 +1,18 @@
-"use server"
+export async function getSoundFiles(mode: "focus" | "study" | "relax"): Promise<string[]> {
+    const soundMap = {
+        focus: [
+            "Focus 1.mp3",
+            "Focus 2.mp3",
+            "Focus 3.mp3",
+            "Focus 4.mp3"
+        ],
+        relax: [
+            "Relaxing 1.mp3"
+        ],
+        study: [
+            "Study 1.mp3"
+        ]
+    };
 
-import fs from "fs"
-import path from "path"
-
-export async function getSoundFiles(mode: "focus" | "study" | "relax") {
-    const directoryPath = path.join(process.cwd(), "public", "sounds", mode)
-
-    try {
-        if (!fs.existsSync(directoryPath)) {
-            console.warn(`Directory not found: ${directoryPath}`)
-            return []
-        }
-
-        const files = fs.readdirSync(directoryPath)
-        return files
-            .filter(file => file.endsWith(".mp3"))
-            .map(file => `/sounds/${mode}/${file}`)
-    } catch (error) {
-        console.error(`Error reading sound files for mode ${mode}:`, error)
-        return []
-    }
+    return (soundMap[mode] || []).map(file => `/sounds/${mode}/${file}`);
 }
