@@ -3,15 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "cross-env NEXT_DISABLE_TURBOPACK=1 next dev",
-    "ci-check": "cross-env DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy npx prisma generate && cross-env DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy NEXT_TELEMETRY_DISABLED=1 NODE_ENV=production next build --webpack",
-    "ci-full": "rimraf .next && npm ci && npm run ci-check",
+    "dev": "next dev",
     "build": "prisma generate && next build",
     "postinstall": "prisma generate",
     "start": "next start",
     "type-check": "tsc --noEmit",
-    "lint": "next lint",
-    "build:check": "npm run type-check && npm run build"
+    "lint": "next lint"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
