@@ -13,10 +13,15 @@ export default async function DashboardPage() {
 
   let userLayout = null;
   if (session?.user?.id) {
-    const dbUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-    });
-    userLayout = (dbUser as any)?.dashboardLayout;
+    try {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { dashboardLayout: true }
+      });
+      userLayout = dbUser?.dashboardLayout;
+    } catch (e) {
+      console.error("Failed to load user layout:", e);
+    }
   }
 
   const data = await getFullDashboardData();

@@ -43,31 +43,41 @@ export default async function ProjectDetailsPage({
     redirect("/dashboard/projects");
   }
 
-  const [project, user] = await Promise.all([
-    prisma.project.findUnique({
-      where: { id: projectId },
-      include: {
-        transactions: {
-          orderBy: { date: "desc" },
-          select: {
-            id: true,
-            amount: true,
-            date: true,
-            description: true,
+  let project = null;
+  let user = null;
+
+  try {
+    const data = await Promise.all([
+      prisma.project.findUnique({
+        where: { id: projectId },
+        include: {
+          transactions: {
+            orderBy: { date: "desc" },
+            select: {
+              id: true,
+              amount: true,
+              date: true,
+              description: true,
+            }
+          },
+          timeEntries: {
+            orderBy: { startAt: "desc" }
+          },
+          client: {
+            select: { id: true, name: true }
           }
-        },
-        timeEntries: {
-          orderBy: { startAt: "desc" }
-        },
-        client: {
-          select: { id: true, name: true }
         }
-      }
-    }),
-    prisma.user.findUnique({
-      where: { id: userId }
-    })
-  ]);
+      }),
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: { targetHourlyRate: true }
+      })
+    ]);
+    project = data[0];
+    user = data[1];
+  } catch (error) {
+    console.error("Failed to fetch project details:", error);
+  }
 
   if (!project) {
     redirect("/dashboard/projects");

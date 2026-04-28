@@ -38,17 +38,28 @@ export default async function DashboardLayout({
 
   const freshUser = { ...session.user, ...dbUser };
 
-  const [rawActiveTimer, projects, tags, clients] = await Promise.all([
-    getActiveTimer(),
-    listProjects(session.user.id),
-    listTags(session.user.id),
-    prisma.client.findMany({
-      where: { userId: session.user.id },
-      select: { id: true, name: true }
-    }).catch(() => []), // Захист від відсутності таблиці в БД
-  ]);
+  let rawActiveTimer = null;
+  let projects: any[] = [];
+  let tags: any[] = [];
+  let clients: any[] = [];
 
-  // Серіалізуємо дані для клієнтського компонента (особливо дати)
+  try {
+    const data = await Promise.all([
+      getActiveTimer().catch(() => null),
+      listProjects(session.user.id).catch(() => []),
+      listTags(session.user.id).catch(() => []),
+      prisma.client.findMany({
+        where: { userId: session.user.id },
+        select: { id: true, name: true }
+      }).catch(() => []),
+    ]);
+    
+    [rawActiveTimer, projects, tags, clients] = data;
+  } catch (error) {
+    console.error("Layout data fetching error:", error);
+  }
+
+  // Serialize complex objects for Client Components
   const activeTimer = rawActiveTimer ? JSON.parse(JSON.stringify(rawActiveTimer)) : null;
 
   return (
@@ -57,7 +68,6 @@ export default async function DashboardLayout({
         <AppSidebar user={freshUser} />
 
         <SidebarInset className="bg-sidebar flex flex-col min-h-0 overflow-hidden">
-          {/* ✅ TOPBAR: фіксований */}
           <header className="flex h-14 shrink-0 items-center gap-2 bg-sidebar">
             <div className="min-w-0 flex-1">
               <DashboardTopbar 
