@@ -1,11 +1,13 @@
 import "dotenv/config";
-import { defineConfig, env } from "prisma/config";
+import { defineConfig } from "prisma/config";
+
+// ✅ We use a fallback URL to prevent build failures when DATABASE_URL is not present (e.g. during CI/CD generation)
+const databaseUrl = process.env.DATABASE_URL || "postgresql://dummy:dummy@localhost:5432/dummy";
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
 
-  // ✅ Prisma 7.x expects "datasource" (singular), not "datasources"
   datasource: {
-    url: env("DATABASE_URL"),
+    url: databaseUrl,
   },
 });
