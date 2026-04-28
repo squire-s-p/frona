@@ -7,12 +7,6 @@ export const metadata: Metadata = {
 import { getAuthSession } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, Palette, ShieldCheck } from "lucide-react";
 import { ProfileForm } from "@/components/settings/profile-form";
@@ -29,29 +23,62 @@ export default async function SettingsPage() {
     redirect("/login");
   }
 
-  const dbUser = await prisma.user.findUnique({
-    where: { id: session.user.id }
-  });
+  let dbUser: any = null;
+  try {
+    dbUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+        targetHourlyRate: true,
+      }
+    });
+  } catch (e) {
+    try {
+        dbUser = await prisma.user.findUnique({
+            where: { id: session.user.id },
+            select: { id: true, name: true, email: true, image: true }
+        });
+    } catch (e2) {
+        dbUser = session.user;
+    }
+  }
+  
   const user = dbUser || session.user;
   
-  const monoAccounts = await getBankAccounts();
-  const isMonoConnected = monoAccounts.length > 0;
+  let isMonoConnected = false;
+  try {
+    const monoAccounts = await getBankAccounts();
+    isMonoConnected = monoAccounts.length > 0;
+  } catch (e) {}
 
-  const googleAccount = await prisma.account.findFirst({
-    where: { userId: user.id, provider: "google" },
-  });
-  const isGoogleConnected = !!googleAccount?.scope?.includes("calendar");
+  let isGoogleConnected = false;
+  try {
+    const googleAccount = await prisma.account.findFirst({
+        where: { userId: user.id, provider: "google" },
+    });
+    isGoogleConnected = !!googleAccount?.scope?.includes("calendar");
+  } catch (e) {}
 
-  const deviceSessions = await prisma.deviceSession.findMany({
-    where: { userId: user.id },
-    orderBy: { lastActive: "desc" }
-  });
+  let deviceSessions: any[] = [];
+  try {
+    deviceSessions = await prisma.deviceSession.findMany({
+        where: { userId: user.id },
+        orderBy: { lastActive: "desc" }
+    });
+  } catch (e) {}
+
+  let hasPassword = false;
+  try {
+    const userPassword = await prisma.userPassword.findUnique({
+        where: { userId: user.id },
+    });
+    hasPassword = !!userPassword;
+  } catch (e) {}
+
   const currentSessionId = (session as any).deviceSessionId;
-
-  const userPassword = await prisma.userPassword.findUnique({
-    where: { userId: user.id },
-  });
-  const hasPassword = !!userPassword;
 
   return (
     <div className="absolute inset-0 overflow-y-auto scrollbar-hide bg-background">

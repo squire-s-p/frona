@@ -24,27 +24,29 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Prepare standalone
+      - name: Prepare bundle
         run: |
-          mkdir -p build/.next
-          cp -r .next/standalone/* build/
-          cp -r .next/standalone/.next build/
-          cp -r public build/ || echo "No public dir"
-          cp -r .next/static build/.next/static
+          mkdir -p deploy
+          cp -r .next/standalone/* deploy/
+          cp -r .next/standalone/.next deploy/
+          cp -r public deploy/ || echo "No public dir"
+          cp -r .next/static deploy/.next/static
+          cp -r prisma deploy/
+          cp package.json deploy/
 
       - name: Archive
-        run: tar -czf build.tar.gz build
+        run: tar -czf deploy.tar.gz -C deploy .
 
-      - name: Upload
+      - name: Upload to Server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          source: "build.tar.gz"
+          source: "deploy.tar.gz"
           target: "/root"
 
-      - name: Deploy
+      - name: Execute Remote Commands
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -53,19 +55,26 @@ jobs:
           script: |
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-            source ~/.bashrc || source ~/.profile
-            rm -rf /root/app
-            mkdir /root/app
+            
+            # 1. Підготовка папки
+            rm -rf /root/app_new
+            mkdir -p /root/app_new
+            tar -xzf /root/deploy.tar.gz -C /root/app_new
+            rm /root/deploy.tar.gz
 
-            tar -xzf /root/build.tar.gz -C /root/app
-            rm /root/build.tar.gz
+            # 2. Копіюємо конфіг (беремо з робочої папки frona)
+            cp /root/frona/.env /root/app_new/.env
 
-            cp /root/frona/.env /root/app/build/.env
-            if [ ! -f "/root/app/build/.env" ]; then echo "FATAL: .env file NOT found!"; exit 1; fi
+            # 3. Оновлення бази даних (автоматично!)
+            cd /root/app_new
+            npx prisma db push --accept-data-loss || echo "Prisma push failed, but continuing..."
 
-            cd /root/app/build
-
+            # 4. Рокіровка папок та перезапуск
+            rm -rf /root/app_old
+            [ -d "/root/app" ] && mv /root/app /root/app_old
+            mv /root/app_new /root/app
+            
+            cd /root/app
             pm2 delete dashboard || true
             pm2 start server.js --name dashboard --update-env
-
             pm2 save

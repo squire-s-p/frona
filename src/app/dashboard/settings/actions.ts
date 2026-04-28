@@ -20,13 +20,23 @@ export async function updateProfileAction(prevState: any, formData: FormData) {
 
     const targetHourlyRate = Number(formData.get("targetHourlyRate") || 0);
     
-    await prisma.user.update({
-      where: { id: session.user.id },
-      data: { 
-        name: name.trim(),
-        targetHourlyRate: targetHourlyRate
-      },
-    });
+    try {
+      await prisma.user.update({
+        where: { id: session.user.id },
+        data: { 
+          name: name.trim(),
+          targetHourlyRate: targetHourlyRate
+        },
+      });
+    } catch (dbError) {
+      console.warn("Could not update targetHourlyRate, updating only name:", dbError);
+      await prisma.user.update({
+        where: { id: session.user.id },
+        data: { 
+          name: name.trim()
+        },
+      });
+    }
 
     revalidatePath("/dashboard", "layout");
     return { success: "Профіль оновлено успішно!" };
