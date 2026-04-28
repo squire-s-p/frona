@@ -38,18 +38,18 @@ export default async function DashboardLayout({
 
   const freshUser = { ...session.user, ...dbUser };
 
-  const [activeTimer, projects, tags, clients] = await Promise.all([
+  const [rawActiveTimer, projects, tags, clients] = await Promise.all([
     getActiveTimer(),
     listProjects(session.user.id),
     listTags(session.user.id),
     prisma.client.findMany({
       where: { userId: session.user.id },
       select: { id: true, name: true }
-    }),
+    }).catch(() => []), // Захист від відсутності таблиці в БД
   ]);
 
-  const isTimerRunning = !!activeTimer;
-  const isDeepWorkMode = activeTimer?.mode === "work";
+  // Серіалізуємо дані для клієнтського компонента (особливо дати)
+  const activeTimer = rawActiveTimer ? JSON.parse(JSON.stringify(rawActiveTimer)) : null;
 
   return (
     <SoundProvider>
