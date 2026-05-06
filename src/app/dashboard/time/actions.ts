@@ -18,12 +18,6 @@ function secondsBetween(a: Date, b: Date) {
   return Math.max(0, Math.floor(diffMs / 1000));
 }
 
-function startOfDayUtc(date: Date) {
-  const d = new Date(date);
-  d.setUTCHours(0, 0, 0, 0);
-  return d;
-}
-
 function normalizeId(v: unknown): string | null {
   if (typeof v !== "string") return null;
   const s = v.trim();
@@ -429,13 +423,13 @@ async function punchThroughOverlaps(tx: any, userId: string, startAt: Date, endA
         try {
           const title = full.task?.title || full.project?.name || "Робота";
           await updateCalendarEvent({ eventId: full.calendarEventId, title, allDay: false, startIso: newStart.toISOString(), endIso: newEnd.toISOString() });
-        } catch(e) {}
+        } catch {}
       }
     };
 
     if (eStart >= nStart && eEnd <= nEnd) {
       if (entry.calendarEventId) {
-        try { await deleteCalendarEvent({ eventId: entry.calendarEventId }); } catch(e){}
+        try { await deleteCalendarEvent({ eventId: entry.calendarEventId }); } catch{}
       }
       await tx.timeEntry.delete({ where: { id: entry.id } });
     } else if (eStart < nStart && eEnd > nEnd) {
@@ -468,8 +462,7 @@ async function punchThroughOverlaps(tx: any, userId: string, startAt: Date, endA
           if (res.event.id) {
             await tx.timeEntry.update({ where: { id: createdSplit.id }, data: { calendarEventId: res.event.id } });
           }
-        } catch(e) {}
-      }
+        } catch {}      }
 
     } else if (eStart < nStart) {
       await tx.timeEntry.update({

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -76,7 +77,7 @@ function CardSmall() {
       </CardHeader>
       <CardContent>
         <p className="text-sm text-muted-foreground">
-          You can adjust the card's width using Tailwind classes like max-w-sm.
+          You can adjust the card&apos;s width using Tailwind classes like max-w-sm.
         </p>
       </CardContent>
       <CardFooter>
@@ -92,9 +93,11 @@ function CardImage() {
   return (
     <Card className="relative mx-auto w-full max-w-sm pt-0 overflow-hidden">
       <div className="absolute inset-0 z-30 aspect-video bg-black/35" />
-      <img
+      <Image
         src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=800&q=80"
         alt="Event cover"
+        width={800}
+        height={450}
         className="relative z-20 aspect-video w-full object-cover brightness-60 grayscale dark:brightness-40"
       />
       <CardHeader>

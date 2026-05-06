@@ -2,8 +2,12 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getAuthSession } from "@/lib/auth-session";
 
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  DashboardPage,
+  DashboardPageHeader,
+  DashboardSurface,
+} from "@/components/layout/dashboard-page";
 
 export default async function InvoicesPage() {
   const session = await getAuthSession();
@@ -24,32 +28,35 @@ export default async function InvoicesPage() {
   });
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <div className="text-2xl font-semibold">Рахунки</div>
-          <div className="text-sm text-muted-foreground">MVP: створення + позиції + PDF</div>
+    <DashboardPage>
+      <DashboardPageHeader
+        title="Рахунки"
+        description="MVP: створення + позиції + PDF"
+        actions={
+          <Button asChild>
+            <Link href="/dashboard/clients">+ Новий рахунок</Link>
+          </Button>
+        }
+      />
+
+      <DashboardSurface>
+        <div className="border-b border-border/50 px-6 py-4 text-sm font-semibold">
+          Останні рахунки
         </div>
 
-        <Button asChild className="rounded-xl">
-          <Link href="/dashboard/clients">+ Новий рахунок</Link>
-        </Button>
-      </div>
-
-      <Card className="overflow-hidden">
-        <div className="border-b p-4 md:p-6 text-sm font-semibold">Останні рахунки</div>
-
-        <div className="divide-y">
+        <div className="divide-y divide-border/60">
           {invoices.length === 0 ? (
-            <div className="p-6 text-sm text-muted-foreground">Поки немає рахунків</div>
+            <div className="px-6 py-8 text-sm text-muted-foreground">
+              Поки немає рахунків
+            </div>
           ) : (
             invoices.map((inv: any) => (
               <div
                 key={inv.id}
-                className="flex flex-col gap-2 p-4 md:flex-row md:items-center md:justify-between md:p-6"
+                className="flex flex-col gap-2 px-6 py-4 md:flex-row md:items-center md:justify-between"
               >
                 <div className="min-w-0">
-                  <div className="font-medium truncate">
+                  <div className="truncate font-medium">
                     №{inv.number} • {inv.client?.name ?? "Клієнт"}
                   </div>
                   <div className="text-sm text-muted-foreground">
@@ -71,7 +78,7 @@ export default async function InvoicesPage() {
                     {inv.currency}
                   </div>
 
-                  <Button asChild variant="outline" className="rounded-xl">
+                  <Button asChild variant="outline">
                     <Link href={`/dashboard/invoices/${inv.id}`}>Відкрити</Link>
                   </Button>
                 </div>
@@ -79,7 +86,8 @@ export default async function InvoicesPage() {
             ))
           )}
         </div>
-      </Card>
-    </div>
+      </DashboardSurface>
+    </DashboardPage>
   );
 }
+

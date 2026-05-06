@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
+import { Command, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import { FileText } from "lucide-react";
 
@@ -65,7 +65,7 @@ export function NotesAutocomplete({ notes, query, position, onSelect, onClose }:
                     Нотатки не знайдені
                     {query && (
                         <div className="mt-2 text-xs">
-                            <span className="text-blue-500">Enter</span> щоб створити "{query}"
+                            <span className="text-blue-500">Enter</span> щоб створити &quot;{query}&quot;
                         </div>
                     )}
                 </div>

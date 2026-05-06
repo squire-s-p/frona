@@ -9,7 +9,7 @@ import {
     CommandItem,
     CommandList,
 } from "@/components/ui/command";
-import { FileText, Search, Plus, Calendar } from "lucide-react";
+import { FileText, Search, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { searchNotes, createNote } from "@/app/dashboard/notes/actions";
 import { cn } from "@/lib/utils";
@@ -18,7 +18,7 @@ import { buttonVariants } from "@/components/ui/button";
 export function NotesSearch() {
     const [open, setOpen] = React.useState(false);
     const [query, setQuery] = React.useState("");
-    const [results, setResults] = React.useState<any[]>([]);
+    const [results, setResults] = React.useState<Array<{ id: string; title: string }>>([]);
     const router = useRouter();
 
     React.useEffect(() => {

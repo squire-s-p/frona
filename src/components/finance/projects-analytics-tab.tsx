@@ -16,15 +16,10 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import {
     Briefcase,
-    TrendingUp,
-    TrendingDown,
-    Clock,
-    DollarSign,
-    ChevronRight,
     Target
 } from "lucide-react";
 
@@ -245,8 +240,4 @@ export function ProjectsAnalyticsTab({ projects, clients }: ProjectsAnalyticsTab
             </Tabs>
         </div>
     );
-}
-
-function cn(...classes: any[]) {
-    return classes.filter(Boolean).join(" ");
 }

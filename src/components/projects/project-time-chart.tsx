@@ -92,7 +92,7 @@ export default function ProjectTimeChart({ buckets }: { buckets: TimeBucket[] })
     [data]
   );
 
-  const rangeLabel = range === "all" ? "Весь період" : `Останні ${range} днів`;
+  const _rangeLabel = range === "all" ? "Весь період" : `Останні ${range} днів`;
 
   return (
     <div className="space-y-4">

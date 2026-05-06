@@ -228,7 +228,7 @@ export default function DataTablePage() {
             </div>
             <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
               <h3 className="font-bold mb-2">Видимість колонок</h3>
-              <p className="text-sm text-muted-foreground">Кнопка "Вигляд" дозволяє приховувати або показувати окремі колонки.</p>
+              <p className="text-sm text-muted-foreground">Кнопка &quot;Вигляд&quot; дозволяє приховувати або показувати окремі колонки.</p>
             </div>
             <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
               <h3 className="font-bold mb-2">Вибір рядків</h3>

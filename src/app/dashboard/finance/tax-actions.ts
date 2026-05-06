@@ -147,7 +147,7 @@ export async function getTaxStats() {
 
     // Поточний баланс податкового резерву
     const taxAccount = await prisma.financeAccount.findFirst({
-        where: { userId: user.id, role: "tax" as any }
+        where: { userId: user.id, role: "tax" }
     });
     const reserveBalance = taxAccount ? Number(taxAccount.balance) : 0;
 
@@ -186,7 +186,7 @@ export async function getTaxStats() {
             totalTax: tax5Yearly + tax1Yearly + esvYearly,
             paid: Object.entries(paidByQuarter)
                 .filter(([key]) => key.startsWith(`${now.getFullYear()}-`))
-                .reduce((sum: number, [_, val]: [string, any]) => sum + val, 0)
+                .reduce((sum: number, [_key, val]: [string, any]) => sum + val, 0)
         },
         quarterly: {
             income: incomeTransactions.filter((tx: any) => tx.date >= quarterStart && tx.date <= quarterEnd).reduce((sum: number, tx: any) => sum + Number(tx.amount), 0),
@@ -268,7 +268,7 @@ export async function moveToTaxReserve(amount: number, fromAccountId: string) {
 
     // Знаходимо податковий рахунок
     const taxAccount = await prisma.financeAccount.findFirst({
-        where: { userId: user.id, role: "tax" as any }
+        where: { userId: user.id, role: "tax" }
     });
 
     if (!taxAccount) {

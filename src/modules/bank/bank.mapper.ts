@@ -4,6 +4,7 @@
 
 import type { MonoStatementItem, MonoAccount } from "./bank.types";
 import type { BankTransactionRow } from "./bank.repository";
+import type { Prisma } from "@prisma/client";
 
 /**
  * Maps a Monobank statement item to a Prisma BankTransaction createMany input.
@@ -29,7 +30,7 @@ export function mapStatementToDb(
         receiptId: item.receiptId ?? null,
         counterEdrpou: item.counterEdrpou ?? null,
         counterIban: item.counterIban ?? null,
-        raw: item as unknown as Record<string, unknown>,
+        raw: item as unknown as Prisma.InputJsonValue,
     };
 }
 

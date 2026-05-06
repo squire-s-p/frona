@@ -8,8 +8,7 @@ import { oneDark } from "@codemirror/theme-one-dark";
 import { useTheme } from "next-themes";
 import { EditorView, keymap } from "@codemirror/view";
 import { NotesAutocomplete } from "./notes-autocomplete";
-import { EditorState } from "@codemirror/state";
-import { Bold, Italic, Strikethrough, Heading1, Heading2, List, ListOrdered, CheckSquare, Quote, Link as LinkIcon, Code, Type } from "lucide-react";
+import { Bold, Italic, Strikethrough, Heading1, Heading2, List, ListOrdered, CheckSquare, Quote, Link as LinkIcon, Code } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -299,7 +298,7 @@ export function MarkdownEditor({ value, onChange, placeholder, notes = [] }: Mar
     );
 }
 
-function ToolbarButton({ icon: Icon, label, shortcut, onClick }: { icon: any, label: string, shortcut?: string, onClick: () => void }) {
+function ToolbarButton({ icon: Icon, label, shortcut, onClick }: { icon: React.ElementType, label: string, shortcut?: string, onClick: () => void }) {
     return (
         <Tooltip>
             <TooltipTrigger asChild>

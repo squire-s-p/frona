@@ -21,11 +21,20 @@ export function parseChecklist(text: string) {
     });
 }
 
-export function stringifyChecklist(items: any[]) {
+type ChecklistItem = {
+    id: number;
+    type: string;
+    indent?: number;
+    checked?: boolean;
+    content: string;
+    original: string;
+};
+
+export function stringifyChecklist(items: ChecklistItem[]) {
     return items
         .map((item) => {
             if (item.type === "checklist") {
-                return `${" ".repeat(item.indent)}- [${item.checked ? "x" : " "}] ${item.content}`;
+                return `${" ".repeat(item.indent ?? 0)}- [${item.checked ? "x" : " "}] ${item.content}`;
             }
             return item.content;
         })

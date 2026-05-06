@@ -3,6 +3,7 @@
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 const RegisterSchema = z.object({
   name: z.string().trim().min(2).max(80).optional().or(z.literal("")),
@@ -34,7 +35,7 @@ export async function registerWithEmail(formData: FormData) {
 
   const passwordHash = await bcrypt.hash(password, 12);
 
-  await prisma.$transaction(async (tx: any) => { // 👈 ФІКС
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const user = await tx.user.create({
       data: { email, name: name?.trim() ? name.trim() : null },
       select: { id: true },

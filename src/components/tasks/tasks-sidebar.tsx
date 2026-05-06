@@ -19,7 +19,6 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
     Collapsible,
     CollapsibleContent,
@@ -112,7 +111,7 @@ export function TasksSidebar({
             }
             toast.success("Дані оновлено");
             setRenamingItem(null);
-        } catch (error) {
+        } catch {
             toast.error("Помилка при оновленні");
         } finally {
             setIsPending(false);
@@ -133,7 +132,7 @@ export function TasksSidebar({
                 onSelectFilter("inbox");
             }
             setDeletingItem(null);
-        } catch (error) {
+        } catch {
             toast.error("Помилка при видаленні");
         } finally {
             setIsPending(false);
@@ -235,7 +234,7 @@ export function TasksSidebar({
                                                     try {
                                                         await toggleProjectPin(project.id, !(project as any).isPinned);
                                                         toast.success((project as any).isPinned ? "Відкріплено" : "Закріплено");
-                                                    } catch (e) {
+                                                    } catch {
                                                         toast.error("Помилка");
                                                     }
                                                 }}>
@@ -312,7 +311,7 @@ export function TasksSidebar({
                                                     try {
                                                         await toggleTagPin(tag.id, !(tag as any).isPinned);
                                                         toast.success((tag as any).isPinned ? "Відкріплено" : "Закріплено");
-                                                    } catch (e) {
+                                                    } catch {
                                                         toast.error("Помилка");
                                                     }
                                                 }}>
@@ -405,7 +404,7 @@ export function TasksSidebar({
                     <AlertDialogHeader>
                         <AlertDialogTitle>Ви впевнені?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Ви збираєтеся видалити {deletingItem?.type === "project" ? "проєкт" : "мітку"} "<strong>{deletingItem?.name}</strong>".
+                            Ви збираєтеся видалити {deletingItem?.type === "project" ? "проєкт" : "мітку"} &quot;<strong>{deletingItem?.name}</strong>&quot;.
                             Цю дію неможливо буде скасувати.
                         </AlertDialogDescription>
                     </AlertDialogHeader>

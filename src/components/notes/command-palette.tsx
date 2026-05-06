@@ -12,14 +12,9 @@ import {
 } from "@/components/ui/command";
 import {
     FileText,
-    Link as LinkIcon,
     Plus,
-    Search,
-    Settings,
     LayoutGrid,
     Network,
-    Calendar,
-    Hash,
     FolderPlus
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -33,7 +28,7 @@ interface CommandPaletteProps {
 export function CommandPalette({ notes = [] }: CommandPaletteProps) {
     const [open, setOpen] = React.useState(false);
     const [search, setSearch] = React.useState("");
-    const [searchResults, setSearchResults] = React.useState<any[]>([]);
+    const [_searchResults, setSearchResults] = React.useState<Array<{ id: string; title: string }>>([]);
     const router = useRouter();
 
     React.useEffect(() => {
@@ -123,7 +118,7 @@ export function CommandPalette({ notes = [] }: CommandPaletteProps) {
                     </CommandItem>
                     <CommandItem onSelect={() => runCommand(() => router.push("/dashboard/notes?view=graph"))}>
                         <Network className="mr-2 h-4 w-4" />
-                        <span>Граф зв'язків</span>
+                        <span>Граф зв&apos;язків</span>
                     </CommandItem>
                 </CommandGroup>
 

@@ -37,10 +37,10 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ ok: true, id: project.id });
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("POST /api/projects error:", e);
     return NextResponse.json(
-      { error: e?.message ?? "Не вдалося створити проєкт" },
+      { error: e instanceof Error ? e.message : "Не вдалося створити проєкт" },
       { status: 500 }
     );
   }

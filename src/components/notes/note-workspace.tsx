@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { NoteEditor } from "./note-editor";
+import type { NoteData } from "./note-editor";
 import { NoteSidebarRight } from "./note-sidebar-right";
 import { CommandPalette } from "./command-palette";
 import { NotesExplorer } from "./notes-explorer";
@@ -10,10 +11,10 @@ import { Button } from "@/components/ui/button";
 import { PanelLeft } from "lucide-react";
 
 interface NoteWorkspaceProps {
-    note: any;
-    folders: any[];
-    notes: any[];
-    tags: any[];
+    note: NoteData & { incomingLinks?: Array<{ id: string; source: { id: string; title: string } }>; outgoingLinks?: Array<{ id: string; target: { id: string; title: string } }> };
+    folders: Array<{ id: string; name: string }>;
+    notes: Array<{ id: string; title: string }>;
+    tags: Array<{ id: string; name: string; color?: string | null }>;
 }
 
 export function NoteWorkspace({ note, folders, notes, tags }: NoteWorkspaceProps) {

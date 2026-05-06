@@ -1,18 +1,11 @@
 import { AppSidebar } from "@/components/app-sidebar";
 import { DashboardTopbar as Topbar } from "@/components/dashboard/topbar";
 
-type UserShape = {
-  name?: string | null;
-  email?: string | null;
-  image?: string | null;
-  id?: string | null;
-};
-
 export default function DashboardShell({
   user,
   children,
 }: {
-  user: any; // Using any to match the slightly different User types if needed, or just specific
+  user: { name?: string | null; email?: string | null; image?: string | null };
   children: React.ReactNode;
 }) {
   return (

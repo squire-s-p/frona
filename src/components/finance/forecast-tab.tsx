@@ -62,7 +62,7 @@ export function ForecastTab({ data, whatIfs, onWhatIfChange }: ForecastTabProps)
         </div>
     );
 
-    const { daily, monthly, cashGaps, currentBalance, currentLiquidBalance } = data;
+    const { daily, monthly, cashGaps, currentLiquidBalance } = data;
     const lastMonth = monthly[monthly.length - 1];
 
     return (

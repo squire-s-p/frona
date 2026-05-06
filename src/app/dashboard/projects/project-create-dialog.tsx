@@ -36,8 +36,8 @@ export default function ProjectCreateDialog({
         setName("");
         setOpen(false);
         onCreated?.();
-      } catch (e: any) {
-        setError(e?.message ?? "Помилка створення");
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : "Помилка створення");
       }
     });
   }

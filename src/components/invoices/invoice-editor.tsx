@@ -250,8 +250,8 @@ export default function InvoiceEditor({
         }
 
         router.refresh();
-      } catch (e: any) {
-        setError(e?.message ?? "Помилка збереження");
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : "Помилка збереження");
       }
     });
   }

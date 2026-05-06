@@ -3,8 +3,6 @@
 import * as React from "react";
 import { format } from "date-fns";
 import { uk } from "date-fns/locale";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 
 import { ProjectSelect } from "@/components/tasks/project-select";
 import { TagSelect } from "@/components/tasks/tag-select";
@@ -42,13 +40,10 @@ import {
 import { Button } from "@/components/ui/button";
 
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 
 import { PencilIcon } from "@/components/icons/pencil";
@@ -322,7 +317,7 @@ export function TaskDialog({
   });
   const [isPinned, setIsPinned] = React.useState(task?.isPinned ?? false);
   const [isTemplate, setIsTemplate] = React.useState(task?.isTemplate ?? false);
-  const [isPreviewMode, setIsPreviewMode] = React.useState(false);
+  const [_isPreviewMode, _setIsPreviewMode] = React.useState(false);
 
   const [range, setRange] = React.useState<{ from: Date | undefined; to?: Date | undefined }>({
     from: task?.startDate ? new Date(task.startDate) : (defaultStartDate ?? undefined),
@@ -352,9 +347,9 @@ export function TaskDialog({
 
   // Subtasks
   const [subtasks, setSubtasks] = React.useState<SubtaskRow[]>([]);
-  const [subtasksLoading, setSubtasksLoading] = React.useState(false);
+  const [_subtasksLoading, setSubtasksLoading] = React.useState(false);
   const [newSubtaskTitle, setNewSubtaskTitle] = React.useState("");
-  const [addingSubtask, setAddingSubtask] = React.useState(false);
+  const [_addingSubtask, setAddingSubtask] = React.useState(false);
 
   const [dateSuggestion, setDateSuggestion] = React.useState<SmartDateResult | null>(null);
   const [prioritySuggestion, setPrioritySuggestion] = React.useState<SmartPriorityResult | null>(null);
@@ -681,8 +676,7 @@ export function TaskDialog({
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
-    } catch (error) {
-      console.error("Upload error:", error);
+        } catch {
       toast.error("Помилка при завантаженні файлів");
     } finally {
       setUploading(false);
@@ -705,7 +699,7 @@ export function TaskDialog({
       const subtask = await createSubtask(task.id, title);
       setSubtasks((prev: any[]) => [...prev, subtask as unknown as SubtaskRow]);
       setNewSubtaskTitle("");
-    } catch (error) {
+        } catch {
       toast.error("Failed to create subtask");
     } finally {
       setAddingSubtask(false);
@@ -720,7 +714,7 @@ export function TaskDialog({
     startTransition(async () => {
       try {
         await toggleSubtask(subtaskId, isDone);
-      } catch (error) {
+          } catch {
         // Revert on error
         setSubtasks((prev: any[]) => prev.map((s: any) => s.id === subtaskId ? { ...s, isDone: !isDone } : s));
         toast.error("Failed to update subtask");
@@ -737,7 +731,7 @@ export function TaskDialog({
     startTransition(async () => {
       try {
         await deleteSubtask(subtaskId);
-      } catch (error) {
+          } catch {
         setSubtasks(previous);
         toast.error("Failed to delete subtask");
       }
@@ -751,7 +745,7 @@ export function TaskDialog({
         await duplicateTask(task.id);
         toast.success("Завдання дубльовано");
         onOpenChange(false);
-      } catch (error) {
+          } catch {
         toast.error("Failed to duplicate task");
       }
     });
@@ -1287,7 +1281,7 @@ export function TaskDialog({
           <AlertDialogHeader>
             <AlertDialogTitle>Ви впевнені?</AlertDialogTitle>
             <AlertDialogDescription>
-              Ця дія незворотна. Завдання "{task?.title}" буде видалено назавжди.
+              Ця дія незворотна. Завдання &quot;{task?.title}&quot; буде видалено назавжди.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

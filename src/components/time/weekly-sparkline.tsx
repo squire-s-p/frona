@@ -2,8 +2,6 @@
 
 import React from "react";
 import { cn } from "@/lib/utils";
-import { format, parseISO } from "date-fns";
-import { uk } from "date-fns/locale";
 
 type DayData = {
     dateISO: string;

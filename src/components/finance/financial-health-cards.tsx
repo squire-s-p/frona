@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Activity, Zap, TrendingUp, Wallet, Calendar, ShieldCheck, TrendingDown } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Activity, Zap, TrendingUp, Wallet, Calendar, TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface FinancialHealthCardsProps {
@@ -30,32 +30,32 @@ export function FinancialHealthCards({ data }: FinancialHealthCardsProps) {
         new Intl.NumberFormat('uk-UA').format(Math.round(val)) + " ₴";
 
     return (
-        <div className="space-y-6">
+        <div className="flex flex-col gap-6">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card className="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-zinc-500">Запас міцності (Runway)</CardTitle>
+                <Card className="shadow-none">
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Запас міцності (Runway)</CardTitle>
                         <Zap className="h-4 w-4 text-amber-500" />
                     </CardHeader>
                     <CardContent>
                         <div className="flex items-baseline gap-2">
                             <div className="text-2xl font-bold">{liquidRunwayText}</div>
-                            <div className="text-xs text-zinc-400">міс. (ліквідний)</div>
+                            <div className="text-xs text-muted-foreground">міс. (ліквідний)</div>
                         </div>
-                        <p className="text-xs text-zinc-500 mt-1">
-                            Повний: <span className="font-medium text-zinc-700 dark:text-zinc-300">{runwayText} міс.</span>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            Повний: <span className="font-medium text-foreground/80">{runwayText} міс.</span>
                         </p>
                     </CardContent>
                 </Card>
 
-                <Card className="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-zinc-500">Ефективність (Savings)</CardTitle>
+                <Card className="shadow-none">
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Ефективність (Savings)</CardTitle>
                         <TrendingUp className="h-4 w-4 text-emerald-500" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{data.savingsRate.toFixed(1)}%</div>
-                        <p className="text-xs text-zinc-500 mt-1 flex items-center gap-1">
+                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                             Стабільність доходу:
                             <span className={cn(
                                 "font-medium",
@@ -68,27 +68,27 @@ export function FinancialHealthCards({ data }: FinancialHealthCardsProps) {
                     </CardContent>
                 </Card>
 
-                <Card className="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-zinc-500">Burn Rate (Витрати)</CardTitle>
+                <Card className="shadow-none">
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Burn Rate (Витрати)</CardTitle>
                         <Activity className="h-4 w-4 text-red-500" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{formatCurrency(data.burnRate)}</div>
-                        <p className="text-xs text-zinc-500 mt-1">Середнє за останні 30 днів</p>
+                        <p className="text-xs text-muted-foreground mt-1">Середнє за останні 30 днів</p>
                     </CardContent>
                 </Card>
 
-                <Card className="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-zinc-500">Загальний капітал</CardTitle>
+                <Card className="shadow-none">
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Загальний капітал</CardTitle>
                         <Wallet className="h-4 w-4 text-blue-500" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{formatCurrency(data.totalBalance)}</div>
-                        <p className="text-xs text-zinc-500 mt-1 flex items-center justify-between">
+                        <p className="text-xs text-muted-foreground mt-1 flex items-center justify-between">
                             <span>Ліквідно:</span>
-                            <span className="font-semibold text-zinc-700 dark:text-zinc-300">{formatCurrency(data.liquidBalance)}</span>
+                            <span className="font-semibold text-foreground/80">{formatCurrency(data.liquidBalance)}</span>
                         </p>
                     </CardContent>
                 </Card>

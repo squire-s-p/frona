@@ -7,13 +7,14 @@ export const metadata: Metadata = {
 import { prisma } from "@/lib/prisma";
 import { getAuthSession } from "@/lib/auth-session";
 import ClientsClient from "@/components/clients/clients-client";
+import { DashboardPage } from "@/components/layout/dashboard-page";
 
 export default async function ClientsPage() {
   const session = await getAuthSession();
   if (!session?.user?.id) return null;
 
-  let clients: any[] = [];
-  let projects: any[] = [];
+  let clients: { id: string; name: string; projects: { id: string; status: string }[]; createdAt: Date }[] = [];
+  let projects: { id: string; name: string; clientId: string | null; status: string }[] = [];
 
   try {
     const data = await Promise.all([
@@ -38,9 +39,9 @@ export default async function ClientsPage() {
     console.error("Failed to load clients page data:", e);
   }
 
-  const rows = clients.map((c: any) => {
+  const rows = clients.map((c) => {
     const totalProjects = c.projects.length;
-    const activeProjects = c.projects.filter((p: any) => p.status === "active").length;
+    const activeProjects = c.projects.filter((p) => p.status === "active").length;
 
     return {
       id: c.id,
@@ -52,8 +53,8 @@ export default async function ClientsPage() {
   });
 
   return (
-    <div className="space-y-6">
+    <DashboardPage>
       <ClientsClient clients={rows} projects={projects} />
-    </div>
+    </DashboardPage>
   );
 }

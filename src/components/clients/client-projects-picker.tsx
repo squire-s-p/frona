@@ -7,7 +7,6 @@ import { setClientProjects } from "@/app/dashboard/clients/actions";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 
 import ProjectMultiSelect from "@/components/clients/project-multiselect";
 
@@ -59,8 +58,8 @@ export default function ClientProjectsPicker({
       try {
         await setClientProjects({ clientId, projectIds: value });
         setSavedSnapshot(value);
-      } catch (e: any) {
-        setError(e?.message ?? "Помилка збереження");
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : "Помилка збереження");
       }
     });
   }

@@ -6,15 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 interface NotePropertiesProps {
-    properties: Record<string, any>;
-    onChange: (properties: Record<string, any>) => void;
+    properties: Record<string, string>;
+    onChange: (properties: Record<string, string>) => void;
 }
 
 export function NoteProperties({ properties, onChange }: NotePropertiesProps) {
     const [isAdding, setIsAdding] = React.useState(false);
     const [newKey, setNewKey] = React.useState("");
 
-    const updateProperty = (key: string, value: any) => {
+    const updateProperty = (key: string, value: string) => {
         onChange({ ...properties, [key]: value });
     };
 

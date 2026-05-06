@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { cn } from "@/lib/utils";
-import { Loader2, Wallet, CreditCard, Banknote, Bitcoin, PiggyBank } from "lucide-react";
+import { Loader2, CreditCard, Banknote, Bitcoin, PiggyBank } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -64,10 +64,21 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+type FinanceAccount = {
+    id: string;
+    name: string;
+    type: string;
+    currency: string;
+    balance: number;
+    color?: string;
+    includeInTotal?: boolean;
+    role?: string;
+};
+
 interface AccountDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    account?: any;
+    account?: FinanceAccount;
     onSuccess?: () => void;
 }
 
@@ -237,7 +248,7 @@ export function AccountDialog({
                                         </SelectContent>
                                     </Select>
                                     <FormDescription>
-                                        Впливає на розрахунок "фінансової подушки" (Runway)
+                                        Впливає на розрахунок &quot;фінансової подушки&quot; (Runway)
                                     </FormDescription>
                                     <FormMessage />
                                 </FormItem>

@@ -128,8 +128,8 @@ export default function ProjectCreateDialog({
         onCreated?.();
         reset();
         router.push(`/dashboard/projects/${created.id}`);
-      } catch (e: any) {
-        setError(e?.message ?? "Помилка створення");
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : "Помилка створення");
       }
     });
   }

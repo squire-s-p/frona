@@ -11,6 +11,7 @@ import { getAuthSession } from "@/lib/auth-session";
 
 import ProjectsClient from "@/components/projects/projects-client";
 import { autoArchiveCompletedProjects } from "./actions";
+import { DashboardPage } from "@/components/layout/dashboard-page";
 
 type ProjectStatus = "active" | "completed" | "archived";
 
@@ -50,7 +51,7 @@ export default async function ProjectsPage() {
   ]);
 
   return (
-    <div className="space-y-6">
+    <DashboardPage>
       <ProjectsClient
         clients={clients.map((c: any) => ({ id: c.id, name: c.name }))}
         projects={projects.map((p: any) => ({
@@ -69,6 +70,6 @@ export default async function ProjectsPage() {
           status: p.status as unknown as ProjectStatus,
         }))}
       />
-    </div>
+    </DashboardPage>
   );
 }

@@ -110,7 +110,7 @@ export function SearchCommand() {
               </div>
             )}
             {!isLoading && query.length >= 2 && results.length === 0 && (
-              <CommandEmpty>Нічого не знайдено за запитом "{query}"</CommandEmpty>
+              <CommandEmpty>Нічого не знайдено за запитом &quot;{query}&quot;</CommandEmpty>
             )}
             {!isLoading && query.length > 0 && query.length < 2 && (
               <div className="py-6 text-center text-sm text-muted-foreground">

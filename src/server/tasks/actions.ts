@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthSession } from "@/lib/auth-session";
 import { revalidatePath } from "next/cache";
 
-function requireUserId(session: any) {
+function requireUserId(session: { user?: { id?: string | null } } | null) {
   const id = session?.user?.id;
   if (!id) throw new Error("Unauthorized");
   return id as string;
@@ -33,7 +33,9 @@ function mapPriority(p?: Priority): PriorityDb {
   }
 }
 
-function mapStatus(s?: Status): any {
+type StatusDb = "todo" | "doing" | "done" | "blocked" | "canceled";
+
+function mapStatus(s?: Status): StatusDb {
   return s === "DONE" ? "done" : "todo";
 }
 
@@ -75,25 +77,24 @@ export async function createTask(input: {
 
       // ✅ map UI enums -> DB enums (lowercase)
       priority: mapPriority(input.priority),
-      status: mapStatus(input.status) as any,
+      status: mapStatus(input.status),
 
       // ✅ schema fields are startAt/endAt (not startDate/endDate)
       startAt: input.startDate ? new Date(input.startDate) : null,
       endAt: input.endDate ? new Date(input.endDate) : null,
 
       // Recurring
-      recurrenceRule: (input.recurrenceRule ?? null) as any,
-      parentTaskId: (input.parentTaskId ?? null) as any,
+      recurrenceRule: input.recurrenceRule ?? null,
+      parentTaskId: input.parentTaskId ?? null,
 
-      isPinned: (input.isPinned ?? false) as any,
-      isTemplate: (input.isTemplate ?? false) as any,
+      isPinned: input.isPinned ?? false,
+      isTemplate: input.isTemplate ?? false,
 
-      // Tags
-      taskTags: (input.tagIds && input.tagIds.length > 0
+      taskTags: input.tagIds && input.tagIds.length > 0
         ? {
           create: input.tagIds.map((tagId) => ({ tagId })),
         }
-        : undefined) as any,
+        : undefined,
     },
   });
 
@@ -113,7 +114,7 @@ export async function toggleTaskStatus(taskId: string, status: Status) {
   const updated = await prisma.task.update({
     where: { id: taskId },
     data: {
-      status: mapStatus(status) as any,
+      status: mapStatus(status),
     },
   });
 
@@ -199,8 +200,8 @@ export async function updateTask(
       recurrenceRule: input.recurrenceRule !== undefined ? input.recurrenceRule : undefined,
       parentTaskId: input.parentTaskId !== undefined ? input.parentTaskId : undefined,
 
-      isPinned: (input.isPinned !== undefined ? input.isPinned : undefined) as any,
-      isTemplate: (input.isTemplate !== undefined ? input.isTemplate : undefined) as any,
+      isPinned: input.isPinned !== undefined ? input.isPinned : undefined,
+      isTemplate: input.isTemplate !== undefined ? input.isTemplate : undefined,
     },
   });
 
@@ -375,7 +376,7 @@ export async function toggleTaskPin(taskId: string, isPinned: boolean) {
 
   await prisma.task.update({
     where: { id: taskId, userId },
-    data: { isPinned: isPinned as any },
+    data: { isPinned },
   });
 
   revalidatePath("/dashboard/tasks");
@@ -387,7 +388,7 @@ export async function toggleTaskTemplate(taskId: string, isTemplate: boolean) {
 
   await prisma.task.update({
     where: { id: taskId, userId },
-    data: { isTemplate: isTemplate as any },
+    data: { isTemplate },
   });
 
   revalidatePath("/dashboard/tasks");
@@ -572,7 +573,7 @@ export async function getTaskSubtasks(taskId: string) {
 
   return await prisma.subtask.findMany({
     where: { taskId },
-    orderBy: { createdAt: "asc" } as any,
+    orderBy: { createdAt: "asc" },
   });
 }
 
@@ -583,10 +584,9 @@ export async function duplicateTask(taskId: string) {
   const task = await prisma.task.findFirst({
     where: { id: taskId, userId },
     include: {
-      tags: true,
       subtasks: true,
       taskTags: true,
-    } as any,
+    },
   });
   if (!task) throw new Error("Not found");
 
@@ -599,20 +599,18 @@ export async function duplicateTask(taskId: string) {
       priority: task.priority,
       status: "todo", // Reset status
       projectId: task.projectId,
-      isPinned: false as any, // Don't pin copy
-      isTemplate: false as any, // Don't template copy
+      isPinned: false,
+      isTemplate: false,
 
-      // Copy tags
-      taskTags: (task as any).taskTags && (task as any).taskTags.length > 0
+      taskTags: task.taskTags && task.taskTags.length > 0
         ? {
-          create: (task as any).taskTags.map((tt: any) => ({ tagId: tt.tagId })),
+          create: task.taskTags.map((tt) => ({ tagId: tt.tagId })),
         }
         : undefined,
 
-      // Copy subtasks (reset isDone)
-      subtasks: (task as any).subtasks && (task as any).subtasks.length > 0
+      subtasks: task.subtasks && task.subtasks.length > 0
         ? {
-          create: (task as any).subtasks.map((s: any) => ({
+          create: task.subtasks.map((s) => ({
             title: s.title,
             isDone: false,
           })),
@@ -671,7 +669,7 @@ export async function toggleProjectPin(projectId: string, isPinned: boolean) {
   const session = await getAuthSession();
   const userId = requireUserId(session);
 
-  await (prisma.project as any).update({
+  await prisma.project.update({
     where: { id: projectId, userId },
     data: { isPinned: !!isPinned },
   });
@@ -683,7 +681,7 @@ export async function toggleTagPin(tagId: string, isPinned: boolean) {
   const session = await getAuthSession();
   const userId = requireUserId(session);
 
-  await (prisma.tag as any).update({
+  await prisma.tag.update({
     where: { id: tagId, userId },
     data: { isPinned: !!isPinned },
   });
@@ -701,10 +699,10 @@ export async function updateTagName(tagId: string, name: string, color?: string 
   if (!tag) throw new Error("Tag not found");
 
   try {
-    const updateData: any = { name: name.trim() };
+    const updateData: { name: string; color?: string | null } = { name: name.trim() };
     if (color !== undefined) updateData.color = color;
 
-    await (prisma.tag as any).update({
+    await prisma.tag.update({
       where: { id: tagId },
       data: updateData,
     });

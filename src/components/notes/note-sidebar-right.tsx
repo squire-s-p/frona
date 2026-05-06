@@ -9,12 +9,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NoteOutline } from "./note-outline";
 import { NoteBacklinks } from "./note-backlinks";
 
+type NoteLink = { id: string; source: { id: string; title: string } };
+type OutgoingLink = { id: string; target: { id: string; title: string } };
+
 interface NoteSidebarRightProps {
     noteId: string;
     title: string;
     content: string;
-    incomingLinks: any[];
-    outgoingLinks?: any[];
+    incomingLinks: NoteLink[];
+    outgoingLinks?: OutgoingLink[];
 }
 
 export function NoteSidebarRight({ noteId, title, content, incomingLinks, outgoingLinks = [] }: NoteSidebarRightProps) {
@@ -53,7 +56,7 @@ export function NoteSidebarRight({ noteId, title, content, incomingLinks, outgoi
                                     className="flex-1 text-[11px] font-bold uppercase tracking-wider rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 transition-all duration-200"
                                 >
                                     <LinkIcon className="h-3.5 w-3.5 mr-2" />
-                                    Зв'язки
+                                    Зв&apos;язки
                                 </TabsTrigger>
                             </TabsList>
                         </div>

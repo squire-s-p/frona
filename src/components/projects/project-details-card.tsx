@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronsUpDown, Check, PencilIcon, Send, Trash2Icon as TrashIconLucide, Plus, Trash2, CornerDownLeft } from "lucide-react";
+import { ChevronsUpDown, Check, PencilIcon, Trash2, CornerDownLeft } from "lucide-react";
 import { updateProject, setProjectClient } from "@/app/dashboard/projects/actions";
 
 import {
@@ -20,7 +20,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
-import { TrashIcon } from "@/components/icons/trash";
 import { Badge } from "@/components/ui/badge";
 import { uk } from "date-fns/locale";
 

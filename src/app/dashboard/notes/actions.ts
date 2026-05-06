@@ -127,7 +127,7 @@ export async function bulkCreateNotes(notes: { title: string, content: string }[
     const user = await requireUser();
 
     // Create multiple notes in a single query for high performance
-    const createdNotes = await (prisma.note as any).createManyAndReturn({
+    const createdNotes = await prisma.note.createManyAndReturn({
         data: notes.map((note: any) => ({
             userId: user.id,
             title: note.title,
@@ -331,7 +331,7 @@ export async function seedTestData() {
         data: { userId: user.id, name: "Технології" }
     });
 
-    const folderLearning = await prisma.folder.create({
+    const _folderLearning = await prisma.folder.create({
         data: { userId: user.id, name: "Навчання" }
     });
 

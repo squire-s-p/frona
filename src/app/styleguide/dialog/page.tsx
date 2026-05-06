@@ -49,7 +49,7 @@ export default function DialogPage() {
                 <DialogHeader>
                   <DialogTitle>Edit profile</DialogTitle>
                   <DialogDescription>
-                    Make changes to your profile here. Click save when you're done.
+                    Make changes to your profile here. Click save when you&apos;re done.
                   </DialogDescription>
                 </DialogHeader>
                 <FieldGroup>
@@ -127,7 +127,7 @@ export default function DialogPage() {
               <DialogHeader>
                 <DialogTitle>No Close Button</DialogTitle>
                 <DialogDescription>
-                  This dialog doesn't have a close button in the top-right corner.
+                  This dialog doesn&apos;t have a close button in the top-right corner.
                 </DialogDescription>
               </DialogHeader>
               <DialogFooter>

@@ -225,7 +225,7 @@ export function GraphView() {
                             {isDisplayExpanded && (
                                 <div className="space-y-5 pt-2 px-1 animate-in fade-in slide-in-from-top-2">
                                     <div className="flex items-center justify-between">
-                                        <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Напрямок зв'язків</label>
+                                        <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Напрямок зв&apos;язків</label>
                                         <Switch checked={showArrows} onCheckedChange={setShowArrows} />
                                     </div>
 
@@ -310,7 +310,7 @@ export function GraphView() {
                                     </div>
 
                                     <div className="space-y-3">
-                                        <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Сила зв'язку</label>
+                                        <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Сила зв&apos;язку</label>
                                         <Slider
                                             value={[linkStrength]}
                                             min={0}

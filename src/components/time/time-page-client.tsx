@@ -4,22 +4,17 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { addDays, parseISO, format as dfFormat, isToday } from "date-fns";
+import { addDays, format as dfFormat, isToday } from "date-fns";
 import { uk } from "date-fns/locale";
 import {
   Play,
   Plus,
-  MoreHorizontal,
   ChevronLeft,
   ChevronRight,
   Square,
-  Coffee,
-  Trash2,
   BarChart3,
   History,
   CalendarClock,
-  AlertCircle,
-  Clock,
 } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
@@ -27,14 +22,6 @@ import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Separator } from "@/components/ui/separator";
-
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 import {
   startWork,
@@ -51,7 +38,6 @@ import {
 import {
   AlertDialog,
   AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -161,7 +147,7 @@ export default function TimePageClient({
     return new Date(y, m - 1, d, 0, 0, 0);
   }, [dateISO]);
 
-  const [weeklyData, setWeeklyData] = React.useState<any[]>([]);
+  const [weeklyData, setWeeklyData] = React.useState<Array<{ dateISO: string; workSec: number }>>([]);
 
   React.useEffect(() => {
     getWeeklySummary(dateISO).then(setWeeklyData);
@@ -236,7 +222,7 @@ export default function TimePageClient({
   // Audio Notification Logic
   const playBeep = React.useCallback((freq = 440, duration = 0.2) => {
     try {
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
@@ -312,7 +298,7 @@ export default function TimePageClient({
 
   // Idle Detection Logic
   const [isIdleDialogOpen, setIsIdleDialogOpen] = React.useState(false);
-  const [idleAt, setIdleAt] = React.useState<number | null>(null);
+  const [_idleAt, setIdleAt] = React.useState<number | null>(null);
   const IDLE_THRESHOLD_SEC = 5 * 60; // 5 minutes
 
   React.useEffect(() => {
@@ -373,7 +359,7 @@ export default function TimePageClient({
     });
   };
 
-  const onStopFromMenu = () => {
+  const _onStopFromMenu = () => {
     startTransition(async () => {
       await stopActive();
       router.refresh();
@@ -417,7 +403,7 @@ export default function TimePageClient({
   const [highlightedId, setHighlightedId] = React.useState<string | null>(null);
 
   return (
-    <div className="space-y-6 flex-1 flex flex-col">
+    <div className="flex flex-1 min-h-0 flex-col gap-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="flex items-center gap-3">
           <Button
@@ -435,7 +421,7 @@ export default function TimePageClient({
 
         <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
           {/* Date controls */}
-          <div className="flex items-center rounded-lg border bg-background p-1 shadow-sm">
+          <div className="flex items-center rounded-lg border bg-background p-1 shadow-none">
             <Button size="icon" variant="ghost" className="h-8 w-8" onClick={goPrev} aria-label="Попередній день">
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -527,16 +513,13 @@ export default function TimePageClient({
 
                 let badgeLabel = "";
                 let badgeClass = "bg-muted text-muted-foreground";
-                let Icon = Clock;
 
                 if (isOverdue) {
                   badgeLabel = task.dueAt ? dfFormat(new Date(task.dueAt), "d MMM", { locale: uk }) : "Прострочено";
                   badgeClass = "bg-transparent text-destructive border-transparent";
-                  Icon = AlertCircle;
                 } else if (isTodayTask) {
                   badgeLabel = task.dueAt ? `Сьогодні · ${dfFormat(new Date(task.dueAt), "d MMM", { locale: uk })}` : "Сьогодні";
                   badgeClass = "bg-muted/40 text-muted-foreground border-muted/20";
-                  Icon = Clock;
                 } else if (isTomorrowTask) {
                   badgeLabel = task.dueAt ? `Завтра · ${dfFormat(new Date(task.dueAt), "d MMM", { locale: uk })}` : "Завтра";
                   badgeClass = "bg-muted/20 text-muted-foreground/80 border-muted/10";
@@ -603,7 +586,7 @@ export default function TimePageClient({
       {/* Timeline */}
       <Card className="p-4 gap-0">
         <div className="flex items-start justify-between gap-6">
-          <div className="space-y-1">
+          <div className="flex flex-col gap-1">
             <div className="text-sm text-muted-foreground">Робота</div>
             <div className="text-2xl font-semibold">{formatDurationUa(totals.work + activeDurationSec)}</div>
 
@@ -776,7 +759,7 @@ export default function TimePageClient({
             setTaskDialogProjectId(projectId);
             setTaskDialogOpen(true);
           }}
-          onBulkUpdateAction={async (payload: any) => {
+          onBulkUpdateAction={async (payload: { ids: string[]; projectId?: string | null; taskId?: string | null }) => {
             startTransition(async () => {
               await bulkUpdateTimeEntries(payload);
               router.refresh();
@@ -810,7 +793,7 @@ export default function TimePageClient({
         defaultTaskId={editingWorkEntry?.task?.id ?? null}
         defaultStartAt={editingWorkEntry?.startAt ?? undefined}
         defaultEndAt={editingWorkEntry?.endAt ?? undefined}
-        onSaveAction={(payload: any) => {
+        onSaveAction={(payload: { startAt: Date; endAt: Date; projectId?: string | null; taskId?: string | null; note?: string | null }) => {
           startTransition(async () => {
             if (editingWorkEntryId) {
               await updateWorkEntry({
@@ -840,7 +823,7 @@ export default function TimePageClient({
             router.refresh();
           });
         }}
-        onStartTimerAction={async (payload: any) => {
+        onStartTimerAction={async (payload: { projectId?: string | null; taskId?: string | null }) => {
           startTransition(async () => {
             await startWork(payload);
             router.refresh();

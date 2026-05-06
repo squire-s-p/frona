@@ -1,11 +1,12 @@
-import type { Metadata } from 'next';
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: 'Час',
+  title: "Час",
 };
 
 import TimePageClient from "@/components/time/time-page-client";
 import { getTimeDayData, getRelevantTasks } from "./actions";
+import { DashboardPage } from "@/components/layout/dashboard-page";
 
 function isoTodayInTZ(timeZone: string) {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -36,7 +37,7 @@ export default async function TimePage({
 }) {
   const sp = await searchParams;
 
-  // Спочатку тягнемо дані сьогодні (для timezone), потім якщо date передали — перезавантажимо
+  // Спочатку тягнемо дані "сьогодні" (для timezone), потім якщо date передали — перезавантажимо.
   const todayData = await getTimeDayData("2000-01-01");
   const todayISO = isoTodayInTZ(todayData.timezone);
 
@@ -49,14 +50,17 @@ export default async function TimePage({
   ]);
 
   return (
-    <TimePageClient
-      dateISO={dateISO}
-      timezone={data.timezone}
-      activeTimer={data.activeTimer}
-      entries={data.entries}
-      projects={data.projects}
-      tags={data.tags}
-      relevantTasks={relevantTasks}
-    />
+    <DashboardPage className="h-full">
+      <TimePageClient
+        dateISO={dateISO}
+        timezone={data.timezone}
+        activeTimer={data.activeTimer}
+        entries={data.entries}
+        projects={data.projects}
+        tags={data.tags}
+        relevantTasks={relevantTasks}
+      />
+    </DashboardPage>
   );
 }
+

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { uk } from "date-fns/locale";
-import { User, ChevronRight, Calendar, Briefcase, Trash2 } from "lucide-react";
+import { User, ChevronRight, Calendar } from "lucide-react";
 
 import {
   Table,
@@ -15,9 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { deleteClient } from "@/app/dashboard/clients/actions";
 import { DeleteClientDialog } from "./delete-client-dialog";
 
 type ClientRow = {
@@ -25,7 +23,7 @@ type ClientRow = {
   name: string;
   activeProjects: number;
   totalProjects: number;
-  createdAt: Date;
+  createdAt: string;
 };
 
 export default function ClientsTable({ clients }: { clients: ClientRow[] }) {

@@ -63,7 +63,7 @@ export default function ProjectTasksClient({
 }) {
   const router = useRouter();
   const [taskTitle, setTaskTitle] = React.useState("");
-  const [isCreating, setIsCreating] = React.useState(false);
+  const [_isCreating, _setIsCreating] = React.useState(false);
 
   const tasks = React.useMemo(() => normalizeTasks(initialTasks), [initialTasks]);
 
@@ -84,7 +84,7 @@ export default function ProjectTasksClient({
           projectId,
           status: "TODO",
           priority: "NONE",
-        } as any);
+        });
         setTaskTitle("");
         router.refresh();
       } catch (e) {

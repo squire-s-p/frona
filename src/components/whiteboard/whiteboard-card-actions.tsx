@@ -42,7 +42,7 @@ export function WhiteboardCardActions({ id, title, isPinned }: WhiteboardCardAct
         try {
             await togglePinWhiteboard(id, !isPinned);
             toast.success(isPinned ? "Відкріплено" : "Закріплено");
-        } catch (error) {
+        } catch {
             toast.error("Помилка");
         }
     };
@@ -54,7 +54,7 @@ export function WhiteboardCardActions({ id, title, isPinned }: WhiteboardCardAct
             try {
                 await deleteWhiteboard(id);
                 toast.success("Видалено");
-            } catch (error) {
+            } catch {
                 toast.error("Помилка");
             }
         }
@@ -67,7 +67,7 @@ export function WhiteboardCardActions({ id, title, isPinned }: WhiteboardCardAct
             await renameWhiteboard(id, newTitle);
             toast.success("Перейменовано");
             setIsRenaming(false);
-        } catch (error) {
+        } catch {
             toast.error("Помилка");
         } finally {
             setIsPending(false);

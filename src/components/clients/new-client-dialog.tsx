@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { Loader2 } from "lucide-react";
 
 import { createClient } from "@/app/dashboard/clients/actions";
 
@@ -10,7 +9,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
 
 import ProjectMultiSelect from "@/components/clients/project-multiselect";
 
@@ -84,8 +82,8 @@ export default function NewClientDialog({
         if (created?.id && created?.name) onCreated?.(created);
 
         onClose(false);
-      } catch (e: any) {
-        setError(e?.message ?? "Помилка створення клієнта");
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : "Помилка створення клієнта");
       }
     });
   }
@@ -102,7 +100,7 @@ export default function NewClientDialog({
         <div className="flex-1 overflow-y-auto px-6 py-2 custom-scrollbar min-h-0">
           <div className="grid gap-5 pb-4">
             <div className="grid gap-2">
-              <Label htmlFor="client-name">Назва / Ім'я *</Label>
+              <Label htmlFor="client-name">Назва / Ім&apos;я *</Label>
               <Input
                 id="client-name"
                 className="rounded-lg bg-neutral-100 dark:bg-input/30"

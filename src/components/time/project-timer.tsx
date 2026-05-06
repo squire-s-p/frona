@@ -7,7 +7,16 @@ import { Button } from "@/components/ui/button";
 import { Play, Square, Timer } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type ActiveTimerDTO = any;
+type ActiveTimerDTO = {
+  id?: string;
+  mode: "work" | "break";
+  startedAt: Date;
+  startAt?: Date;
+  projectId?: string | null;
+  note?: string | null;
+  project?: { id: string; name: string } | null;
+  task?: { id: string; title: string } | null;
+} | null;
 
 function pad(n: number) {
   return String(n).padStart(2, "0");
@@ -80,7 +89,7 @@ export default function ProjectTimer({
 
   return (
     <div className={cn(
-      "relative flex items-center justify-between gap-6 rounded-2xl border p-6 transition-all duration-500 overflow-hidden shadow-sm",
+      "relative flex items-center justify-between gap-6 rounded-3xl border p-6 overflow-hidden shadow-none",
       isActive 
         ? "bg-primary/[0.05] border-primary/20 ring-1 ring-primary/10" 
         : "bg-card border-border/50"
@@ -126,7 +135,7 @@ export default function ProjectTimer({
               size="lg"
               onClick={onStop}
               disabled={pending || !isThisProject}
-              className="h-12 rounded-xl px-6 font-bold shadow-lg shadow-destructive/10"
+              className="h-12 px-6 font-bold"
             >
               <Square className="h-4 w-4 mr-2 fill-current" />
               Stop
@@ -136,7 +145,7 @@ export default function ProjectTimer({
               size="lg"
               onClick={onStart} 
               disabled={pending} 
-              className="h-12 rounded-xl px-8 font-bold shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              className="h-12 px-8 font-bold"
             >
               <Play className="h-4 w-4 mr-2 fill-current" />
               Start

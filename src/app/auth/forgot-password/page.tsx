@@ -1,5 +1,6 @@
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Metadata } from "next";
 import { ChevronLeft } from "lucide-react";
 import { ForgotPasswordForm } from "@/components/auth/forgot-password-form";
@@ -16,7 +17,7 @@ export default function ForgotPasswordPage() {
         <div className="w-full max-w-md">
           <div className="mb-8 flex flex-col items-center text-center">
             <div className="mb-6 flex size-20 items-center justify-center overflow-hidden">
-              <img src="/logo.svg" alt="Frona Logo" className="size-full object-contain brightness-0 invert" />
+              <Image src="/logo.svg" alt="Frona Logo" width={80} height={80} className="size-full object-contain brightness-0 invert" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight">Забули пароль?</h1>
             <p className="mt-1 text-sm text-muted-foreground">

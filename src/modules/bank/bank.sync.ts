@@ -2,7 +2,7 @@
 // Core sync orchestration logic.
 // Called by: server actions (initial import) and API route (incremental sync).
 
-import { MonoBankService, RateLimitError, isRateLimitError, MONO_MAX_PERIOD_S } from "./bank.service";
+import { MonoBankService, isRateLimitError, MONO_MAX_PERIOD_S } from "./bank.service";
 import { encryptToken, decryptToken } from "./bank.crypto";
 import {
     findBankAccounts,
@@ -15,8 +15,7 @@ import {
 } from "./bank.repository";
 import { mapStatementToDb, mapMonoAccountMeta, buildAccountName } from "./bank.mapper";
 import { bridgeAccountTransactions, ensureFinanceAccount } from "./bank.bridge";
-import type { SyncStatus, ImportProgress } from "./bank.types";
-import { prisma } from "@/lib/prisma";
+import type { SyncStatus, ImportProgress, MonoStatementItem } from "./bank.types";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -45,16 +44,16 @@ export async function autoInitBankAccounts(userId: string): Promise<number> {
     const service = new MonoBankService(token);
     const clientInfo = await service.getClientInfo();
 
-    let encrypted: string;
-    try {
-        encrypted = encryptToken(token);
-    } catch {
-        // If BANK_TOKEN_SECRET not set, use a base64 fallback (less secure, dev-only)
-        encrypted = Buffer.from(token).toString("base64");
-        console.warn("[bank.sync] BANK_TOKEN_SECRET not set — token stored with base64 only (dev mode)");
-    }
+  let encrypted: string;
+  try {
+    encrypted = encryptToken(token);
+  } catch {
+    throw new Error(
+      "Failed to encrypt Monobank token. Ensure BANK_TOKEN_SECRET is set. " +
+      "Generate with: openssl rand -hex 32"
+    );
+  }
 
-    const db = prisma as any;
     let created = 0;
     for (const monoAccount of clientInfo.accounts) {
         const meta = mapMonoAccountMeta(monoAccount);
@@ -106,7 +105,9 @@ export async function importMonthChunk(
     try {
         token = decryptToken(account.monoToken);
     } catch {
-        token = Buffer.from(account.monoToken, "base64").toString("utf8");
+        throw new Error(
+            "Failed to decrypt Monobank token. Ensure BANK_TOKEN_SECRET matches the key used during encryption."
+        );
     }
     const service = new MonoBankService(token);
 
@@ -116,7 +117,7 @@ export async function importMonthChunk(
 
     try {
         const statements = await service.getStatement(account.monoAccountId, fromS, toS);
-        const rows = statements.map((s: any) => mapStatementToDb(s, accountId));
+        const rows = statements.map((s: MonoStatementItem) => mapStatementToDb(s, accountId));
         const inserted = await insertTransactions(rows);
 
         // Bridge to Finance domain
@@ -174,7 +175,9 @@ export async function syncAccountIncremental(accountId: string): Promise<SyncSta
     try {
         token = decryptToken(account.monoToken);
     } catch {
-        token = Buffer.from(account.monoToken, "base64").toString("utf8");
+        throw new Error(
+            "Failed to decrypt Monobank token. Ensure BANK_TOKEN_SECRET matches the key used during encryption."
+        );
     }
     const service = new MonoBankService(token);
 
@@ -186,7 +189,7 @@ export async function syncAccountIncremental(accountId: string): Promise<SyncSta
 
     try {
         const statements = await service.getStatement(account.monoAccountId, fromS, toS);
-        const rows = statements.map((s: any) => mapStatementToDb(s, accountId));
+        const rows = statements.map((s: MonoStatementItem) => mapStatementToDb(s, accountId));
         const inserted = await insertTransactions(rows);
 
         // Bridge new transactions to Finance domain

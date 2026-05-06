@@ -35,7 +35,7 @@ type User = {
 
 type ProjectItem = { id: string; name: string };
 
-function initials(name?: string | null) {
+function _initials(name?: string | null) {
   if (!name) return "U";
   const parts = name.trim().split(/\s+/);
   return (parts[0]?.[0] ?? "U") + (parts[1]?.[0] ?? "");

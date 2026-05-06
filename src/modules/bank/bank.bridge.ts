@@ -86,19 +86,21 @@ async function getOrCreateCategory(
  * Uses monoTransactionId as Transaction.id — so this is idempotent and safe to
  * call multiple times for the same transaction (no duplicates ever created).
  *
+ * Note: For bulk bridging, prefer bridgeAccountTransactions which uses batch operations.
+ *
  * @param row              The raw BankTransaction
  * @param userId           The user's ID
  * @param monoAccountId    The Monobank account ID — used as FinanceAccount.id
  * @param internalIbans    Optional set of IBANs belonging to the user
  */
-export async function bridgeTransaction(
+async function _bridgeTransaction(
     row: BankTransactionRow,
     userId: string,
     monoAccountId: string,   // = FinanceAccount.id in the old finance module
     internalIbans?: Set<string>
 ): Promise<boolean> {
     // Already bridged? Skip (idempotent)
-    const existing = await (prisma as any).transaction.findUnique({
+    const existing = await prisma.transaction.findUnique({
         where: { id: row.monoTransactionId },
         select: { id: true },
     });
@@ -125,7 +127,7 @@ export async function bridgeTransaction(
 
     const categoryId = await getOrCreateCategory(userId, type, row.mcc, isInternal);
 
-    await (prisma as any).transaction.create({
+    await prisma.transaction.create({
         data: {
             id: row.monoTransactionId,  // Monobank ID as PK = guaranteed dedup
             userId,
@@ -145,6 +147,9 @@ export async function bridgeTransaction(
  * Bridge all BankTransactions for a given BankAccount that haven't been bridged yet.
  * Called after each sync to keep Finance table in sync.
  *
+ * Optimized: batch-fetches already-bridged IDs and batch-creates new transactions
+ * to avoid N+1 queries per transaction.
+ *
  * @param bankAccountId    Internal BankAccount.id
  * @param monoAccountId    Monobank account ID (= FinanceAccount.id)
  * @param userId           User's ID
@@ -156,9 +161,9 @@ export async function bridgeAccountTransactions(
     userId: string,
     since?: Date
 ): Promise<number> {
-    categoryCache.clear(); // Reset per-call cache
+    categoryCache.clear();
 
-    const rows: BankTransactionRow[] = await (prisma as any).bankTransaction.findMany({
+    const rows = await prisma.bankTransaction.findMany({
         where: {
             bankAccountId,
             ...(since ? { time: { gte: since } } : {}),
@@ -166,16 +171,75 @@ export async function bridgeAccountTransactions(
         orderBy: { time: "asc" },
     });
 
-    // Fetch all internal IBANs for this user to detect transfers
+    if (rows.length === 0) return 0;
+
     const accounts = await findBankAccounts(userId);
     const internalIbans = new Set(accounts.map(a => a.iban).filter((iban): iban is string => !!iban));
 
-    let bridged = 0;
-    for (const row of rows) {
-        const wasNew = await bridgeTransaction(row, userId, monoAccountId, internalIbans);
-        if (wasNew) bridged++;
+    // Batch-fetch already-bridged transaction IDs
+    const monoIds = rows.map(r => r.monoTransactionId);
+    const existingBridged = await prisma.transaction.findMany({
+        where: { id: { in: monoIds } },
+        select: { id: true },
+    });
+    const bridgedIdSet = new Set(existingBridged.map((e: { id: string }) => e.id));
+
+    // Prepare new transactions in batch
+    const newRows = rows.filter(r => !bridgedIdSet.has(r.monoTransactionId));
+
+    if (newRows.length === 0) {
+        console.log(`[bank.bridge] bridged 0/${rows.length} transactions for account ${monoAccountId}`);
+        return 0;
     }
 
+    // Resolve categories for all new rows (with cache)
+    const resolvedCategories = new Map<string, string>();
+    for (const row of newRows) {
+        const _amount = Math.abs(row.amount) / 100;
+        const type: "income" | "expense" = row.amount > 0 ? "income" : "expense";
+        const description = row.description + (row.comment ? `: ${row.comment}` : "");
+
+        let isInternal = false;
+        if (internalIbans && row.counterIban && internalIbans.has(row.counterIban)) {
+            isInternal = true;
+        } else {
+            const lowerDesc = description.toLowerCase();
+            if (lowerDesc.includes("своєї карти") || lowerDesc.includes("своєї картки") || lowerDesc.includes("свій рахунок")) {
+                if (row.mcc === 4829 || row.mcc === 6538 || row.mcc === 6012) {
+                    isInternal = true;
+                }
+            }
+        }
+
+        const categoryId = await getOrCreateCategory(userId, type, row.mcc, isInternal);
+        resolvedCategories.set(row.monoTransactionId, categoryId);
+    }
+
+    // Batch-create all new transactions
+    const createData = newRows.map(row => {
+        const amount = Math.abs(row.amount) / 100;
+        const type: "income" | "expense" = row.amount > 0 ? "income" : "expense";
+        const description = row.description + (row.comment ? `: ${row.comment}` : "");
+        const categoryId = resolvedCategories.get(row.monoTransactionId)!;
+
+        return {
+            id: row.monoTransactionId,
+            userId,
+            accountId: monoAccountId,
+            categoryId,
+            amount,
+            type,
+            date: row.time,
+            description,
+        };
+    });
+
+    const result = await prisma.transaction.createMany({
+        data: createData,
+        skipDuplicates: true,
+    });
+
+    const bridged = result.count;
     console.log(`[bank.bridge] bridged ${bridged}/${rows.length} transactions for account ${monoAccountId}`);
     return bridged;
 }
@@ -194,14 +258,14 @@ export async function ensureFinanceAccount(
         type: string;       // white, black, fop, etc.
     }
 ): Promise<void> {
-    const existing = await (prisma as any).financeAccount.findUnique({
+    const existing = await prisma.financeAccount.findUnique({
         where: { id: monoAccountId },
         select: { id: true },
     });
 
     if (!existing) {
         const role = meta.type === "fop" ? "tax" : "liquid";
-        await (prisma as any).financeAccount.create({
+        await prisma.financeAccount.create({
             data: {
                 id: monoAccountId,
                 userId,
@@ -215,7 +279,7 @@ export async function ensureFinanceAccount(
         console.log(`[bank.bridge] created FinanceAccount for ${monoAccountId}`);
     } else {
         // Update balance
-        await (prisma as any).financeAccount.update({
+        await prisma.financeAccount.update({
             where: { id: monoAccountId },
             data: { balance: meta.balance, lastSyncedAt: new Date() },
         });

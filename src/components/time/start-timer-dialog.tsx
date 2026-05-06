@@ -87,7 +87,7 @@ export function StartTimerDialog({
         </DialogHeader>
 
         {projects.length === 0 ? (
-          <div className="space-y-3">
+          <div className="flex flex-col gap-3">
             <div className="rounded-xl border bg-card p-3 text-sm text-muted-foreground">
               Проєкти ще не підʼєднані до Topbar. Потрібно передати їх із
               server layout.
@@ -98,7 +98,7 @@ export function StartTimerDialog({
             </Button>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="flex flex-col gap-4">
             {/* Project (required) */}
             <div>
               <div className="mb-1 text-xs text-muted-foreground">

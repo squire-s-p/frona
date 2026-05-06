@@ -196,7 +196,7 @@ export function TimePickerClock({
 
     const getHandStyle = () => {
         let angle = 0;
-        let length = mode === "hours" ? (pickingHour >= 13 || pickingHour === 0 ? 80 : 50) : 80;
+        const length = mode === "hours" ? (pickingHour >= 13 || pickingHour === 0 ? 80 : 50) : 80;
 
         if (mode === "hours") {
             const h = pickingHour % 12;

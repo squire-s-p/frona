@@ -57,7 +57,7 @@ type FormValues = z.infer<typeof formSchema>;
 interface RecurringPaymentDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    accounts: any[];
+    accounts: Array<{ id: string; name: string; currency: string }>;
     onSuccess?: () => void;
 }
 
@@ -68,7 +68,7 @@ export function RecurringPaymentDialog({
     onSuccess,
 }: RecurringPaymentDialogProps) {
     const [isLoading, setIsLoading] = useState(false);
-    const [categories, setCategories] = useState<any[]>([]);
+    const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([]);
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema) as any,
@@ -162,7 +162,7 @@ export function RecurringPaymentDialog({
                                 name="amount"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Сума (від'ємна для витрат)</FormLabel>
+                                        <FormLabel>Сума (від&apos;ємна для витрат)</FormLabel>
                                         <FormControl>
                                             <Input type="number" step="0.01" {...field} />
                                         </FormControl>

@@ -13,9 +13,8 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { ShieldCheck, KeyRound, Smartphone, LogOut, Laptop, Key, Loader2, Monitor, Trash2 } from "lucide-react";
+import { KeyRound, Smartphone, LogOut, Laptop, Key, Loader2, Monitor, Trash2 } from "lucide-react";
 import { updatePasswordAction, revokeDeviceSessionAction, revokeAllOtherDeviceSessionsAction } from "@/app/dashboard/settings/actions";
 // DeviceSession type defined locally to bypass Prisma generate issues in CI
 interface DeviceSession {

@@ -12,7 +12,6 @@ import {
   Check,
   Plus,
   Folder,
-  Minus,
   ChevronsUpDown,
 } from "lucide-react";
 
@@ -100,7 +99,7 @@ type Props = {
 };
 
 function safeDate(v: unknown): Date | null {
-  const d = new Date(v as any);
+  const d = new Date(v as string | number | Date);
   return Number.isFinite(d.getTime()) ? d : null;
 }
 
@@ -270,8 +269,8 @@ function BulkTaskSelector({
   const taskItems = React.useMemo(() => tasks.map(t => ({ value: t.id, label: t.title })), [tasks]);
 
   return (
-    <div className="space-y-3">
-      <div className="space-y-2">
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2">
         <Label>1. Виберіть проєкт</Label>
         <Combobox
           value={projectId}
@@ -281,7 +280,7 @@ function BulkTaskSelector({
           emptyText="Немає проєктів"
         />
       </div>
-      <div className="space-y-2">
+      <div className="flex flex-col gap-2">
         <Label>2. Виберіть задачу</Label>
         <Combobox
           value={taskId}
@@ -324,13 +323,13 @@ export default function TimeEntriesList({
   const [isMobile, setIsMobile] = React.useState(false);
   const [selectedIds, setSelectedIds] = React.useState<Record<string, boolean>>({});
   const [hideBreaks, setHideBreaks] = React.useState(false);
-  const [expandedGroups, setExpandedGroups] = React.useState<Record<string, boolean>>({});
+  const [_expandedGroups, _setExpandedGroups] = React.useState<Record<string, boolean>>({});
 
   const ordered = React.useMemo(() => {
     return [...entries].sort((a, b) => b.startAt.getTime() - a.startAt.getTime());
   }, [entries]);
 
-  const groupedEntries = React.useMemo(() => {
+  const _groupedEntries = React.useMemo(() => {
     type Group = {
       id: string; // key
       entries: TimeEntriesListItem[];
@@ -362,7 +361,7 @@ export default function TimeEntriesList({
   }, [ordered]);
 
   const allSelected = ordered.length > 0 && ordered.every((e) => selectedIds[e.id]);
-  const anySelected = React.useMemo(() => Object.values(selectedIds).some(Boolean), [selectedIds]);
+  const _anySelected = React.useMemo(() => Object.values(selectedIds).some(Boolean), [selectedIds]);
 
   const toggleAll = (next: boolean) => {
     const map: Record<string, boolean> = {};
@@ -540,7 +539,7 @@ export default function TimeEntriesList({
         </div>
       )}
 
-      <Card className={cn("overflow-hidden border shadow-sm py-0 gap-0", className)}>
+      <Card className={cn("overflow-hidden border shadow-none py-0 gap-0", className)}>
         {isMobile ? (
           <div className="divide-y bg-background">
             <div className="flex items-center gap-3 border-b px-3 py-2.5 bg-muted/40">
@@ -581,7 +580,7 @@ export default function TimeEntriesList({
               </div>
             ) : null}
 
-            <div className="p-2 space-y-2">
+            <div className="p-2 flex flex-col gap-2">
               {(ordered.length === 0 && !activeTimer) ? (
                 <div className="p-10 text-center flex flex-col items-center justify-center text-muted-foreground gap-2">
                   <Briefcase className="h-8 w-8 opacity-20" />
@@ -723,7 +722,7 @@ export default function TimeEntriesList({
             </PopoverTrigger>
             <PopoverContent className="w-[380px] p-4" align="start">
               <div className="flex flex-col gap-4">
-                <div className="space-y-2">
+                <div className="flex flex-col gap-2">
                   <h4 className="font-medium leading-none">Редагувати активний запис</h4>
                   <p className="text-sm text-muted-foreground">Змініть проєкт або задачу для поточного таймера.</p>
                 </div>

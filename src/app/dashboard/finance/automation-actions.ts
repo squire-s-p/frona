@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { getAuthSession } from "@/lib/auth-session";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -18,7 +19,7 @@ export async function getAutomationRules() {
         orderBy: { createdAt: "desc" }
     });
 
-    return rules.map((r: any) => ({
+    return rules.map((r) => ({
         ...r,
         minAmount: r.minAmount ? Number(r.minAmount) : null,
         maxAmount: r.maxAmount ? Number(r.maxAmount) : null,
@@ -45,7 +46,7 @@ export async function createAutomationRule(data: {
             minAmount: data.minAmount,
             maxAmount: data.maxAmount,
             currency: data.currency
-        } as any
+        }
     });
     revalidatePath("/dashboard/finance");
     return rule;
@@ -74,14 +75,15 @@ export async function toggleAutomationRule(id: string, isActive: boolean) {
 export async function applyRulesToTransaction(transactionId: string) {
     const user = await requireUser();
     const transaction = await prisma.transaction.findUnique({
-        where: { id: transactionId, userId: user.id }
+        where: { id: transactionId, userId: user.id },
+        include: { account: { select: { currency: true } } }
     });
 
     if (!transaction || !transaction.description) return;
 
     const rules = await prisma.automationRule.findMany({
         where: { userId: user.id, isActive: true }
-    }) as any[];
+    }) as { pattern: string; type: string; targetId: string; minAmount: Prisma.Decimal | null; maxAmount: Prisma.Decimal | null; currency: string | null; isActive: boolean }[];
 
     for (const rule of rules) {
         // 1. Опис (pattern)
@@ -90,7 +92,7 @@ export async function applyRulesToTransaction(transactionId: string) {
         if (!description.includes(pattern)) continue;
 
         // 2. Валюта (якщо вказана в правилі)
-        if (rule.currency && (transaction as any).currency !== rule.currency) continue;
+        if (rule.currency && transaction.account.currency !== rule.currency) continue;
 
         // 3. Сума (якщо вказані пороги)
         const amount = Math.abs(Number(transaction.amount));

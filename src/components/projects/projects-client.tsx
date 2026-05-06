@@ -6,11 +6,9 @@ import { useRouter } from "next/navigation";
 import {
   List,
   Grid,
-  Archive,
   Search,
   Plus,
   ArrowUpDown,
-  Filter,
 } from "lucide-react";
 
 import ProjectsGrid, { ProjectRow } from "@/components/projects/projects-grid";
@@ -18,7 +16,6 @@ import ProjectsTable from "@/components/projects/projects-table";
 import ProjectCreateDialog from "@/components/projects/project-create-dialog";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -27,16 +24,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
 } from "@/components/ui/input-group";
-import { Field, FieldLabel } from "@/components/ui/field";
 
 type ViewMode = "list" | "grid";
 type StatusFilter = "active" | "completed";

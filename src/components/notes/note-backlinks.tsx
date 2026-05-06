@@ -5,15 +5,18 @@ import Link from "next/link";
 import { Link as LinkIcon, Link2Off, Loader2, ArrowRight } from "lucide-react";
 import { getUnlinkedMentions } from "@/app/dashboard/notes/actions";
 
+type NoteLink = { id: string; source: { id: string; title: string } };
+type OutgoingLink = { id: string; target: { id: string; title: string } };
+
 interface NoteBacklinksProps {
     noteId: string;
     title: string;
-    incomingLinks: any[];
-    outgoingLinks?: any[];
+    incomingLinks: NoteLink[];
+    outgoingLinks?: OutgoingLink[];
 }
 
 export function NoteBacklinks({ noteId, title, incomingLinks, outgoingLinks = [] }: NoteBacklinksProps) {
-    const [unlinkedMentions, setUnlinkedMentions] = React.useState<any[]>([]);
+    const [unlinkedMentions, setUnlinkedMentions] = React.useState<Array<{ id: string; title: string }>>([]);
     const [isLoading, setIsLoading] = React.useState(true);
 
     React.useEffect(() => {
@@ -40,7 +43,7 @@ export function NoteBacklinks({ noteId, title, incomingLinks, outgoingLinks = []
                         Вихідні посилання
                     </h4>
                     <div className="flex flex-col gap-1">
-                        {outgoingLinks.map((link: any) => (
+                        {outgoingLinks.map((link) => (
                             <Link
                                 key={link.id}
                                 href={`/dashboard/notes/${link.target.id}`}
@@ -84,7 +87,7 @@ export function NoteBacklinks({ noteId, title, incomingLinks, outgoingLinks = []
             <div className="space-y-2">
                 <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-2">
                     <Link2Off className="h-3 w-3" />
-                    Непов'язані згадки
+                    Непов&apos;язані згадки
                 </h4>
                 {isLoading ? (
                     <div className="flex items-center gap-2 px-2 text-xs text-zinc-400">

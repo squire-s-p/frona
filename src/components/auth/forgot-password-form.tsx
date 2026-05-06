@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, CheckCircle2 } from "lucide-react";
 import { forgotPasswordAction } from "@/app/auth/actions";
-import Link from "next/link";
 
 const initialState = {
   error: null,

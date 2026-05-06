@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/combobox";
 
 // Using standard div structure for the 'Item' component which seems to be custom in their setup
-function Item({ size, className, children }: any) {
+function Item({ className, children }: any) {
   return <div className={`flex flex-col ${className || ""}`}>{children}</div>;
 }
 function ItemContent({ children }: any) {

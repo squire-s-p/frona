@@ -42,7 +42,7 @@ export function DeleteClientDialog({
       setIsOpen(false);
       onDeleted?.();
       router.refresh();
-    } catch (error) {
+    } catch {
       toast.error("Не вдалося видалити клієнта");
     } finally {
       setIsDeleting(false);

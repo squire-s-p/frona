@@ -47,8 +47,8 @@ export default function InvoiceCreateDialog({ clientId, trigger }: Props) {
         });
 
         router.push(`/dashboard/invoices/${created.id}`);
-      } catch (e: any) {
-        setError(e?.message ?? "Помилка створення рахунку");
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : "Помилка створення рахунку");
       }
     });
   }

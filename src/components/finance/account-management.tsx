@@ -15,12 +15,11 @@ import {
 import { AccountDialog } from "./account-dialog";
 import { TransferDialog } from "./transfer-dialog";
 import { deleteAccount } from "@/app/dashboard/finance/phase1-actions";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { uk } from "date-fns/locale";
-import { History, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { BankConnectWidget, BankAccountSyncCard } from "@/modules/bank/BankConnectWidget";
+import type { BankAccountRecord } from "@/modules/bank/bank.types";
 
 const accountTypeIcons = {
     bank: CreditCard,
@@ -30,18 +29,32 @@ const accountTypeIcons = {
     default: Wallet,
 } as const;
 
+type FinanceAccount = {
+    id: string;
+    name: string;
+    type: string;
+    currency: string;
+    balance: number;
+    color?: string;
+    includeInTotal?: boolean;
+    role?: string;
+    isArchived?: boolean;
+    updatedAt?: string | Date;
+    lastSyncedAt?: string | Date | null;
+};
+
 interface AccountManagementProps {
-    accounts: any[];
-    bankAccounts?: any[]; // records from the new bank module
+    accounts: FinanceAccount[];
+    bankAccounts?: BankAccountRecord[];
     onRefresh: () => void;
 }
 
 export function AccountManagement({ accounts, bankAccounts = [], onRefresh }: AccountManagementProps) {
     const [accountDialogOpen, setAccountDialogOpen] = React.useState(false);
     const [transferDialogOpen, setTransferDialogOpen] = React.useState(false);
-    const [editingAccount, setEditingAccount] = React.useState<any>(null);
+    const [editingAccount, setEditingAccount] = React.useState<FinanceAccount | undefined>(undefined);
 
-    const handleEdit = (account: any) => {
+    const handleEdit = (account: FinanceAccount) => {
         setEditingAccount(account);
         setAccountDialogOpen(true);
     };
@@ -57,7 +70,7 @@ export function AccountManagement({ accounts, bankAccounts = [], onRefresh }: Ac
 
     const handleDialogClose = (open: boolean) => {
         if (!open) {
-            setEditingAccount(null);
+            setEditingAccount(undefined);
         }
         setAccountDialogOpen(open);
     };

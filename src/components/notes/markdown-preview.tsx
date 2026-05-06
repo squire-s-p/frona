@@ -21,7 +21,7 @@ mermaid.initialize({
     securityLevel: "loose",
 });
 
-const CALLOUT_TYPES: Record<string, { icon: any, color: string, bg: string, border: string }> = {
+const CALLOUT_TYPES: Record<string, { icon: React.ElementType, color: string, bg: string, border: string }> = {
     INFO: { icon: Info, color: "text-blue-500", bg: "bg-blue-50/50 dark:bg-blue-900/10", border: "border-blue-200 dark:border-blue-800" },
     NOTE: { icon: StickyNote, color: "text-zinc-500", bg: "bg-zinc-50/50 dark:bg-zinc-800/20", border: "border-zinc-200 dark:border-zinc-700" },
     TIP: { icon: Lightbulb, color: "text-amber-500", bg: "bg-amber-50/50 dark:bg-amber-900/10", border: "border-amber-200 dark:border-amber-800" },
@@ -53,7 +53,7 @@ export function MarkdownPreview({ content, className, notes = [], onNoteNotFound
                     h3: ({ children, ...props }) => <h3 id={String(children).toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-')} {...props}>{children}</h3>,
                     blockquote: ({ children }) => {
                         const content = React.Children.toArray(children);
-                        const firstChild = content[0] as any;
+                        const firstChild = content[0] as React.ReactElement<{ children?: string[] }>;
                         const text = firstChild?.props?.children?.[0] || "";
 
                         if (typeof text === "string" && text.startsWith("[!")) {
@@ -79,11 +79,11 @@ export function MarkdownPreview({ content, className, notes = [], onNoteNotFound
                         }
                         return <blockquote className="border-l-4 border-zinc-200 dark:border-zinc-800 pl-4 my-4 italic text-zinc-600 dark:text-zinc-400">{children}</blockquote>;
                     },
-                    code({ node, inline, className, children, ...props }: any) {
+                    code({ className, children, ...props }: React.ClassAttributes<HTMLElement> & React.HTMLAttributes<HTMLElement> & { inline?: boolean; node?: unknown }) {
                         const match = /language-(\w+)/.exec(className || "");
                         const isMermaid = match && match[1] === "mermaid";
 
-                        if (!inline && isMermaid) {
+                        if (!props.inline && isMermaid) {
                             return <MermaidChart chart={String(children).replace(/\n$/, "")} />;
                         }
 
@@ -108,7 +108,7 @@ export function MarkdownPreview({ content, className, notes = [], onNoteNotFound
 function processLinks(
     children: React.ReactNode,
     notes: Array<{ id: string; title: string }>,
-    router: any,
+    router: { push: (path: string) => void },
     onNoteNotFound?: (title: string) => void
 ): React.ReactNode {
     if (typeof children !== "string") {

@@ -46,7 +46,7 @@ export function DashboardSidebar({
   variant = "desktop",
   onNavigate,
   collapsed = false,
-  onToggleCollapsed, // залишив у пропсах для сумісності, але тепер НЕ використовується
+  onToggleCollapsed: _onToggleCollapsed,
 }: {
   variant?: "desktop" | "mobile";
   onNavigate?: () => void;

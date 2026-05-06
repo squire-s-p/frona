@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import Image from "next/image";
 import { ResetPasswordForm } from "@/components/auth/reset-password-form";
 
 export const metadata: Metadata = {
@@ -29,7 +30,7 @@ export default async function ResetPasswordPage({
         <div className="w-full max-w-md">
           <div className="mb-8 flex flex-col items-center text-center">
             <div className="mb-6 flex size-20 items-center justify-center overflow-hidden">
-              <img src="/logo.svg" alt="Frona Logo" className="size-full object-contain brightness-0 invert" />
+              <Image src="/logo.svg" alt="Frona Logo" width={80} height={80} className="size-full object-contain brightness-0 invert" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight">Новий пароль</h1>
             <p className="mt-1 text-sm text-muted-foreground">

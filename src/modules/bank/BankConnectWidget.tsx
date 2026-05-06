@@ -58,7 +58,7 @@ export function BankConnectWidget({ onConnected, useEnvToken = true }: BankConne
     const [token, setToken] = useState("");
     const [state, setState] = useState<ImportState>({ phase: "idle" });
     const [countdown, setCountdown] = useState(0);
-    const [_, startTransition] = useTransition();
+    const [_, _startTransition] = useTransition();
 
     // ─── Single-click auto-init (env token mode) ──────────────────────────────
 

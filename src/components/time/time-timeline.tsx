@@ -58,7 +58,7 @@ export default function TimeTimeline({
 
   // click segment -> edit dialog
   onEditEntryAction,
-  onResizeEntryAction,
+  onResizeEntryAction: _onResizeEntryAction,
   highlightedId,
 }: {
 
@@ -80,7 +80,7 @@ export default function TimeTimeline({
   React.useEffect(() => setMounted(true), []);
 
   // stable day window baseline: we need the UTC range that corresponds to 00:00..23:59 in the user's timezone
-  const { dayStartMs, dayEndMs, rangeMs } = React.useMemo(() => {
+  const { dayStartMs, dayEndMs: _dayEndMs, rangeMs } = React.useMemo(() => {
     // We reuse the same logic as the server to find the UTC boundaries of the dayISO
     const [y, m, d] = dateISO.split("-").map(Number);
     
@@ -142,7 +142,6 @@ export default function TimeTimeline({
     if (!mounted) return null;
     if (!activeTimer) return null;
 
-    const now = new Date();
     const startMs = activeTimer.startedAt.getTime();
     if (!Number.isFinite(startMs)) return null;
 
@@ -370,7 +369,7 @@ export default function TimeTimeline({
                 e.stopPropagation();
               }}
             >
-              <div className="flex items-center gap-1 rounded-md border bg-background p-1 shadow-sm">
+              <div className="flex items-center gap-1 rounded-md border bg-background p-1 shadow-none">
                 {onSelectWorkRangeAction ? (
                   <Button
                     type="button"
@@ -439,7 +438,7 @@ export default function TimeTimeline({
               key={s.id}
               title={s.title}
               className={cn(
-                "absolute top-0 h-full rounded-sm transition-all shadow-sm",
+                "absolute top-0 h-full rounded-sm transition-all shadow-none",
                 s.type === "break" ? "bg-muted" : "bg-primary",
                 canEditWork && isWork ? "cursor-pointer hover:ring-2 hover:ring-primary/50" : "",
                 isHighlighted && "bg-primary/80 ring-2 ring-primary"

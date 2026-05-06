@@ -44,7 +44,7 @@ function isAllDay(e: GoogleEvent) {
 
 async function getUserIdOrThrow() {
   const session = await getAuthSession();
-  const userId = (session?.user as any)?.id as string | undefined;
+  const userId = session?.user?.id;
   if (!userId) throw new Error("Unauthorized");
   return userId;
 }
@@ -294,7 +294,7 @@ export async function getCalendarEvents(input: {
 
     if (listsRes.ok) {
       const listsJson = await listsRes.json();
-      const pLists = (listsJson.items ?? []).map(async (list: any) => {
+      const pLists = (listsJson.items ?? []).map(async (list: { id: string }) => {
         const url = new URL(`https://tasks.googleapis.com/tasks/v1/lists/${list.id}/tasks`);
         url.searchParams.set("showCompleted", "true");
         url.searchParams.set("showHidden", "true");
@@ -319,7 +319,7 @@ export async function getCalendarEvents(input: {
       const allTasksLists = await Promise.all(pLists);
       const allTasksItems = allTasksLists.flat();
 
-      allTasksItems.forEach((t: any) => {
+      allTasksItems.forEach((t: { id: string; title?: string; due?: string; status?: string; links?: { link?: string }[] }) => {
         if (t.due) {
           const isCompleted = t.status === "completed";
           events.push({
@@ -379,7 +379,7 @@ export async function createCalendarEvent(input: {
   const start = new Date(input.startIso);
   const end = new Date(input.endIso);
 
-  const body: any = {
+  const body: Record<string, unknown> = {
     summary: input.title,
     description: input.description ?? undefined,
     location: input.location ?? undefined,
@@ -452,7 +452,7 @@ export async function updateCalendarEvent(input: {
   const start = new Date(input.startIso);
   const end = new Date(input.endIso);
 
-  const body: any = {
+  const body: Record<string, unknown> = {
     summary: input.title,
     description: input.description ?? undefined,
     location: input.location ?? undefined,

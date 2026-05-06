@@ -37,7 +37,7 @@ export function DangerZoneForm() {
       if (res.error) throw new Error(res.error);
       
       const dataStr = JSON.stringify(res.data, null, 2);
-      let content = dataStr;
+      const content = dataStr;
       let type = "application/json";
       let name = "frona-export.json";
 
@@ -59,8 +59,8 @@ export function DangerZoneForm() {
       URL.revokeObjectURL(url);
       
       toast.success("Дані успішно експортовано!");
-    } catch (e: any) {
-      toast.error(e.message || "Помилка при експорті");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Помилка при експорті");
     } finally {
       setIsExporting(false);
     }
@@ -72,8 +72,8 @@ export function DangerZoneForm() {
       const res = await hardResetDataAction();
       if (res.error) throw new Error(res.error);
       toast.success(res.success);
-    } catch (e: any) {
-      toast.error(e.message || "Помилка очищення");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Помилка очищення");
     } finally {
       setIsResetting(false);
     }
@@ -86,8 +86,8 @@ export function DangerZoneForm() {
       toast.success("Акаунт видалено. Переадресація...");
       // Redirect happens server-side, but just in case
       window.location.href = "/";
-    } catch (e: any) {
-      toast.error(e.message || "Помилка видалення акаунта");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Помилка видалення акаунта");
       setIsDeleting(false);
     }
   };
@@ -185,7 +185,7 @@ export function DangerZoneForm() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="space-y-1 max-w-lg">
                 <p className="font-semibold text-base">Назавжди видалити цей акаунт</p>
-                <p className="text-sm text-muted-foreground">Ваш акаунт та всі пов'язані дані будуть видалені назавжди без можливості відновлення.</p>
+                <p className="text-sm text-muted-foreground">Ваш акаунт та всі пов&apos;язані дані будуть видалені назавжди без можливості відновлення.</p>
               </div>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
@@ -201,7 +201,7 @@ export function DangerZoneForm() {
                       Видалити акаунт назавжди?
                     </AlertDialogTitle>
                     <AlertDialogDescription>
-                      Це повністю видалить ваш акаунт та абсолютно всі пов'язані з ним фінансові дані з системи без можливості відновлення.
+                      Це повністю видалить ваш акаунт та абсолютно всі пов&apos;язані з ним фінансові дані з системи без можливості відновлення.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>

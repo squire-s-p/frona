@@ -16,7 +16,7 @@ export function DailyNoteButton() {
         try {
             const note = await getDailyNote();
             router.push(`/dashboard/notes/${note.id}`);
-        } catch (error) {
+        } catch {
             toast.error("Помилка відкриття щоденної нотатки");
         } finally {
             setIsLoading(false);

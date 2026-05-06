@@ -70,19 +70,40 @@ export const authOptions: NextAuthOptions = {
   ],
 
   callbacks: {
-    async signIn({ user, account }) {
-      if (account?.provider === "google" && user?.id) {
-        const existingAccount = await prisma.account.findFirst({
-          where: { userId: user.id, provider: "google" },
+    async signIn({ user, account, profile: _profile }) {
+      if (account?.provider === "google" && user?.email) {
+        // Security check: if a user with this email already exists but has
+        // NO Google account linked, block auto-linking unless email is verified.
+        // This prevents account takeover via Google OAuth with an unowned email.
+        const existingUser = await prisma.user.findUnique({
+          where: { email: user.email.toLowerCase() },
+          select: {
+            id: true,
+            emailVerified: true,
+            accounts: { where: { provider: "google" }, select: { id: true, refresh_token: true } },
+          },
         });
 
-        if (existingAccount) {
+        if (existingUser && existingUser.accounts.length === 0) {
+          // User exists with this email but has no Google account linked.
+          // Only allow linking if the existing user's email is verified,
+          // which implies they legitimately own the email address.
+          if (!existingUser.emailVerified) {
+            console.warn(
+              `[auth] Blocked auto-linking Google account for unverified email: ${user.email}`
+            );
+            return false;
+          }
+        }
+
+        // Update Google account tokens if already linked
+        if (existingUser?.accounts.length) {
           await prisma.account.update({
-            where: { id: existingAccount.id },
+            where: { id: existingUser.accounts[0].id },
             data: {
               access_token: account.access_token,
               expires_at: account.expires_at,
-              refresh_token: account.refresh_token ?? existingAccount.refresh_token,
+              refresh_token: account.refresh_token ?? existingUser.accounts[0].refresh_token,
               scope: account.scope,
             },
           });
@@ -134,7 +155,7 @@ export const authOptions: NextAuthOptions = {
             token.name = dbUser.name;
             token.picture = dbUser.image;
           }
-        } catch (error) {
+        } catch {
           // Ignore
         }
       }
@@ -157,7 +178,7 @@ export const authOptions: NextAuthOptions = {
               });
             }
           }
-        } catch(e) {
+        } catch {
           // ignore DB errors silently so we don't break login if DB is slow
         }
       }

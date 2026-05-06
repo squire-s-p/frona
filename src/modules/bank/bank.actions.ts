@@ -25,7 +25,7 @@ async function requireUser() {
     return session.user as { id: string; email: string; name?: string | null };
 }
 
-const sleep = (ms: number) => new Promise((resolve: any) => setTimeout(resolve, ms));
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 // ─── Auto-initialize from env (single-user setup) ────────────────────────────
 

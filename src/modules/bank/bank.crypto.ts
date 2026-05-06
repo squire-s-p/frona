@@ -2,31 +2,24 @@
 // AES-256-GCM encryption for monoToken storage.
 // Token is NEVER returned to the client — decrypted only inside service layer.
 
-import { config } from "dotenv";
-config();
-
 import crypto from "crypto";
 
 const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12; // 96-bit IV for GCM
 const TAG_LENGTH = 16;
 
-import fs from "fs";
-import path from "path";
-
 function getKey(): Buffer {
-    let secret = process.env.BANK_TOKEN_SECRET || process.env.NEXTAUTH_SECRET;
+    const secret = process.env.BANK_TOKEN_SECRET || process.env.NEXTAUTH_SECRET;
 
     if (!secret) {
-        // Fallback robust constant just in case both are missing entirely on build container
-        secret = "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2";
+        throw new Error(
+            "BANK_TOKEN_SECRET or NEXTAUTH_SECRET must be set to encrypt/decrypt bank tokens. " +
+            "Generate with: openssl rand -hex 32"
+        );
     }
 
-    // Attempt direct hex decode
     let key = Buffer.from(secret, "hex");
     
-    // If it's not EXACTLY 32 bytes long (e.g., standard text string rather than hex),
-    // we take a SHA-256 hash of the string, which guarantees exactly 32 bytes, perfect for AES-256.
     if (key.length !== 32) {
         key = crypto.createHash("sha256").update(secret).digest();
     }

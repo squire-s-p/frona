@@ -8,36 +8,17 @@ import {
     RefreshCw,
     Loader2,
     Calendar as CalendarIcon,
-    ArrowRight,
     TrendingUp,
-    TrendingDown,
     History as HistoryIcon,
-    Search,
-    Filter,
     ArrowUpRight,
-    ArrowDownLeft,
     ArrowLeftRight,
     CreditCard,
-    Check,
-    Tag,
-    Briefcase,
-    MessageSquare,
-    Layers,
-    X,
-    ChevronDown,
     Zap,
-    Wallet,
     Target,
     BarChart3,
     Receipt,
     CalendarClock
 } from "lucide-react";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { DateRange } from "react-day-picker";
@@ -54,13 +35,11 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import {
     getFinanceAccounts,
     getRecentTransactions,
     getProjects,
-    updateTransactionProject,
     getSpendingAnalytics,
     getExchangeRates,
     getBudgets,
@@ -68,7 +47,6 @@ import {
     getPlanningData
 } from "@/app/dashboard/finance/actions";
 import { getCategories } from "@/app/dashboard/finance/phase1-actions";
-import { Checkbox } from "@/components/ui/checkbox";
 import { getFinancialHealth, generateForecast } from "@/app/dashboard/finance/forecast-actions";
 import { getProjectsProfitability, getClientsProfitability } from "@/app/dashboard/finance/project-actions";
 import { getTaxStats } from "@/app/dashboard/finance/tax-actions";
@@ -89,11 +67,10 @@ import {
     ResponsiveContainer
 } from "recharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { DashboardSurface } from "@/components/layout/dashboard-page";
 import { PlanningTab } from "./planning-tab";
 import { AccountManagement } from "./account-management";
 import { TransactionDialog } from "./transaction-dialog";
-import { TransfersTab } from "./transfers-tab";
 import { FinancialHealthCards } from "./financial-health-cards";
 import { ForecastTab } from "./forecast-tab";
 import { ProjectsAnalyticsTab } from "./projects-analytics-tab";
@@ -102,21 +79,18 @@ import { AutomationTab } from "./automation-tab";
 import { GoalsTab } from "./goals-tab";
 import { TransactionDetailDialog } from "./transaction-detail-dialog";
 
-// Monochrome Palette
-const CHART_COLORS = ['#18181b', '#52525b', '#a1a1aa', '#d4d4d8', '#71717a'];
-
 export function FinancePageClient() {
     const [isMounted, setIsMounted] = React.useState(false);
     const [accounts, setAccounts] = React.useState<any[]>([]);
-    const [bankAccounts, setBankAccounts] = React.useState<BankAccountRecord[]>([]);
+    const [_bankAccounts, setBankAccounts] = React.useState<BankAccountRecord[]>([]);
     const [transactions, setTransactions] = React.useState<any[]>([]);
     const [projects, setProjects] = React.useState<any[]>([]);
     const [analytics, setAnalytics] = React.useState<any[]>([]);
     const [financialStats, setFinancialStats] = React.useState<{ pieChart: any[], barChart: any[] }>({ pieChart: [], barChart: [] });
-    const [budgets, setBudgets] = React.useState<any[]>([]);
+    const [_budgets, setBudgets] = React.useState<any[]>([]);
     const [planningData, setPlanningData] = React.useState<{ goals: any[], payments: any[], shoppingItems: any[] }>({ goals: [], payments: [], shoppingItems: [] });
     const [rates, setRates] = React.useState({ USD: 41.5, EUR: 45.0 });
-    const [isLoading, setIsLoading] = React.useState(true);
+    const [_isLoading, setIsLoading] = React.useState(true);
     const [isSyncing, setIsSyncing] = React.useState(false);
     const [syncProgress, setSyncProgress] = React.useState<string | null>(null);
     const [lastSyncedAt, setLastSyncedAt] = React.useState<Date | null>(null);
@@ -158,7 +132,7 @@ export function FinancePageClient() {
     const [pendingDateRange, setPendingDateRange] = React.useState<DateRange | undefined>(dateRange);
     const [isDatePopoverOpen, setIsDatePopoverOpen] = React.useState(false);
     const [debouncedSearch, setDebouncedSearch] = React.useState("");
-    const [historyTotals, setHistoryTotals] = React.useState({ income: 0, expense: 0 });
+    const [_historyTotals, setHistoryTotals] = React.useState({ income: 0, expense: 0 });
 
     React.useEffect(() => {
         const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
@@ -166,7 +140,7 @@ export function FinancePageClient() {
     }, [searchQuery]);
 
     const [activeTab, setActiveTab] = React.useState("overview");
-    const [showLoadMore, setShowLoadMore] = React.useState(false);
+    const [_showLoadMore, setShowLoadMore] = React.useState(false);
     const cardContentRef = React.useRef<HTMLDivElement>(null);
     const loadMoreSentinelRef = React.useRef<HTMLDivElement>(null);
 
@@ -377,7 +351,7 @@ export function FinancePageClient() {
                     : "Нових транзакцій не знайдено";
                 toast.success(msg);
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error(error);
             if (showToast) toast.error("Не вдалося оновити дані");
         } finally {
@@ -433,14 +407,14 @@ export function FinancePageClient() {
     }, [lastSyncedAt, handleSync]);
 
     // Totals
-    const totalBalanceUAH = accounts.reduce((sum: number, acc: any) => {
+    const _totalBalanceUAH = accounts.reduce((sum: number, acc: any) => {
         if (acc.currency === "USD") return sum + (acc.balance * rates.USD);
         if (acc.currency === "EUR") return sum + (acc.balance * rates.EUR);
         return sum + acc.balance;
     }, 0);
 
     if (!isMounted) {
-        return <div className="p-6 space-y-8" />;
+        return <div className="p-6" />;
     }
 
     return (
@@ -448,15 +422,15 @@ export function FinancePageClient() {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 mb-6">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Фінанси</h1>
-                    <p className="text-zinc-500 dark:text-zinc-400 mt-1">
+                    <h1 className="text-3xl font-bold tracking-tight text-foreground">Фінанси</h1>
+                    <p className="text-muted-foreground mt-1">
                         Огляд ваших активів та витрат
                     </p>
                 </div>
                 <div className="flex flex-col items-end gap-2 text-right">
                     <div className="flex items-center gap-2">
                         {syncProgress && (
-                            <span className="text-[10px] text-zinc-500 animate-pulse font-medium">
+                            <span className="text-[10px] text-muted-foreground animate-pulse font-medium">
                                 {syncProgress}
                             </span>
                         )}
@@ -465,7 +439,6 @@ export function FinancePageClient() {
                             size="sm"
                             onClick={() => handleSync()}
                             disabled={isSyncing}
-                            className="bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-800"
                         >
                             {isSyncing ? (
                                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -476,7 +449,7 @@ export function FinancePageClient() {
                         </Button>
                     </div>
                     {lastSyncedAt && (
-                        <p className="text-[10px] text-zinc-400 uppercase tracking-wider">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
                             ОСТАННЯ СИНХРОНІЗАЦІЯ: {formatDistanceToNow(lastSyncedAt, { addSuffix: true, locale: uk })}
                         </p>
                     )}
@@ -484,60 +457,59 @@ export function FinancePageClient() {
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-                <TabsList className={cn(
-                    "w-full justify-start shrink-0",
-                    activeTab === "history" ? "mb-4" : "mb-6"
-                )}>
-                    <TabsTrigger value="overview" className="flex-1 gap-2">
+                <TabsList variant="line" className="w-full justify-start shrink-0 h-10 gap-6 overflow-x-auto">
+                    <TabsTrigger value="overview" className="px-0 gap-2">
                         <LayoutDashboard className="h-3.5 w-3.5" />
                         Огляд
                     </TabsTrigger>
-                    <TabsTrigger value="history" className="flex-1 gap-2">
+                    <TabsTrigger value="history" className="px-0 gap-2">
                         <HistoryIcon className="h-3.5 w-3.5" />
                         Історія
                     </TabsTrigger>
-                    <TabsTrigger value="planning" className="flex-1 gap-2">
+                    <TabsTrigger value="planning" className="px-0 gap-2">
                         <CalendarClock className="h-3.5 w-3.5" />
                         Планування
                     </TabsTrigger>
-                    <TabsTrigger value="goals" className="flex-1 gap-2">
+                    <TabsTrigger value="goals" className="px-0 gap-2">
                         <Target className="h-3.5 w-3.5" />
                         Цілі
                     </TabsTrigger>
-                    <TabsTrigger value="forecast" className="flex-1 gap-2">
+                    <TabsTrigger value="forecast" className="px-0 gap-2">
                         <TrendingUp className="h-3.5 w-3.5" />
                         Прогноз
                     </TabsTrigger>
-                    <TabsTrigger value="analytics" className="flex-1 gap-2">
+                    <TabsTrigger value="analytics" className="px-0 gap-2">
                         <BarChart3 className="h-3.5 w-3.5" />
                         Аналітика
                     </TabsTrigger>
-                    <TabsTrigger value="tax" className="flex-1 gap-2">
+                    <TabsTrigger value="tax" className="px-0 gap-2">
                         <Receipt className="h-3.5 w-3.5" />
                         Податки
                     </TabsTrigger>
-                    <TabsTrigger value="automation" className="flex-1 gap-2">
+                    <TabsTrigger value="automation" className="px-0 gap-2">
                         <Zap className="h-3.5 w-3.5" />
                         Автоматизація
                     </TabsTrigger>
                 </TabsList>
 
                 <div className={cn(
-                    "flex-1 min-h-0 flex flex-col -mx-4 md:-mx-6 px-4 md:px-6",
+                    "flex-1 min-h-0 flex flex-col",
                     activeTab !== "history" && "overflow-y-auto"
                 )}>
                     <div className={cn(
                         "pb-10 pt-1",
                         activeTab === "history" && "flex-1 flex flex-col min-h-0 pb-0"
                     )}>
-                        <TabsContent value="overview" className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500 mt-0 focus-visible:outline-none">
+                        <TabsContent value="overview" className="animate-in fade-in slide-in-from-bottom-2 duration-500 mt-0 focus-visible:outline-none">
+                          <DashboardSurface className="p-0">
+                            <div className="p-4 md:p-6 flex flex-col gap-6">
                             <FinancialHealthCards data={financialHealth} />
 
                             {/* Charts grid */}
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                <Card className="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 shadow-none">
+                                <Card className="shadow-none">
                                     <CardHeader>
-                                        <CardTitle className="text-lg font-medium text-zinc-900 dark:text-zinc-50">Динаміка витрат</CardTitle>
+                                        <CardTitle className="text-lg font-medium">Динаміка витрат</CardTitle>
                                     </CardHeader>
                                     <CardContent className="h-[300px]">
                                         {analytics.length > 0 ? (
@@ -597,16 +569,16 @@ export function FinancePageClient() {
                                                 </AreaChart>
                                             </ResponsiveContainer>
                                         ) : (
-                                            <div className="h-full flex items-center justify-center text-zinc-400 text-sm">
+                                            <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
                                                 Немає даних для графіка
                                             </div>
                                         )}
                                     </CardContent>
                                 </Card>
 
-                                <Card className="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 shadow-none">
+                                <Card className="shadow-none">
                                     <CardHeader>
-                                        <CardTitle className="text-lg font-medium text-zinc-900 dark:text-zinc-50">Доходи vs Витрати</CardTitle>
+                                        <CardTitle className="text-lg font-medium">Доходи vs Витрати</CardTitle>
                                     </CardHeader>
                                     <CardContent className="h-[300px]">
                                         <ResponsiveContainer width="100%" height="100%">
@@ -631,37 +603,47 @@ export function FinancePageClient() {
 
                             {/* Account Management */}
                             <AccountManagement accounts={accounts} onRefresh={fetchData} />
+                            </div>
+                          </DashboardSurface>
                         </TabsContent>
 
                         <TabsContent value="planning">
-                            <PlanningTab
-                                payments={planningData.payments}
-                                shoppingItems={planningData.shoppingItems}
-                                accounts={accounts}
-                                onRefresh={fetchData}
-                            />
+                          <DashboardSurface className="p-0">
+                            <div className="p-4 md:p-6">
+                              <PlanningTab
+                                  payments={planningData.payments}
+                                  shoppingItems={planningData.shoppingItems}
+                                  accounts={accounts}
+                                  onRefresh={fetchData}
+                              />
+                            </div>
+                          </DashboardSurface>
                         </TabsContent>
 
                         <TabsContent value="goals">
-                            <GoalsTab
-                                goals={planningData.goals}
-                                accounts={accounts}
-                                onRefresh={fetchData}
-                            />
+                          <DashboardSurface className="p-0">
+                            <div className="p-4 md:p-6">
+                              <GoalsTab
+                                  goals={planningData.goals}
+                                  accounts={accounts}
+                                  onRefresh={fetchData}
+                              />
+                            </div>
+                          </DashboardSurface>
                         </TabsContent>
 
                         <TabsContent value="history" className="flex-1 flex flex-col min-h-0 m-0 focus-visible:outline-none">
                             {/* Transactions List */}
-                            <Card className="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 h-full flex flex-col overflow-hidden gap-0 pb-0 shadow-none">
-                                <CardHeader className="border-b border-zinc-200 dark:border-zinc-800 flex flex-row items-center justify-between space-y-0 shrink-0">
+                            <Card className="h-full flex flex-col overflow-hidden gap-0 pb-0 shadow-none">
+                                <CardHeader className="border-b border-border flex flex-row items-center justify-between shrink-0">
                                     <div className="flex items-center gap-2">
-                                        <CardTitle className="text-lg font-medium text-zinc-900 dark:text-zinc-50">Історія операцій</CardTitle>
-                                        {isFiltering && <Loader2 className="h-4 w-4 animate-spin text-zinc-400" />}
+                                        <CardTitle className="text-lg font-medium">Історія операцій</CardTitle>
+                                        {isFiltering && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <div className="hidden lg:flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
                                             <div className="relative shrink-0">
-                                                <HistoryIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
+                                                <HistoryIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                                                 <Input
                                                     type="text"
                                                     placeholder="Пошук..."

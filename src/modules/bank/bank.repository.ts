@@ -1,20 +1,14 @@
 // ─── bank.repository.ts ──────────────────────────────────────────────────────
 // All Prisma interactions for the bank domain.
-// Uses (prisma as any) for BankAccount/BankTransaction until migration is run.
 
 import { prisma } from "@/lib/prisma";
 import type { BankAccountRecord } from "./bank.types";
+import type { Prisma } from "@prisma/client";
 
 // ─── BankAccount ─────────────────────────────────────────────────────────────
 
-const db = prisma as any;
-
-/**
- * Find all BankAccounts for a user.
- * monoToken is intentionally excluded — never leak it outside the service layer.
- */
 export async function findBankAccounts(userId: string): Promise<BankAccountRecord[]> {
-    return db.bankAccount.findMany({
+    return prisma.bankAccount.findMany({
         where: { userId },
         select: {
             id: true,
@@ -47,7 +41,7 @@ export async function findBankAccountWithToken(accountId: string): Promise<{
     lastSyncAt: Date | null;
     importDoneAt: Date | null;
 }> {
-    return db.bankAccount.findUniqueOrThrow({
+    return prisma.bankAccount.findUniqueOrThrow({
         where: { id: accountId },
         select: {
             id: true,
@@ -73,7 +67,7 @@ export async function findAccountsDueForSync(olderThanMs: number): Promise<{
     lastSyncAt: Date | null;
 }[]> {
     const cutoff = new Date(Date.now() - olderThanMs);
-    return db.bankAccount.findMany({
+    return prisma.bankAccount.findMany({
         where: {
             importDoneAt: { not: null },
             OR: [
@@ -109,7 +103,7 @@ export async function upsertBankAccount(
         maskedPan: string[];
     }
 ) {
-    return db.bankAccount.upsert({
+    return prisma.bankAccount.upsert({
         where: {
             userId_monoAccountId: {
                 userId,
@@ -131,7 +125,7 @@ export async function upsertBankAccount(
  * Update lastSyncAt = now after a successful incremental sync.
  */
 export async function markSyncComplete(accountId: string): Promise<void> {
-    await db.bankAccount.update({
+    await prisma.bankAccount.update({
         where: { id: accountId },
         data: { lastSyncAt: new Date() },
     });
@@ -143,7 +137,7 @@ export async function markSyncComplete(accountId: string): Promise<void> {
  */
 export async function markImportComplete(accountId: string): Promise<void> {
     const now = new Date();
-    await db.bankAccount.update({
+    await prisma.bankAccount.update({
         where: { id: accountId },
         data: { importDoneAt: now, lastSyncAt: now },
     });
@@ -167,7 +161,7 @@ export interface BankTransactionRow {
     receiptId: string | null;
     counterEdrpou: string | null;
     counterIban: string | null;
-    raw: Record<string, unknown>;
+    raw: Prisma.InputJsonValue;
 }
 
 /**
@@ -177,7 +171,7 @@ export interface BankTransactionRow {
  */
 export async function insertTransactions(rows: BankTransactionRow[]): Promise<number> {
     if (rows.length === 0) return 0;
-    const result = await db.bankTransaction.createMany({
+    const result = await prisma.bankTransaction.createMany({
         data: rows,
         skipDuplicates: true,
     });
@@ -192,7 +186,7 @@ export async function countTransactions(
     from?: Date,
     to?: Date
 ): Promise<number> {
-    return db.bankTransaction.count({
+    return prisma.bankTransaction.count({
         where: {
             bankAccountId,
             time: {
@@ -211,7 +205,7 @@ export async function findRecentTransactions(
     limit = 50,
     offset = 0
 ) {
-    return db.bankTransaction.findMany({
+    return prisma.bankTransaction.findMany({
         where: { bankAccountId },
         orderBy: { time: "desc" },
         take: limit,

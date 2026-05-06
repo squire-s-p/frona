@@ -7,13 +7,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-import {
-  archiveProject,
-  restoreProject,
-  setProjectStatus,
-} from "@/app/dashboard/projects/actions";
-
-import { ArrowLeft } from "lucide-react";
+import { setProjectStatus } from "@/app/dashboard/projects/actions";
 
 type ProjectStatus = "active" | "completed" | "archived";
 
@@ -24,7 +18,7 @@ function statusLabel(status: ProjectStatus) {
   return "Завершено";
 }
 
-function StatusPill({ status }: { status: ProjectStatus }) {
+function _StatusPill({ status }: { status: ProjectStatus }) {
   if (status === "active") {
     return (
       <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-[11px] font-bold text-emerald-400">
@@ -49,7 +43,7 @@ function StatusPill({ status }: { status: ProjectStatus }) {
   );
 }
 
-function ClientPill({ client }: { client: ClientMini }) {
+function _ClientPill({ client }: { client: ClientMini }) {
   if (!client?.id) return null;
 
   return (
@@ -69,7 +63,7 @@ export default function ProjectHeader({
   projectId,
   name,
   status,
-  client,
+  client: _client,
 }: {
   projectId: string;
   name: string;
@@ -79,7 +73,7 @@ export default function ProjectHeader({
   const router = useRouter();
   const [pending, startTransition] = React.useTransition();
 
-  const isArchived = status === "archived";
+  const _isArchived = status === "archived";
 
   function onToggleStatus(next: "active" | "completed") {
     startTransition(async () => {
@@ -88,14 +82,14 @@ export default function ProjectHeader({
     });
   }
 
-  function onArchive() {
+  function _onArchive() {
     startTransition(async () => {
       await setProjectStatus(projectId, "completed");
       router.refresh();
     });
   }
 
-  function onRestore() {
+  function _onRestore() {
     startTransition(async () => {
       await setProjectStatus(projectId, "active");
       router.refresh();

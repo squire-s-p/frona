@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 
 import { createTask, moveTask } from "@/app/dashboard/projects/[projectId]/tasks/actions";
 // Types defined locally to bypass Prisma generate issues in CI
-type Priority = any;
-type TaskStatus = any;
+type Priority = "low" | "medium" | "high" | "urgent";
+type TaskStatus = "todo" | "doing" | "done" | "blocked" | "canceled";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

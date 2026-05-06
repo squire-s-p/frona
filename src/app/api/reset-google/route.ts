@@ -4,7 +4,7 @@ import { getAuthSession } from "@/lib/auth-session";
 
 export async function GET() {
     const session = await getAuthSession();
-    const userId = (session?.user as any)?.id;
+    const userId = session?.user?.id;
 
     if (!userId) {
         return NextResponse.json({ error: "Not logged in" }, { status: 401 });

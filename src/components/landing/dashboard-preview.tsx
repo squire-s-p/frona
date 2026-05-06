@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Timer, CreditCard, BarChart3, Target, CheckCircle2 } from "lucide-react";
+import { Timer, CreditCard, BarChart3 } from "lucide-react";
 
 export function DashboardPreview() {
   const [time, setTime] = useState("01:24:45");

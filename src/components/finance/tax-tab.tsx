@@ -106,12 +106,12 @@ interface TaxStats {
         paid: number;
         debt: number;
     };
-    chartData: any[];
+    chartData: Array<{ quarter: string; tax: number; paid: number }>;
 }
 
 interface TaxTabProps {
     data: TaxStats | null;
-    accounts: any[];
+    accounts: Array<{ id: string; name: string; currency: string; balance: number; role?: string }>;
     onSuccess?: () => void;
 }
 
@@ -142,8 +142,8 @@ export function TaxTab({ data, accounts, onSuccess }: TaxTabProps) {
             setIsMoveDialogOpen(false);
             setMoveAmount("");
             if (onSuccess) onSuccess();
-        } catch (error: any) {
-            toast.error(error.message || "Помилка при переказі");
+        } catch (error: unknown) {
+            toast.error(error instanceof Error ? error.message : "Помилка при переказі");
         } finally {
             setIsMoving(false);
         }
@@ -259,7 +259,7 @@ export function TaxTab({ data, accounts, onSuccess }: TaxTabProps) {
                         </div>
                         <div className="flex gap-2">
                             <p className="text-[10px] text-zinc-500 max-w-[200px] text-center md:text-left">
-                                *Якщо ви вже оплатили цей податок, призначте транзакції категорію "Податки" та вкажіть у нотатці "{data.previousQuarter.quarter} кв {data.previousQuarter.year}".
+                                *Якщо ви вже оплатили цей податок, призначте транзакції категорію &quot;Податки&quot; та вкажіть у нотатці &quot;{data.previousQuarter.quarter} кв {data.previousQuarter.year}&quot;.
                             </p>
                         </div>
                     </CardContent>
@@ -322,7 +322,7 @@ export function TaxTab({ data, accounts, onSuccess }: TaxTabProps) {
 
                     <Card className="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50">
                         <CardHeader>
-                            <CardTitle className="text-md font-medium">Пам'ятка платника</CardTitle>
+                            <CardTitle className="text-md font-medium">Пам&apos;ятка платника</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-700">
@@ -362,7 +362,7 @@ export function TaxTab({ data, accounts, onSuccess }: TaxTabProps) {
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <div>
                             <CardTitle className="text-lg font-medium">Історія податкових платежів</CardTitle>
-                            <CardDescription>Всі транзакції з категорією "Податки"</CardDescription>
+                            <CardDescription>Всі транзакції з категорією &quot;Податки&quot;</CardDescription>
                         </div>
                         <div className="flex gap-2 text-xs font-medium">
                             {data.paidByQuarter.map((amount, idx) => (
@@ -387,7 +387,7 @@ export function TaxTab({ data, accounts, onSuccess }: TaxTabProps) {
                                     {data.payments.length === 0 ? (
                                         <TableRow>
                                             <TableCell colSpan={4} className="h-24 text-center text-zinc-500">
-                                                Жодних платежів не знайдено. Призначте категорію "Податки" транзакції в історії.
+                                                Жодних платежів не знайдено. Призначте категорію &quot;Податки&quot; транзакції в історії.
                                             </TableCell>
                                         </TableRow>
                                     ) : (

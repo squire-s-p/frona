@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Mail, Info, Loader2, Camera, Trash2, Upload } from "lucide-react";
+import { Mail, Info, Loader2, Trash2, Upload } from "lucide-react";
 import { updateProfileAction, uploadAvatarAction, deleteAvatarAction } from "@/app/dashboard/settings/actions";
 
 interface ProfileFormProps {
@@ -99,7 +99,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
         <CardHeader className="border-b bg-muted/10">
           <CardTitle className="text-xl">Особиста інформація</CardTitle>
           <CardDescription>
-            Ваше ім'я та контактні дані для системи
+            Ваше ім&apos;я та контактні дані для системи
           </CardDescription>
         </CardHeader>
         <CardContent className="p-6 space-y-8">
@@ -161,7 +161,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
 
           <div className="grid gap-6 sm:grid-cols-2">
             <div className="space-y-3">
-              <Label htmlFor="name" className="text-sm font-medium px-1">Повне ім'я</Label>
+              <Label htmlFor="name" className="text-sm font-medium px-1">Повне ім&apos;я</Label>
               <Input
                 id="name"
                 name="name"

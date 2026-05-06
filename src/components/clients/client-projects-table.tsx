@@ -35,7 +35,7 @@ type Row = {
   updatedAt: Date;
 };
 
-type StatusFilter = "all" | "active" | "completed" | "archived";
+type _StatusFilter = "all" | "active" | "completed" | "archived";
 
 const statusConfig = {
     active: {
@@ -73,21 +73,10 @@ export default function ClientProjectsTable({ projects }: { projects: Row[] }) {
   const router = useRouter();
 
   const [query, setQuery] = React.useState("");
-  const [status, setStatus] = React.useState<StatusFilter>("all");
   const [sort, setSort] = React.useState<"desc" | "asc">("desc");
 
   const [pendingId, setPendingId] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
-
-  const counts = React.useMemo(() => {
-    const c = { all: projects.length, active: 0, completed: 0, archived: 0 };
-    for (const p of projects) {
-      if (p.status === "active") c.active++;
-      else if (p.status === "completed") c.completed++;
-      else if (p.status === "archived") c.archived++;
-    }
-    return c;
-  }, [projects]);
 
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -119,8 +108,8 @@ export default function ClientProjectsTable({ projects }: { projects: Row[] }) {
       setPendingId(projectId);
       await setProjectClient(projectId, null);
       router.refresh();
-    } catch (e: any) {
-      setError(e?.message ?? "Помилка відвʼязки");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Помилка відвʼязки");
     } finally {
       setPendingId(null);
     }

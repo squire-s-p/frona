@@ -1,10 +1,10 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { getAuthSession } from "@/lib/auth-session";
 import { getMonobankClient } from "@/lib/monobank";
 import { revalidatePath } from "next/cache";
-import { applyRulesToTransaction } from "./automation-actions";
 import { format } from "date-fns";
 import { redirect } from "next/navigation";
 
@@ -27,12 +27,12 @@ export async function getFinanceAccounts() {
         orderBy: { createdAt: "asc" },
     });
 
-    return accounts.map((a: any) => ({
+    return accounts.map((a) => ({
         id: a.id,
         userId: a.userId,
         name: a.name,
         type: a.type,
-        role: (a as any).role,
+        role: a.role,
         currency: a.currency,
         balance: Number(a.balance),
         color: a.color,
@@ -57,8 +57,8 @@ export async function getRecentTransactions(limit = 10, offset = 0, filters?: {
 }) {
     const user = await requireUser();
 
-    const txWhere: any = { userId: user.id };
-    const transferWhere: any = { userId: user.id };
+    const txWhere: Prisma.TransactionWhereInput = { userId: user.id };
+    const transferWhere: Prisma.TransferWhereInput = { userId: user.id };
 
     if (filters) {
         if (filters.search) {
@@ -116,7 +116,7 @@ export async function getRecentTransactions(limit = 10, offset = 0, filters?: {
     // Використовуємо skip/take для кожної таблиці окремо, щоб не тягнути забагато даних.
     // Оскільки ми не знаємо точного співвідношення між tx та transfers,
     // беремо запас (offset + limit) з обох.
-    const skip = 0; // Завжди беремо з початку до поточної межі, оскільки сортування після merge
+    // Always start from beginning since sorting happens after merge
     const take = offset + limit + 50;
 
     const txs = await prisma.transaction.findMany({
@@ -131,7 +131,7 @@ export async function getRecentTransactions(limit = 10, offset = 0, filters?: {
     });
 
     // 2. Отримуємо трансфери
-    const transfers = await (prisma as any).transfer.findMany({
+    const transfers = await prisma.transfer.findMany({
         where: transferWhere,
         include: {
             fromAccount: true,
@@ -143,7 +143,7 @@ export async function getRecentTransactions(limit = 10, offset = 0, filters?: {
 
     // 3. Об'єднуємо та нормалізуємо
     const merged = [
-        ...txs.map((t: any) => ({
+        ...txs.map((t) => ({
             id: t.id,
             userId: t.userId,
             accountId: t.accountId,
@@ -152,9 +152,9 @@ export async function getRecentTransactions(limit = 10, offset = 0, filters?: {
             date: t.date.toISOString(),
             description: t.description || (t.type === 'income' ? 'Дохід' : 'Витрата'),
             category: t.category ? {
-                id: (t.category as any).id,
-                name: (t.category as any).name,
-                type: (t.category as any).type
+                id: t.category.id,
+                name: t.category.name,
+                type: t.category.type
             } : null,
             account: t.account ? {
                 id: t.account.id,
@@ -164,13 +164,13 @@ export async function getRecentTransactions(limit = 10, offset = 0, filters?: {
             } : null,
             projectId: t.projectId,
             project: t.project ? {
-                id: (t.project as any).id,
-                name: (t.project as any).name
+                id: t.project.id,
+                name: t.project.name
             } : null,
             isTransfer: false,
             createdAt: t.createdAt.toISOString(),
         })),
-        ...transfers.map((t: any) => ({
+        ...transfers.map((t) => ({
             id: t.id.startsWith('transfer-') ? t.id : `transfer-${t.id}`,
             userId: t.userId,
             accountId: t.fromAccountId,
@@ -255,7 +255,7 @@ export async function getProjects() {
         orderBy: { name: "asc" }
     });
 
-    return projects.map((p: any) => ({
+    return projects.map((p) => ({
         ...p,
         cost: p.cost ? Number(p.cost) : null,
         createdAt: p.createdAt.toISOString(),
@@ -278,8 +278,8 @@ export async function updateTransactionProject(transactionId: string, projectId:
         });
         revalidatePath("/dashboard/finance");
         return { success: true };
-    } catch (error: any) {
-        return { success: false, error: error.message };
+    } catch (error: unknown) {
+        return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
 }
 
@@ -290,19 +290,19 @@ export async function updateTransactionDetails(transactionId: string, data: { ca
     const user = await requireUser();
 
     try {
-        const updateData: any = {};
+        const updateData: Record<string, unknown> = {};
         if (data.categoryId !== undefined) updateData.categoryId = data.categoryId === "none" ? null : data.categoryId;
         if (data.projectId !== undefined) updateData.projectId = data.projectId === "none" ? null : data.projectId;
         if (data.note !== undefined) updateData.note = data.note;
 
         await prisma.transaction.update({
             where: { id: transactionId, userId: user.id },
-            data: updateData
+            data: updateData as Prisma.TransactionUncheckedUpdateInput
         });
         revalidatePath("/dashboard/finance");
         return { success: true };
-    } catch (error: any) {
-        return { success: false, error: error.message };
+    } catch (error: unknown) {
+        return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
 }
 
@@ -335,7 +335,7 @@ export async function getSpendingAnalytics() {
         dailyData[format(d, "yyyy-MM-dd")] = 0;
     }
 
-    txs.forEach((t: any) => {
+    txs.forEach((t) => {
         const day = format(new Date(t.date), "yyyy-MM-dd");
         if (dailyData[day] !== undefined) {
             dailyData[day] += Number(t.amount);
@@ -407,8 +407,8 @@ export async function createBudget(categoryId: string, amount: number) {
         });
         revalidatePath("/dashboard/finance");
         return { success: true };
-    } catch (error: any) {
-        return { success: false, error: error.message };
+    } catch (error: unknown) {
+        return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
 }
 
@@ -426,7 +426,7 @@ export async function getBudgets() {
         include: { category: true }
     });
 
-    const budgetsWithProgress = await Promise.all(budgets.map(async (b: any) => {
+    const budgetsWithProgress = await Promise.all(budgets.map(async (b) => {
         const spent = await prisma.transaction.aggregate({
             where: {
                 userId: user.id,
@@ -450,7 +450,7 @@ export async function getBudgets() {
         };
     }));
 
-    return budgetsWithProgress.sort((a: any, b: any) => b.percentage - a.percentage);
+    return budgetsWithProgress.sort((a, b) => b.percentage - a.percentage);
 }
 
 /**
@@ -460,7 +460,6 @@ export async function getBudgets() {
 export async function getFinancialStats(period: "month" | "year" = "month") {
     const user = await requireUser();
 
-    const now = new Date();
     const startDate = new Date();
 
     if (period === "month") {
@@ -488,7 +487,7 @@ export async function getFinancialStats(period: "month" | "year" = "month") {
         }
     });
 
-    const categoryStats = await Promise.all(expensesByCategory.map(async (item: any) => {
+    const categoryStats = await Promise.all(expensesByCategory.map(async (item) => {
         const category = await prisma.category.findUnique({
             where: { id: item.categoryId }
         });
@@ -554,8 +553,8 @@ export async function createSavingsGoal(data: {
         });
         revalidatePath("/dashboard/finance");
         return { success: true };
-    } catch (error: any) {
-        return { success: false, error: error.message };
+    } catch (error: unknown) {
+        return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
 }
 
@@ -576,12 +575,21 @@ export async function updateSavingsGoal(id: string, data: {
     try {
         await prisma.savingsGoal.update({
             where: { id, userId: user.id },
-            data: data as any
+            data: {
+                currentAmount: data.currentAmount,
+                name: data.name,
+                color: data.color,
+                goalType: data.goalType,
+                status: data.status,
+                accountId: data.accountId,
+                targetAmount: data.targetAmount,
+                deadline: data.deadline,
+            }
         });
         revalidatePath("/dashboard/finance");
         return { success: true };
-    } catch (error: any) {
-        return { success: false, error: error.message };
+    } catch (error: unknown) {
+        return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
 }
 
@@ -596,8 +604,8 @@ export async function deleteSavingsGoal(id: string) {
         });
         revalidatePath("/dashboard/finance");
         return { success: true };
-    } catch (error: any) {
-        return { success: false, error: error.message };
+    } catch (error: unknown) {
+        return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
 }
 
@@ -628,12 +636,12 @@ export async function createRecurringPayment(data: {
                 accountId: data.accountId,
                 affectsForecast: data.affectsForecast ?? true,
                 isExpectedIncome: data.isExpectedIncome ?? false,
-            } as any
+            }
         });
         revalidatePath("/dashboard/finance");
         return { success: true };
-    } catch (error: any) {
-        return { success: false, error: error.message };
+    } catch (error: unknown) {
+        return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
 }
 
@@ -648,8 +656,8 @@ export async function deleteRecurringPayment(id: string) {
         });
         revalidatePath("/dashboard/finance");
         return { success: true };
-    } catch (error: any) {
-        return { success: false, error: error.message };
+    } catch (error: unknown) {
+        return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
 }
 
@@ -679,8 +687,8 @@ export async function createShoppingItem(data: { name: string; url?: string; pri
 
         revalidatePath("/dashboard/finance");
         return { success: true };
-    } catch (error: any) {
-        return { success: false, error: error.message };
+    } catch (error: unknown) {
+        return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
 }
 
@@ -717,12 +725,12 @@ async function scrapePrice(url: string): Promise<{ price: number | null, siteNam
             try {
                 const data = JSON.parse(jsonLdMatch[1]);
                 // Handle single object or array
-                const item = Array.isArray(data) ? data.find((i: any) => i.offers) : data;
+                const item = Array.isArray(data) ? data.find((i) => i.offers) : data;
                 if (item && item.offers) {
                     const priceValue = item.offers.price || item.offers.lowPrice || item.offers.highPrice;
                     if (priceValue) price = parseFloat(priceValue);
                 }
-            } catch (e) {
+            } catch {
                 // Ignore json parse error
             }
         }
@@ -757,7 +765,7 @@ async function scrapePrice(url: string): Promise<{ price: number | null, siteNam
             try {
                 const urlObj = new URL(url);
                 siteName = urlObj.hostname.replace('www.', '');
-            } catch (e) { }
+            } catch { }
         }
 
         return { price, siteName };
@@ -771,7 +779,7 @@ async function scrapePrice(url: string): Promise<{ price: number | null, siteNam
  * Додати посилання до товару
  */
 export async function addShoppingLink(itemId: string, url: string) {
-    const user = await requireUser();
+    await requireUser();
     try {
         // Scrape price
         const { price, siteName } = await scrapePrice(url);
@@ -787,8 +795,8 @@ export async function addShoppingLink(itemId: string, url: string) {
 
         revalidatePath("/dashboard/finance");
         return { success: true, price, siteName };
-    } catch (error: any) {
-        return { success: false, error: error.message };
+    } catch (error: unknown) {
+        return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
 }
 
@@ -816,8 +824,8 @@ export async function deleteShoppingLink(linkId: string) {
 
         revalidatePath("/dashboard/finance");
         return { success: true };
-    } catch (error: any) {
-        return { success: false, error: error.message };
+    } catch (error: unknown) {
+        return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
 }
 
@@ -832,8 +840,8 @@ export async function deleteShoppingItem(id: string) {
         });
         revalidatePath("/dashboard/finance");
         return { success: true };
-    } catch (error: any) {
-        return { success: false, error: error.message };
+    } catch (error: unknown) {
+        return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
 }
 
@@ -850,8 +858,8 @@ export async function toggleShoppingItemStatus(id: string, currentStatus: string
         });
         revalidatePath("/dashboard/finance");
         return { success: true };
-    } catch (error: any) {
-        return { success: false, error: error.message };
+    } catch (error: unknown) {
+        return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
 }
 
@@ -881,11 +889,10 @@ export async function getPlanningData() {
     });
 
     return {
-        goals: goals.map((g: any) => {
-            // Якщо ціль прив'язана до рахунку, її поточна сума береться з балансу рахунку
+        goals: goals.map((g) => {
             let current = Number(g.currentAmount);
             if (g.accountId) {
-                const linkedAccount = accounts.find((a: any) => a.id === g.accountId);
+                const linkedAccount = accounts.find((a) => a.id === g.accountId);
                 if (linkedAccount) {
                     current = Number(linkedAccount.balance);
                 }
@@ -897,16 +904,16 @@ export async function getPlanningData() {
                 name: g.name,
                 targetAmount: Number(g.targetAmount),
                 currentAmount: current,
-                goalType: (g as any).goalType,
-                status: (g as any).status,
-                accountId: (g as any).accountId,
+                goalType: g.goalType,
+                status: g.status,
+                accountId: g.accountId,
                 deadline: g.deadline,
                 color: g.color,
                 createdAt: g.createdAt,
                 updatedAt: g.updatedAt
             };
         }),
-        payments: payments.map((p: any) => ({
+        payments: payments.map((p) => ({
             id: p.id,
             userId: p.userId,
             accountId: p.accountId,
@@ -917,12 +924,12 @@ export async function getPlanningData() {
             frequency: p.frequency,
             nextPaymentDate: p.nextPaymentDate,
             endDate: p.endDate,
-            affectsForecast: (p as any).affectsForecast,
-            isExpectedIncome: (p as any).isExpectedIncome,
+            affectsForecast: p.affectsForecast,
+            isExpectedIncome: p.isExpectedIncome,
             createdAt: p.createdAt,
             updatedAt: p.updatedAt
         })),
-        shoppingItems: shoppingItems.map((i: any) => ({
+        shoppingItems: shoppingItems.map((i) => ({
             id: i.id,
             userId: i.userId,
             name: i.name,
@@ -930,7 +937,7 @@ export async function getPlanningData() {
             status: i.status,
             createdAt: i.createdAt,
             updatedAt: i.updatedAt,
-            links: i.links.map((l: any) => ({
+            links: i.links.map((l) => ({
                 id: l.id,
                 itemId: l.itemId,
                 url: l.url,
@@ -956,7 +963,7 @@ export async function applySmartCategorization(data: {
 
     try {
         // 1. Оновлюємо всі існуючі транзакції з таким самим описом
-        const updateData: any = { categoryId: data.categoryId };
+        const updateData: Record<string, unknown> = { categoryId: data.categoryId };
         if (data.projectId !== undefined) {
             updateData.projectId = data.projectId === "none" ? null : data.projectId;
         }
@@ -966,7 +973,7 @@ export async function applySmartCategorization(data: {
                 userId: user.id,
                 description: data.description
             },
-            data: updateData
+            data: updateData as Prisma.TransactionUncheckedUpdateManyInput
         });
 
         // 2. Створюємо або оновлюємо правило автоматизації
@@ -1001,9 +1008,9 @@ export async function applySmartCategorization(data: {
 
         revalidatePath("/dashboard/finance");
         return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Smart categorization error:", error);
-        return { success: false, error: error.message };
+        return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
 }
 
@@ -1014,7 +1021,7 @@ export async function bulkUpdateTransactions(transactionIds: string[], data: { c
     const user = await requireUser();
 
     try {
-        const updateData: any = {};
+        const updateData: Record<string, unknown> = {};
         if (data.categoryId) updateData.categoryId = data.categoryId;
         if (data.projectId !== undefined) updateData.projectId = data.projectId === "none" ? null : data.projectId;
 
@@ -1023,13 +1030,13 @@ export async function bulkUpdateTransactions(transactionIds: string[], data: { c
                 id: { in: transactionIds },
                 userId: user.id
             },
-            data: updateData
+            data: updateData as Prisma.TransactionUncheckedUpdateManyInput
         });
 
         revalidatePath("/dashboard/finance");
         return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Bulk update error:", error);
-        return { success: false, error: error.message };
+        return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
 }

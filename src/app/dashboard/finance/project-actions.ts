@@ -29,14 +29,7 @@ export async function getProjectsProfitability() {
     });
 
     const projectMetrics = await Promise.all(projects.map(async (project: any) => {
-        // 1. Транзакції
-        const transactions = await prisma.transaction.aggregate({
-            where: { projectId: project.id, userId: user.id },
-            _sum: { amount: true },
-            _count: true
-        });
-
-        // Окремо дохід і витрати по проекту
+        // 1. Транзакції - окремо дохід і витрати по проекту
         const incomeTx = await prisma.transaction.aggregate({
             where: { projectId: project.id, userId: user.id, type: "income" },
             _sum: { amount: true }
@@ -95,7 +88,7 @@ export async function getProjectsProfitability() {
  * Отримує прибутковість по клієнтах
  */
 export async function getClientsProfitability() {
-    const user = await requireUser();
+    await requireUser();
     const projectMetrics = await getProjectsProfitability();
 
     const clientStats: Record<string, any> = {};

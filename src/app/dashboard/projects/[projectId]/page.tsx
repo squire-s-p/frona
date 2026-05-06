@@ -6,22 +6,18 @@ import { bucketsFromEntries } from "@/lib/time-entries";
 import { format } from "date-fns";
 import { uk } from "date-fns/locale";
 
-import { Card } from "@/components/ui/card";
 import ProjectTimeChart from "@/components/projects/project-time-chart";
 
-import { TrashIcon } from "@/components/icons/trash";
-import { Badge } from "@/components/ui/badge";
 import ProjectHeader from "@/components/projects/project-header";
 import ProjectDetailsCard from "@/components/projects/project-details-card";
 
 import ProjectTasksClient from "@/components/projects/project-tasks-client";
-import { 
-  Wallet, Clock, Coins, Banknote, 
-  Sparkles, TrendingUp, BadgePercent, DollarSign, ShoppingBag, BarChart2, Percent,
-  MoreVertical, ChevronDown, Briefcase
+import {
+  TrendingUp,
 } from "lucide-react";
+import { DashboardPage } from "@/components/layout/dashboard-page";
 
-type ActiveTimer = any;
+type _ActiveTimer = any;
 
 export default async function ProjectDetailsPage({
   params,
@@ -150,7 +146,7 @@ export default async function ProjectDetailsPage({
   })();
 
   const earned = project.transactions.reduce((acc, t) => acc + Number(t.amount), 0);
-  const earnedText = earned > 0 ? `${earned} ₴` : "—";
+  const _earnedText = earned > 0 ? `${earned} ₴` : "—";
 
   const rateNum = (() => {
     if (totalMinutes === 0) return 0;
@@ -162,7 +158,7 @@ export default async function ProjectDetailsPage({
   const rate = rateNum > 0 ? `${Math.round(rateNum)} ₴` : "—";
 
   const targetRate = (user as any)?.targetHourlyRate || 0;
-  const targetRateText = targetRate > 0 ? `Ціль: ${targetRate} ₴/год` : "Ціль не встановлена";
+  const _targetRateText = targetRate > 0 ? `Ціль: ${targetRate} ₴/год` : "Ціль не встановлена";
 
   const gaugePercent = targetRate > 0 
     ? Math.min(100, (rateNum / targetRate) * 50)
@@ -217,8 +213,7 @@ export default async function ProjectDetailsPage({
   }
 
   return (
-    <div className="absolute inset-0 overflow-y-auto scrollbar-hide bg-background">
-      <div className="p-4 md:p-6 pb-20 space-y-6">
+    <DashboardPage>
         {/* TOP BAR / BREADCRUMBS handled by ProjectHeader */}
         <ProjectHeader
           projectId={project.id}
@@ -443,7 +438,6 @@ export default async function ProjectDetailsPage({
           </div>
         </div>
 
-      </div>
-    </div>
+    </DashboardPage>
   );
 }

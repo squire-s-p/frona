@@ -7,7 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { X, Plus, Tag } from "lucide-react";
+import { X, Plus } from "lucide-react";
 import { CommandList } from "@/components/ui/command";
 
 
@@ -28,7 +28,7 @@ export function TagSelect({
 }) {
 
   const [open, setOpen] = React.useState(false);
-  const [pending, startTransition] = React.useTransition();
+  const [_pending, startTransition] = React.useTransition();
   const [searchQuery, setSearchQuery] = React.useState("");
 
   const selectedTags = tags.filter((t) => value.includes(t.id));
@@ -82,7 +82,7 @@ export function TagSelect({
               <div className="h-4 w-4 flex items-center justify-center rounded-sm bg-primary/10 text-primary">
                 <Plus className="h-3 w-3" />
               </div>
-              <span className="text-sm font-bold">Створити "{searchQuery}"</span>
+              <span className="text-sm font-bold">Створити &quot;{searchQuery}&quot;</span>
             </CommandItem>
           )}
 

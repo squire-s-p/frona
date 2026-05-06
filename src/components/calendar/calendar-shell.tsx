@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { format, isSameDay, parseISO } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -82,7 +82,7 @@ export default function CalendarShell(props: {
           </div>
         </div>
 
-        <div className="mt-4 space-y-2">
+        <div className="mt-4 flex flex-col gap-2">
           {dayEvents.length === 0 ? (
             <div className="text-sm text-muted-foreground">
               Немає подій на цей день.

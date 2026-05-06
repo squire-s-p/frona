@@ -4,10 +4,13 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getAuthSession } from "@/lib/auth-session";
 
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-
 import InvoiceEditor from "@/components/invoices/invoice-editor";
+import {
+  DashboardPage,
+  DashboardPageHeader,
+  DashboardSurface,
+} from "@/components/layout/dashboard-page";
 
 export default async function InvoicePage({
   params,
@@ -37,58 +40,65 @@ export default async function InvoicePage({
   if (!invoice) notFound();
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <div className="min-w-0">
-          <div className="text-2xl font-semibold truncate">
-            Рахунок №{invoice.number} • {invoice.client?.name ?? "Клієнт"}
+    <DashboardPage>
+      <DashboardPageHeader
+        title={`Рахунок №${invoice.number} • ${invoice.client?.name ?? "Клієнт"}`}
+        description={
+          <Link
+            href="/dashboard/invoices"
+            className="hover:underline underline-offset-4"
+          >
+            ← Назад до рахунків
+          </Link>
+        }
+        actions={
+          <div className="flex items-center gap-2">
+            <Button asChild variant="outline">
+              <a
+                href={`/dashboard/invoices/${invoice.id}/pdf`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Завантажити PDF
+              </a>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href={`/dashboard/clients/${invoice.clientId}`}>Клієнт</Link>
+            </Button>
           </div>
-          <div className="text-sm text-muted-foreground">
-            <Link href="/dashboard/invoices" className="hover:underline underline-offset-4">
-              ← Назад до рахунків
-            </Link>
-          </div>
-        </div>
+        }
+      />
 
-        <div className="flex gap-2">
-          <Button asChild variant="outline" className="rounded-xl">
-            <a href={`/dashboard/invoices/${invoice.id}/pdf`} target="_blank" rel="noreferrer">
-              Завантажити PDF
-            </a>
-          </Button>
-          <Button asChild variant="outline" className="rounded-xl">
-            <Link href={`/dashboard/clients/${invoice.clientId}`}>Клієнт</Link>
-          </Button>
+      <DashboardSurface className="p-0">
+        <div className="p-4 md:p-6">
+          <InvoiceEditor
+            invoice={{
+              id: invoice.id,
+              number: invoice.number,
+              clientId: invoice.clientId,
+              issueDate: invoice.issueDate,
+              dueDate: invoice.dueDate,
+              currency: invoice.currency,
+              status: invoice.status,
+              notes: invoice.notes ?? "",
+              subtotal: Number(invoice.subtotal),
+              total: Number(invoice.total),
+            }}
+            items={invoice.items.map((it: any) => ({
+              id: it.id,
+              name: it.name,
+              description: (it as any).description ?? "",
+              unit: it.unit ?? "",
+              qty: Number(it.qty),
+              price: Number(it.price),
+              amount: Number(it.amount),
+              sort: it.sort,
+            }))}
+            clients={clients}
+          />
         </div>
-      </div>
-
-      <Card className="p-4 md:p-6">
-        <InvoiceEditor
-          invoice={{
-            id: invoice.id,
-            number: invoice.number,
-            clientId: invoice.clientId,
-            issueDate: invoice.issueDate,
-            dueDate: invoice.dueDate,
-            currency: invoice.currency,
-            status: invoice.status,
-            notes: invoice.notes ?? "",
-            subtotal: Number(invoice.subtotal),
-            total: Number(invoice.total),
-          }}
-          items={invoice.items.map((it: any) => ({
-            id: it.id,
-            name: it.name,
-            description: (it as any).description ?? "",
-            unit: it.unit ?? "",
-            qty: Number(it.qty),
-            price: Number(it.price),
-            amount: Number(it.amount),
-            sort: it.sort,
-          }))}
-          clients={clients}
-        />
-      </Card>
-    </div>
+      </DashboardSurface>
+    </DashboardPage>
   );
 }
+

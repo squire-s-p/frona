@@ -3,6 +3,7 @@
 import * as React from "react";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
@@ -129,7 +130,7 @@ export default function LoginForm({
       <div className="rounded-2xl border bg-card p-6 shadow-sm">
         <div className="flex flex-col items-center text-center">
           <div className="mb-6 flex size-20 items-center justify-center overflow-hidden">
-            <img src="/logo.svg" alt="Frona Logo" className="size-full object-contain brightness-0 invert" />
+            <Image src="/logo.svg" alt="Frona Logo" width={80} height={80} className="size-full object-contain brightness-0 invert" />
           </div>
 
           <h1 className="text-2xl font-bold tracking-tight">Ласкаво просимо до Frona</h1>

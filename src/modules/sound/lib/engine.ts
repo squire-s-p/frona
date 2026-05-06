@@ -12,7 +12,7 @@ export class SoundEngine {
 
     public async init() {
         if (this.ctx) return
-        this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
+        this.ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)()
 
         if (this.ctx.state === "suspended") {
             await this.ctx.resume()
@@ -96,7 +96,7 @@ export class SoundEngine {
                     oldSource?.stop()
                     oldSource?.disconnect()
                     oldGain.disconnect()
-                } catch (e) { }
+                } catch { }
             }, fadeTime * 1000)
         }
 
@@ -123,7 +123,7 @@ export class SoundEngine {
             if (!this.isRunning) {
                 try {
                     source?.stop()
-                } catch (e) { }
+                } catch { }
             }
         }, fadeTime * 1000)
     }

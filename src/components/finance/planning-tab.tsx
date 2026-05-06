@@ -4,7 +4,6 @@ import * as React from "react";
 import { useState } from "react";
 import { format } from "date-fns";
 import { uk } from "date-fns/locale";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
     CalendarClock, Plus, Trash2, CheckCircle2, Circle, ExternalLink,
@@ -31,10 +30,12 @@ import { RecurringPaymentDialog } from "./recurring-payment-dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
+type ShoppingItem = { id: string; name: string; url?: string | null; price?: number | null; status?: string; links?: Array<{ id: string; url: string }> };
+
 interface PlanningTabProps {
     payments: any[];
-    shoppingItems?: any[];
-    accounts: any[];
+    shoppingItems?: ShoppingItem[];
+    accounts: Array<{ id: string; name: string; currency: string }>;
     onRefresh: () => void;
 }
 
@@ -72,8 +73,8 @@ export function PlanningTab({ payments, shoppingItems = [], accounts, onRefresh 
         } catch { toast.error("Помилка"); } finally { setIsSubmitting(false); }
     };
 
-    const handleToggleShopStatus = async (item: any) => {
-        try { await toggleShoppingItemStatus(item.id, item.status); onRefresh(); } catch { toast.error("Помилка"); }
+    const handleToggleShopStatus = async (item: ShoppingItem) => {
+            try { await toggleShoppingItemStatus(item.id, item.status ?? ""); onRefresh(); } catch { toast.error("Помилка"); }
     };
 
     const handleAddLink = async (itemId: string) => {
@@ -210,7 +211,7 @@ export function PlanningTab({ payments, shoppingItems = [], accounts, onRefresh 
                                                     {item.name}
                                                 </div>
                                                 <div className="flex items-center gap-2 mt-0.5">
-                                                    {(item.links?.length > 0) && <Badge variant="secondary" className="text-[10px] h-4 px-1 rounded-sm text-zinc-500">{item.links.length} посилань</Badge>}
+                                                    {(item.links?.length ?? 0) > 0 && <Badge variant="secondary" className="text-[10px] h-4 px-1 rounded-sm text-zinc-500">{item.links?.length} посилань</Badge>}
                                                     {item.url && !item.links?.length && (
                                                         <a href={item.url} target="_blank" rel="noreferrer" className="text-[10px] text-zinc-400 hover:underline flex items-center gap-1">
                                                             <ExternalLink className="w-3 h-3" /> Link

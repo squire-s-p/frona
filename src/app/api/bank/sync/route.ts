@@ -34,12 +34,12 @@ export async function GET(request: NextRequest) {
 
         const summary = {
             processed: results.length,
-            ok: results.filter((r: any) => r.ok).length,
-            rateLimited: results.filter((r: any) => !r.ok && "rateLimited" in r).length,
-            errors: results.filter((r: any) => !r.ok && !("rateLimited" in r)).length,
+            ok: results.filter((r) => r.ok).length,
+            rateLimited: results.filter((r) => !r.ok && "rateLimited" in r).length,
+            errors: results.filter((r) => !r.ok && !("rateLimited" in r)).length,
             totalInserted: results
-                .filter((r: any): r is Extract<typeof r, { ok: true }> => r.ok)
-                .reduce((sum: number, r: any) => sum + r.inserted, 0),
+                .filter((r): r is Extract<typeof r, { ok: true }> => r.ok)
+                .reduce((sum: number, r) => sum + r.inserted, 0),
             durationMs: Date.now() - startedAt,
         };
 

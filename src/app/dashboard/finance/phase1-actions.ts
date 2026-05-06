@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { getAuthSession } from "@/lib/auth-session";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -39,7 +40,7 @@ export async function createAccount(data: {
             color: data.color,
             includeInTotal: data.includeInTotal ?? true,
             role: data.role || "liquid",
-        } as any
+        }
     });
 
     revalidatePath("/dashboard/finance");
@@ -117,7 +118,7 @@ export async function getAccountHistory(
         },
     });
 
-    return transactions.map((t: any) => ({
+    return transactions.map((t) => ({
         ...t,
         amount: Number(t.amount),
     }));
@@ -156,9 +157,9 @@ export async function createTransfer(data: {
     }
 
     // Створюємо переказ
-    const transfer = await prisma.$transaction(async (tx: any) => {
+    const transfer = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         // Створюємо запис трансферу
-        const newTransfer = await (tx as any).transfer.create({
+        const newTransfer = await tx.transfer.create({
             data: {
                 userId: user.id,
                 fromAccountId: data.fromAccountId,
@@ -218,14 +219,14 @@ export async function getTransfers(filters?: {
 }) {
     const user = await requireUser();
 
-    const where: any = { userId: user.id };
+    const where: Prisma.TransferWhereInput = { userId: user.id };
     if (filters?.from || filters?.to) {
         where.date = {};
         if (filters.from) where.date.gte = filters.from;
         if (filters.to) where.date.lte = filters.to;
     }
 
-    const transfers = await (prisma as any).transfer.findMany({
+    const transfers = await prisma.transfer.findMany({
         where,
         include: {
             fromAccount: true,
@@ -234,7 +235,7 @@ export async function getTransfers(filters?: {
         orderBy: { date: "desc" },
     });
 
-    return transfers.map((t: any) => ({
+    return transfers.map((t) => ({
         ...t,
         amount: Number(t.amount),
         fee: Number(t.fee),
@@ -269,7 +270,7 @@ export async function createCategory(data: {
             name: data.name,
             type: data.type,
             isTaxable: data.isTaxable ?? false,
-        } as any,
+        },
     });
 
     revalidatePath("/dashboard/finance");
@@ -332,7 +333,7 @@ export async function getTags() {
 export async function createTag(name: string, color?: string) {
     const user = await requireUser();
 
-    const tag = await (prisma as any).financeTag.create({
+    const tag = await prisma.financeTag.create({
         data: {
             userId: user.id,
             name,
@@ -381,7 +382,7 @@ export async function createTransactionWithTags(data: {
 }) {
     const user = await requireUser();
 
-    const transaction = await prisma.$transaction(async (tx: any) => {
+    const transaction = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         // Створюємо транзакцію
         const newTx = await tx.transaction.create({
             data: {
@@ -397,7 +398,7 @@ export async function createTransactionWithTags(data: {
                 tagIds: data.tagIds || [],
                 note: data.note,
                 isRecurring: data.isRecurring || false,
-            } as any,
+            },
         });
 
         // Якщо це рекурентний платіж, створюємо і його
@@ -407,7 +408,7 @@ export async function createTransactionWithTags(data: {
             else if (data.recurringFrequency === "monthly") nextDate.setMonth(nextDate.getMonth() + 1);
             else if (data.recurringFrequency === "yearly") nextDate.setFullYear(nextDate.getFullYear() + 1);
 
-            await (tx as any).recurringPayment.create({
+            await tx.recurringPayment.create({
                 data: {
                     userId: user.id,
                     name: data.description || "Рекурентний платіж",
@@ -418,7 +419,7 @@ export async function createTransactionWithTags(data: {
                     categoryId: data.categoryId,
                     accountId: data.accountId,
                     autoCreate: true,
-                } as any,
+                },
             });
         }
 
@@ -461,7 +462,7 @@ export async function createFullSplitTransaction(data: {
 }) {
     const user = await requireUser();
 
-    const transaction = await prisma.$transaction(async (tx: any) => {
+    const transaction = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         // 1. Створюємо головну транзакцію (батьківську)
         const parentTx = await tx.transaction.create({
             data: {
@@ -476,7 +477,7 @@ export async function createFullSplitTransaction(data: {
                 note: "[PARENT] " + (data.splits[0].note || ""),
                 clientId: data.clientId !== "none" && data.clientId !== "" ? data.clientId : null,
                 projectId: data.projectId || null,
-            } as any,
+            },
         });
 
         // 2. Створюємо дочірні транзакції
@@ -495,7 +496,7 @@ export async function createFullSplitTransaction(data: {
                     splitParentId: parentTx.id,
                     clientId: data.clientId !== "none" && data.clientId !== "" ? data.clientId : null,
                     projectId: data.projectId || null,
-                } as any,
+                },
             });
         }
 
@@ -545,7 +546,7 @@ export async function updateTransaction(data: {
 
     if (!oldTx) throw new Error("Transaction not found");
 
-    const transaction = await prisma.$transaction(async (tx: any) => {
+    const transaction = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         // 1. Повертаємо баланс назад
         const oldBalanceChange = oldTx.type === "income" ? -Number(oldTx.amount) : Number(oldTx.amount);
         await tx.financeAccount.update({
@@ -564,10 +565,10 @@ export async function updateTransaction(data: {
                 date: data.date,
                 description: data.description,
                 projectId: data.projectId !== "none" ? data.projectId : null,
-                clientId: (data as any).clientId !== "none" && (data as any).clientId !== "" ? (data as any).clientId : null,
-                tagIds: (data as any).tagIds || [],
-                note: (data as any).note,
-            } as any,
+                clientId: data.clientId !== "none" && data.clientId !== "" ? data.clientId : null,
+                tagIds: data.tagIds || [],
+                note: data.note,
+            },
         });
 
         // 3. Застосовуємо новий баланс
@@ -599,7 +600,7 @@ export async function deleteTransaction(id: string) {
 
     if (!transaction) throw new Error("Transaction not found");
 
-    await prisma.$transaction(async (tx: any) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         // Коригуємо баланс
         const balanceChange = transaction.type === "income" ? -Number(transaction.amount) : Number(transaction.amount);
         await tx.financeAccount.update({
@@ -624,7 +625,7 @@ export async function processRecurringPayments() {
     const user = await requireUser();
     const now = new Date();
 
-    const pending = await (prisma as any).recurringPayment.findMany({
+    const pending = await prisma.recurringPayment.findMany({
         where: {
             userId: user.id,
             autoCreate: true,
@@ -637,30 +638,35 @@ export async function processRecurringPayments() {
     });
 
     for (const payment of pending) {
-        await prisma.$transaction(async (tx: any) => {
+        if (!payment.accountId || !payment.categoryId) continue;
+
+        const pAccountId = payment.accountId;
+        const pCategoryId = payment.categoryId;
+
+        await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             // Створюємо транзакцію
             await tx.transaction.create({
                 data: {
                     userId: user.id,
-                    accountId: payment.accountId,
-                    categoryId: payment.categoryId,
+                    accountId: pAccountId,
+                    categoryId: pCategoryId,
                     type: payment.type,
                     amount: payment.amount,
                     date: payment.nextPaymentDate,
                     description: `[Auto] ${payment.name}`,
                     note: "Автоматичний рекурентний платіж",
-                } as any
+                }
             });
 
             // Оновлюємо баланс
             const balanceChange = payment.type === "income" ? Number(payment.amount) : -Number(payment.amount);
             await tx.financeAccount.update({
-                where: { id: payment.accountId },
+                where: { id: pAccountId },
                 data: { balance: { increment: balanceChange } }
             });
 
             // Оновлюємо дату наступного платежу або вимикаємо автотворення для "once"
-            let nextDate = new Date(payment.nextPaymentDate);
+            const nextDate = new Date(payment.nextPaymentDate);
             let autoCreate = payment.autoCreate;
 
             if (payment.frequency === "weekly") nextDate.setDate(nextDate.getDate() + 7);
@@ -668,13 +674,13 @@ export async function processRecurringPayments() {
             else if (payment.frequency === "yearly") nextDate.setFullYear(nextDate.getFullYear() + 1);
             else if (payment.frequency === "once") autoCreate = false;
 
-            await (tx as any).recurringPayment.update({
+            await tx.recurringPayment.update({
                 where: { id: payment.id },
                 data: {
                     nextPaymentDate: nextDate,
                     autoCreate: autoCreate,
                     lastGenerated: now
-                } as any
+                }
             });
         });
     }

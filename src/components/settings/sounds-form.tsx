@@ -63,15 +63,15 @@ export function SoundsForm() {
           <div className="space-y-4">
             <Label className="text-sm font-medium">Вибір атмосфери</Label>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {[
-                { id: "focus", label: "Фокус", icon: Music, desc: "Глибока робота" },
-                { id: "relax", label: "Релакс", icon: Coffee, desc: "Спокійний ритм" },
-                { id: "study", label: "Навчання", icon: Wind, desc: "Природні шуми" },
-              ].map((mode) => (
+              {([
+                { id: "focus" as const, label: "Фокус", icon: Music, desc: "Глибока робота" },
+                { id: "relax" as const, label: "Релакс", icon: Coffee, desc: "Спокійний ритм" },
+                { id: "study" as const, label: "Навчання", icon: Wind, desc: "Природні шуми" },
+              ] as const).map((mode) => (
                 <button
                   key={mode.id}
                   type="button"
-                  onClick={() => setSelectedMode(mode.id as any)}
+                  onClick={() => setSelectedMode(mode.id)}
                   className={cn(
                     buttonVariants({ variant: "outline" }),
                     "relative flex flex-col items-center gap-3 rounded-xl p-4 border transition-all text-center group",

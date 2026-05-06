@@ -53,7 +53,7 @@ export function TaskQuickAdd({ projects }: TaskQuickAddProps) {
                 setPriority("MEDIUM");
                 setProjectId(null);
                 toast.success("Завдання додано");
-            } catch (error) {
+            } catch {
                 toast.error("Помилка при додаванні");
             }
         });

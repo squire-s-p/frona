@@ -1,12 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { format, isToday, isTomorrow, isPast, isSameDay, addDays } from "date-fns";
+import { format, isToday, isPast, isSameDay, addDays } from "date-fns";
 import { uk } from "date-fns/locale";
-import { Check, Calendar, Flag } from "lucide-react";
+import { Flag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TaskRow } from "./tasks-client";
-import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 
 interface TaskListViewProps {

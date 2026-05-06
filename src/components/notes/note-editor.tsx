@@ -5,7 +5,7 @@ import { MarkdownEditor } from "./markdown-editor";
 import { MarkdownPreview } from "./markdown-preview";
 import { TagEditor } from "./tag-editor";
 import { updateNote } from "@/app/dashboard/notes/actions";
-import { Loader2, Star, Share2, MoreVertical, Calendar, Tag, Clock, Eye, Edit2, Share, FolderPlus, Folder, FolderCheck } from "lucide-react";
+import { Loader2, Star, MoreVertical, Calendar, Tag, Share, Folder, FolderCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
     AlertDialog,
-    AlertDialogAction,
     AlertDialogCancel,
     AlertDialogContent,
     AlertDialogDescription,
@@ -29,15 +28,26 @@ import {
 } from "@/components/ui/alert-dialog";
 import { createNote } from "@/app/dashboard/notes/actions";
 
+export type NoteData = {
+    id: string;
+    title: string;
+    content: string | null;
+    isFavorite: boolean;
+    createdAt: string | Date;
+    folderId: string | null;
+    tags?: string[];
+    tagsRel?: Array<{ id: string; name: string; color: string | null }>;
+};
+
 interface NoteEditorProps {
-    note: any;
-    folders?: any[];
+    note: NoteData;
+    folders?: Array<{ id: string; name: string }>;
     notes?: Array<{ id: string; title: string }>;
-    unlinkedMentions?: any[];
+    unlinkedMentions?: Array<{ id: string; title: string }>;
     onContentChange?: (content: string) => void;
 }
 
-export function NoteEditor({ note: initialNote, folders = [], notes = [], unlinkedMentions = [], onContentChange }: NoteEditorProps) {
+export function NoteEditor({ note: initialNote, folders = [], notes = [], unlinkedMentions: _unlinkedMentions = [], onContentChange }: NoteEditorProps) {
     const router = useRouter();
     const [note, setNote] = React.useState(initialNote);
     const [content, setContent] = React.useState(initialNote.content || "");
@@ -60,24 +70,24 @@ export function NoteEditor({ note: initialNote, folders = [], notes = [], unlink
         localStorage.setItem("notes-view-mode", val ? "preview" : "editor");
     };
 
-    const handleCreateMissingNote = async () => {
+    const _handleCreateMissingNote = async () => {
         if (!missingNoteTitle) return;
         try {
             const newNote = await createNote(missingNoteTitle, initialNote.folderId);
             toast.success(`Нотатку "${missingNoteTitle}" створено`);
             router.push(`/dashboard/notes/${newNote.id}`);
-        } catch (error) {
+        } catch {
             toast.error("Помилка створення нотатки");
         } finally {
             setMissingNoteTitle(null);
         }
     };
 
-    const handleSave = React.useCallback(async (updatedFields: any) => {
+    const handleSave = React.useCallback(async (updatedFields: Record<string, unknown>) => {
         setIsSaving(true);
         try {
             await updateNote(initialNote.id, updatedFields);
-        } catch (error) {
+        } catch {
             toast.error("Помилка збереження");
         } finally {
             setIsSaving(false);
@@ -93,7 +103,7 @@ export function NoteEditor({ note: initialNote, folders = [], notes = [], unlink
         return () => clearTimeout(timer);
     }, [content, initialNote.content, handleSave, onContentChange]);
 
-    const stats = React.useMemo(() => {
+    const _stats = React.useMemo(() => {
         const words = content.trim().split(/\s+/).filter(Boolean).length;
         const readingTime = Math.ceil(words / 200);
         return { words, readingTime };
@@ -215,7 +225,7 @@ export function NoteEditor({ note: initialNote, folders = [], notes = [], unlink
                                 className="h-auto p-0 text-zinc-600 dark:text-zinc-400 font-mono hover:bg-transparent hover:text-foreground"
                                 onClick={() => setMoveDialogOpen(true)}
                             >
-                                {folders.find((f: any) => f.id === note.folderId)?.name || "Без папки"}
+                                {folders.find((f: { id: string; name: string }) => f.id === note.folderId)?.name || "Без папки"}
                             </Button>
                         </div>
                     </div>
@@ -261,7 +271,7 @@ export function NoteEditor({ note: initialNote, folders = [], notes = [], unlink
                         >
                             <FolderCheck className="h-4 w-4" /> Без папки (Корінь)
                         </Button>
-                        {folders.map((folder: any) => (
+                        {folders.map((folder: { id: string; name: string }) => (
                             <Button
                                 key={folder.id}
                                 variant={note.folderId === folder.id ? "secondary" : "ghost"}

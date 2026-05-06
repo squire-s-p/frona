@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 
 import {
@@ -24,7 +25,6 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarGroup,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
@@ -87,7 +87,7 @@ export function AppSidebar({
           {/* Logo — НІКОЛИ не стискається */}
           <div className="shrink-0">
             <div className="flex size-9 items-center justify-center overflow-hidden">
-              <img src="/logo.svg" alt="Frona Logo" className="size-full object-contain dark:invert" />
+              <Image src="/logo.svg" alt="Frona Logo" width={36} height={36} className="size-full object-contain dark:invert" />
             </div>
           </div>
 

@@ -32,9 +32,8 @@ import {
   type CalendarListItem,
 } from "@/app/dashboard/calendar/actions";
 
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -52,7 +51,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { TimePicker } from "@/components/ui/time-picker";
@@ -188,18 +186,6 @@ type DraftEvent = {
   end: Date;
 };
 
-function toInputDateTimeLocal(d: Date) {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
-    d.getHours()
-  )}:${pad(d.getMinutes())}`;
-}
-
-function fromInputDateTimeLocal(v: string) {
-  // "YYYY-MM-DDTHH:mm" => local Date
-  return new Date(v);
-}
-
 export default function CalendarClient() {
   const [mode, setMode] = React.useState<ViewMode>("week");
   const [anchor, setAnchor] = React.useState<Date>(new Date());
@@ -208,10 +194,10 @@ export default function CalendarClient() {
   const [calendars, setCalendars] = React.useState<CalendarListItem[]>([]);
 
   const [events, setEvents] = React.useState<CalendarEvent[]>([]);
-  const [timeZone, setTimeZone] = React.useState<string>("Europe/Kyiv");
+  const [_timeZone, setTimeZone] = React.useState<string>("Europe/Kyiv");
 
   const [error, setError] = React.useState<string | null>(null);
-  const [loading, startTransition] = React.useTransition();
+  const [_loading, startTransition] = React.useTransition();
 
   const { start, end } = React.useMemo(() => rangeFor(mode, anchor), [mode, anchor]);
 
@@ -233,9 +219,9 @@ export default function CalendarClient() {
 
         const primary = res.calendars.find((c: any) => c.primary);
         if (primary) setCalendarId((primary as any).id);
-      } catch (e: any) {
+      } catch (e: unknown) {
         if (!alive) return;
-        setError(e?.message ?? "Не вдалося завантажити список календарів");
+        setError(e instanceof Error ? e.message : "Не вдалося завантажити список календарів");
       }
     });
     return () => {
@@ -253,8 +239,8 @@ export default function CalendarClient() {
       });
       setEvents(res.events);
       setTimeZone(res.timeZone);
-    } catch (e: any) {
-      setError(e?.message ?? "Не вдалося завантажити події");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Не вдалося завантажити події");
     }
   }, [start, end, calendarId]);
 
@@ -324,8 +310,8 @@ export default function CalendarClient() {
       setCreateOpen(false);
       setDraft(null);
       await loadEvents();
-    } catch (e: any) {
-      setCreateErr(e?.message ?? "Не вдалося зберегти подію");
+    } catch (e: unknown) {
+      setCreateErr(e instanceof Error ? e.message : "Не вдалося зберегти подію");
     }
   }
 
@@ -334,8 +320,8 @@ export default function CalendarClient() {
       await deleteCalendarEvent({ calendarId, eventId });
       setSelectedEvent(null);
       await loadEvents();
-    } catch(e: any) {
-      alert("Не вдалося видалити: " + (e?.message || ""));
+    } catch(e: unknown) {
+      alert("Не вдалося видалити: " + (e instanceof Error ? e.message : "Unknown error"));
     }
   }
 
@@ -355,8 +341,8 @@ export default function CalendarClient() {
   }
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 space-y-4 h-full">
-      <Card className="shrink-0 rounded-2xl p-3 md:p-4 shadow-sm border-border bg-card">
+    <div className="flex-1 flex flex-col min-h-0 gap-4 h-full">
+      <Card className="shrink-0 rounded-3xl p-3 md:p-4 shadow-none ring-1 ring-border/50 border-none bg-card">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="flex flex-wrap items-center gap-2">
             <Button onClick={() => openCreateAt(new Date())}>
@@ -427,7 +413,7 @@ export default function CalendarClient() {
         )}
       </Card>
 
-      <Card className="flex-1 min-h-0 overflow-hidden flex flex-col rounded-2xl shadow-sm border-border bg-card p-0 gap-0">
+      <Card className="flex-1 min-h-0 overflow-hidden flex flex-col rounded-3xl shadow-none ring-1 ring-border/50 border-none bg-card p-0 gap-0">
         {mode === "day" && (
           <DayView day={start} events={events} onCreateAt={openCreateAt} onEventClick={setSelectedEvent} />
         )}
@@ -435,7 +421,7 @@ export default function CalendarClient() {
           <WeekView start={start} events={events} onCreateAt={openCreateAt} onEventClick={setSelectedEvent} />
         )}
         {mode === "month" && <MonthView anchor={anchor} events={events} onCreateAt={openCreateAt} onEventClick={setSelectedEvent} />}
-        {mode === "year" && <YearView anchor={anchor} events={events} onEventClick={setSelectedEvent} />}
+        {mode === "year" && <YearView anchor={anchor} events={events} />}
       </Card>
 
       <CreateEventDialog
@@ -547,13 +533,12 @@ function DayView({
               <div className="border-r border-border/50 p-2 text-[10px] text-muted-foreground text-center relative">
                 <span className="-translate-y-1/2 absolute top-0 left-0 right-0">{h === 0 ? "" : String(h).padStart(2, "0") + ":00"}</span>
               </div>
-              <button
+              <Button
                 type="button"
-                className={cn(
-                  buttonVariants({ variant: "ghost" }),
-                  "min-h-12 h-auto w-full rounded-none border-b border-border/50 px-0 py-0 justify-start text-left hover:bg-muted/10"
-                )}
+                variant="ghost"
+                className="min-h-12 h-auto w-full rounded-none border-b border-border/50 px-0 py-0 justify-start text-left hover:bg-muted/10"
                 style={{ height: hourPx }}
+                aria-label={`Створити подію на ${String(h).padStart(2, "0")}:00`}
                 onClick={() => {
                   const dt = setMinutes(setHours(new Date(day), h), 0);
                   onCreateAt(dt);
@@ -589,7 +574,7 @@ function DayView({
                   onEventClick(p.event);
                 }}
                 className={cn(
-                  "absolute overflow-hidden rounded-md border-l-4 border-l-primary bg-primary/10 p-1.5 hover:bg-primary/20 transition-colors shadow-sm",
+                  "absolute overflow-hidden rounded-md border-l-4 border-l-primary bg-primary/10 p-1.5 hover:bg-primary/20 transition-colors shadow-none",
                   "border border-primary/20"
                 )}
                 style={{
@@ -711,14 +696,13 @@ function WeekView({
               </div>
 
               {days.map((d) => (
-                <button
+                <Button
                   key={d.toISOString() + h}
                   type="button"
-                  className={cn(
-                    buttonVariants({ variant: "ghost" }),
-                    "min-h-12 h-auto w-full rounded-none border-b border-l border-border/50 px-0 py-0 justify-start text-left hover:bg-muted/10"
-                  )}
+                  variant="ghost"
+                  className="min-h-12 h-auto w-full rounded-none border-b border-l border-border/50 px-0 py-0 justify-start text-left hover:bg-muted/10"
                   style={{ height: hourPx }}
+                  aria-label={`Створити подію ${d.toLocaleDateString("uk-UA")} ${String(h).padStart(2, "0")}:00`}
                   onClick={() => {
                     const dt = setMinutes(setHours(new Date(d), h), 0);
                     onCreateAt(dt);
@@ -758,7 +742,7 @@ function WeekView({
                         onEventClick(p.event);
                       }}
                       className={cn(
-                        "absolute overflow-hidden rounded-md border-l-4 border-l-primary bg-primary/10 p-1 hover:bg-primary/20 transition-colors shadow-sm",
+                        "absolute overflow-hidden rounded-md border-l-4 border-l-primary bg-primary/10 p-1 hover:bg-primary/20 transition-colors shadow-none",
                         "border border-primary/20"
                       )}
                       style={{
@@ -841,7 +825,7 @@ function MonthView({ anchor, events, onCreateAt, onEventClick }: { anchor: Date;
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto space-y-1 mt-1 pr-1 pb-1 scrollbar-hide">
+              <div className="flex-1 overflow-y-auto flex flex-col gap-1 mt-1 pr-1 pb-1 scrollbar-hide">
                 {preview.map((e: any) => (
                   <a
                     key={e.id}
@@ -874,7 +858,7 @@ function MonthView({ anchor, events, onCreateAt, onEventClick }: { anchor: Date;
   );
 }
 
-function YearView({ anchor, events, onEventClick }: { anchor: Date; events: CalendarEvent[]; onEventClick: (e: CalendarEvent) => void; }) {
+function YearView({ anchor, events }: { anchor: Date; events: CalendarEvent[]; }) {
   const months = Array.from({ length: 12 }, (_, i) => new Date(anchor.getFullYear(), i, 1));
 
   return (
@@ -890,7 +874,7 @@ function YearView({ anchor, events, onEventClick }: { anchor: Date; events: Cale
         }).length;
 
         return (
-          <div key={m.toISOString()} className="rounded-xl border border-border/50 bg-card p-4 shadow-sm hover:shadow-md transition-shadow">
+          <div key={m.toISOString()} className="rounded-2xl border border-border/50 bg-card p-4 shadow-none hover:shadow-none transition-shadow">
             <div className="text-base font-semibold capitalize text-foreground">{format(m, "MMMM", { locale: uk })}</div>
             <div className="mt-1 flex items-center gap-2">
               <div className="text-sm text-muted-foreground">{count} подій</div>
@@ -930,7 +914,7 @@ function CreateEventDialog({
           <DialogTitle>{draft?.id ? "Редагувати подію" : "Нова подія"}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="flex flex-col gap-4">
           <div className="text-xs text-muted-foreground">
             Календар: <span className="font-medium text-foreground">{calendarId}</span>
           </div>
@@ -941,7 +925,7 @@ function CreateEventDialog({
             </div>
           )}
 
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <Label>Назва</Label>
             <Input
               value={draft?.title ?? ""}
@@ -956,7 +940,7 @@ function CreateEventDialog({
 
 
           <div className="flex flex-col gap-4">
-            <div className="space-y-2">
+            <div className="flex flex-col gap-2">
               <Label>Початок</Label>
               <div className="flex gap-2">
                 <Popover>
@@ -1015,7 +999,7 @@ function CreateEventDialog({
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="flex flex-col gap-2">
               <Label>Кінець</Label>
               <div className="flex gap-2">
                 <Popover>
@@ -1075,7 +1059,7 @@ function CreateEventDialog({
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <Label>Опис</Label>
             <Textarea
               value={draft?.description ?? ""}
@@ -1128,7 +1112,7 @@ function EventDetailsDialog({
           <DialogTitle className="pr-6">{event.title}</DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4 py-4">
+        <div className="flex flex-col gap-4 py-4">
           <div className="flex items-start justify-between gap-3 text-sm">
             <div className="flex items-start gap-3">
               <CalendarIcon className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />

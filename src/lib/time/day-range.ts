@@ -1,4 +1,4 @@
-function getZonedParts(date: Date, timeZone: string) {
+function _getZonedParts(date: Date, timeZone: string) {
   const dtf = new Intl.DateTimeFormat("en-CA", {
     timeZone,
     year: "numeric",
@@ -24,7 +24,7 @@ function getZonedParts(date: Date, timeZone: string) {
   };
 }
 
-function minutesFromParts(p: { hour: number; minute: number }) {
+function _minutesFromParts(p: { hour: number; minute: number }) {
   return p.hour * 60 + p.minute;
 }
 
@@ -51,7 +51,7 @@ export function getUtcDayRange(dateISO: string, timeZone: string = "Europe/Kyiv"
   }
 
   // 2. Те саме для кінця дня (23:59:59.999)
-  let end = new Date(start.getTime() + 24 * 3600 * 1000 - 1);
+  const end = new Date(start.getTime() + 24 * 3600 * 1000 - 1);
   
   return { start, end };
 }

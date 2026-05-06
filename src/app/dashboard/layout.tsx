@@ -12,12 +12,10 @@ export const metadata: Metadata = {
 
 import { AppSidebar } from "@/components/app-sidebar";
 import { DashboardTopbar } from "@/components/dashboard/topbar";
-import ActiveTimerPill from "@/components/time/active-timer-pill";
 import { getActiveTimer } from "@/app/dashboard/time/actions";
 import { SoundProvider } from "@/modules/sound/components/SoundProvider";
 import { listProjects, listTags } from "@/server/tasks/queries";
 
-import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 export default async function DashboardLayout({

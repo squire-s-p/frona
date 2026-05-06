@@ -187,7 +187,7 @@ export default function WorkEntryDialog({
   entryId,
   onSaveAction,
   onDeleteAction,
-  onStartTimerAction,
+  onStartTimerAction: _onStartTimerAction,
   className,
 }: Props) {
   const [projectId, setProjectId] = React.useState<string | null>(null);
@@ -249,7 +249,7 @@ export default function WorkEntryDialog({
         if (cancelled) return;
         setTasks(list);
 
-        if (taskId && !list.some((t: any) => t.id === taskId)) setTaskId(null);
+        if (taskId && !list.some((t: Task) => t.id === taskId)) setTaskId(null);
       } catch {
         if (!cancelled) setTasks([]);
       } finally {

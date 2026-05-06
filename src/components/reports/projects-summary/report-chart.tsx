@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { Bar, BarChart as ReBarChart, CartesianGrid, XAxis, YAxis, Label, Pie, PieChart, Sector } from "recharts";
-import { PieSectorDataItem } from "recharts/types/polar/Pie";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ChartConfig,

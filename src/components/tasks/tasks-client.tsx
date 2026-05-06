@@ -46,7 +46,7 @@ function normalizeTasks(tasks: any[]): TaskRow[] {
     project: t.project ?? null,
     recurrenceRule: t.recurrenceRule ?? null,
     parentTaskId: t.parentTaskId ?? null,
-    tags: (t.taskTags ?? []).map((tt: any) => ({
+    tags: (t.taskTags ?? []).map((tt: { tag: { id: string; name: string; color: string | null } }) => ({
       id: tt.tag.id,
       name: tt.tag.name,
       color: tt.tag.color,
@@ -68,8 +68,8 @@ function priorityLabel(p: string) {
 const TasksLayoutInner = dynamic(() => import("./tasks-layout-inner"), {
   ssr: false,
   loading: () => (
-    <div className="flex-1 flex flex-col min-h-0 -m-4 md:-m-6 bg-background overflow-hidden relative border-0 h-full w-full items-center justify-center">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+    <div className="flex-1 min-h-0 flex items-center justify-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
     </div>
   ),
 });
@@ -162,14 +162,14 @@ export function TasksClient({
       await createTask({
         title: cleanTitle,
         status: "TODO",
-        priority: (quickAddPriority?.priority ?? "NONE") as any,
+        priority: quickAddPriority?.priority ?? "NONE",
         startDate: quickAddDate?.date?.toISOString() || (selectedFilter === "today" ? new Date().toISOString() : undefined),
         projectId,
       });
 
       setQuickAddValue("");
       toast.success("Завдання створено");
-    } catch (error) {
+    } catch {
       toast.error("Помилка при створенні");
     } finally {
       setQuickAddPending(false);
@@ -179,7 +179,7 @@ export function TasksClient({
   async function onToggleStatus(taskId: string, isDone: boolean) {
     try {
       await toggleTaskStatus(taskId, isDone ? "DONE" : "TODO");
-    } catch (err) {
+    } catch {
       toast.error("Не вдалося змінити статус");
     }
   }

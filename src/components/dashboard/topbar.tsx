@@ -14,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, LogOut, User as UserIcon, Play, Square, ListPlus, ChevronRight } from "lucide-react";
+import { Plus, LogOut, User as UserIcon, Play, Square, ChevronRight } from "lucide-react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -33,12 +33,15 @@ import { SoundPopover } from "@/modules/sound/components/SoundPopover";
 import { TaskDialog } from "@/components/tasks/task-dialog";
 import { NotificationsSheet } from "@/components/layout/notifications-sheet";
 import { cn } from "@/lib/utils";
+import type { ProjectOption, TagOption } from "@/components/tasks/tasks-client";
 
 type User = {
   name?: string | null;
   email?: string | null;
   image?: string | null;
 };
+
+type ActiveTimerView = { startedAt: Date } | null;
 
 function initials(name?: string | null) {
   if (!name) return "U";
@@ -66,10 +69,10 @@ export function DashboardTopbar({
   clients = []
 }: { 
   user: User; 
-  activeTimer?: any; 
-  projects?: any[]; 
-  tags?: any[];
-  clients?: any[];
+  activeTimer?: ActiveTimerView; 
+  projects?: ProjectOption[]; 
+  tags?: TagOption[];
+  clients?: Array<{ id: string; name: string }>;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -150,7 +153,7 @@ export function DashboardTopbar({
       <div className="ml-1 sm:ml-2">
         <Breadcrumb>
           <BreadcrumbList>
-            {breadcrumbs.map((bc, index) => (
+            {breadcrumbs.map((bc, _index) => (
               <React.Fragment key={bc.href}>
                 <BreadcrumbItem>
                   {bc.isLast ? (

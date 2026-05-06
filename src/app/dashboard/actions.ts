@@ -231,34 +231,34 @@ export async function getFullDashboardData() {
   ]);
 
   // Clients for all-time revenue mapping
-  const topClientIds = allClientsRevenue.map((t: { clientId: string | null }) => t.clientId).filter(Boolean) as string[];
+  const topClientIds = allClientsRevenue.map((t) => t.clientId).filter(Boolean) as string[];
   const topClients = await prisma.client.findMany({
     where: { id: { in: topClientIds } },
     select: { id: true, name: true }
   });
-  const topClientNameMap = new Map(topClients.map((c: any) => [c.id, c.name]));
+  const topClientNameMap = new Map(topClients.map((c) => [c.id, c.name]));
 
-  const topClientsRevenue = allClientsRevenue.map((t: any) => ({
+  const topClientsRevenue = allClientsRevenue.map((t) => ({
     name: topClientNameMap.get(t.clientId as string) || "Клієнт",
     value: Number(t._sum.amount || 0)
   }));
 
   // Map clients names for revenue
-  const clientIds = transactionsByClient.map((t: any) => t.clientId as string);
+  const clientIds = transactionsByClient.map((t) => t.clientId as string);
   const clients = await prisma.client.findMany({
     where: { id: { in: clientIds } },
     select: { id: true, name: true }
   });
-  const clientNameMap = new Map(clients.map((c: any) => [c.id, c.name]));
+  const clientNameMap = new Map(clients.map((c) => [c.id, c.name]));
 
-  const revenueByClient = transactionsByClient.map((t: any) => ({
+  const revenueByClient = transactionsByClient.map((t) => ({
     name: clientNameMap.get(t.clientId as string) || "Невідомий клієнт",
     value: Number(t._sum.amount || 0)
   }));
 
   // Build weekly chart data: group by day Mon-Sun
   const dailyMap: Record<number, number> = {};
-  weeklyEntries.forEach((e: any) => {
+  weeklyEntries.forEach((e) => {
     const day = e.startAt.getDay(); // 0=Sun, 1=Mon... 6=Sat
     dailyMap[day] = (dailyMap[day] || 0) + (e.durationSec || 0);
   });
@@ -278,7 +278,7 @@ export async function getFullDashboardData() {
 
     // Projects
     projectCount: activeProjects,
-    recentProjects: recentProjects.map((p: any) => ({
+    recentProjects: recentProjects.map((p) => ({
       id: p.id,
       name: p.name,
       clientName: p.client?.name,
@@ -290,7 +290,7 @@ export async function getFullDashboardData() {
     overdueTasksCount: overdueTasks,
 
     // Finance
-    financeAccounts: financeAccounts.map((a: any) => ({
+    financeAccounts: financeAccounts.map((a) => ({
       name: a.name,
       balance: Number(a.balance),
       currency: a.currency,
@@ -298,7 +298,7 @@ export async function getFullDashboardData() {
     })),
     monthlyIncome: Number(monthlyIncome._sum.amount ?? 0),
     monthlyExpense: Number(monthlyExpense._sum.amount ?? 0),
-    recentTransactions: recentTransactions.map((t: any) => ({
+    recentTransactions: recentTransactions.map((t) => ({
       id: t.id,
       amount: Number(t.amount),
       type: t.type,
@@ -309,7 +309,7 @@ export async function getFullDashboardData() {
     // Statistics
     prevMonthDuration: prevMonthWork._sum.durationSec ?? 0,
     revenueByClient,
-    urgentTasks: urgentTasks.map((t: any) => ({
+    urgentTasks: urgentTasks.map((t) => ({
       id: t.id,
       title: t.title,
       dueAt: t.dueAt?.toISOString(),
@@ -317,7 +317,7 @@ export async function getFullDashboardData() {
     })),
 
     // Recent notes
-    recentNotes: recentNotes.map((n: any) => ({
+    recentNotes: recentNotes.map((n) => ({
       id: n.id,
       title: n.title,
       content: n.content?.substring(0, 100),

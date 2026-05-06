@@ -5,8 +5,6 @@ import { format, formatDistanceToNow } from "date-fns";
 import { uk } from "date-fns/locale";
 
 import {
-    CheckCircle2,
-    Circle,
     Calendar,
     Flag,
     Hash,
@@ -18,12 +16,6 @@ import {
     MessageSquare,
     Link2,
     Clock,
-    Pin,
-    ChevronRight,
-    Search,
-    Plus,
-    Wand2,
-    CalendarIcon,
     File,
     Image as ImageIcon,
     FileText,
@@ -31,7 +23,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TaskRow, ProjectOption, TagOption } from "./tasks-client";
-import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,7 +54,6 @@ import {
     addTaskComment,
     getTaskComments,
     deleteTaskComment,
-    toggleTaskStatus,
     deleteTaskAttachment
 } from "@/server/tasks/actions";
 
@@ -78,10 +68,10 @@ type RecurrenceFrequency = "daily" | "weekly" | "monthly" | "yearly";
 function AdvancedDatePicker({
     range,
     setRange,
-    isRecurring,
+    isRecurring: _isRecurring,
     setIsRecurring,
-    recurrenceFrequency,
-    setRecurrenceFrequency,
+    recurrenceFrequency: _recurrenceFrequency,
+    setRecurrenceFrequency: _setRecurrenceFrequency,
     setDateOpen
 }: {
     range: { from: Date | undefined; to?: Date | undefined };
@@ -145,7 +135,7 @@ function AdvancedDatePicker({
                     mode="range"
                     locale={uk}
                     selected={{ from: range?.from, to: range?.to }}
-                    onSelect={(r: any) => setRange(r ?? { from: undefined, to: undefined })}
+                    onSelect={(r) => setRange(r ?? { from: undefined, to: undefined })}
                     className="w-full flex justify-center !p-0"
                 />
             )}
@@ -221,7 +211,7 @@ export function TaskDetailView({
     const [comment, setComment] = React.useState("");
     const [comments, setComments] = React.useState<TaskCommentRow[]>([]);
     const [commentsLoading, setCommentsLoading] = React.useState(false);
-    const [attachments, setAttachments] = React.useState<any[]>([]);
+    const [attachments, setAttachments] = React.useState<Array<{ id: string; name: string; url: string; mimeType: string | null; size: number | null; createdAt: Date }>>([]);
     const [attachmentsLoading, setAttachmentsLoading] = React.useState(false);
     const [dateOpen, setDateOpen] = React.useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
@@ -288,8 +278,7 @@ export function TaskDetailView({
             try {
                 await updateTask(task.id, fullUpdates);
                 onUpdate?.();
-            } catch (error) {
-                console.error("Update error:", error);
+            } catch {
                 toast.error("Не вдалося оновити завдання");
                 setTask(task); // Revert
             }
@@ -305,7 +294,7 @@ export function TaskDetailView({
             try {
                 await addTaskComment(task.id, text);
                 await loadComments(task.id);
-            } catch (error) {
+            } catch {
                 toast.error("Не вдалося додати коментар");
                 setComment(text);
             }
@@ -317,7 +306,7 @@ export function TaskDetailView({
             try {
                 await deleteTaskComment(commentId);
                 setComments(prev => prev.filter(c => c.id !== commentId));
-            } catch (error) {
+            } catch {
                 toast.error("Не вдалося видалити коментар");
             }
         });
@@ -329,7 +318,7 @@ export function TaskDetailView({
                 await deleteTaskAttachment(attachmentId);
                 setAttachments(prev => prev.filter(a => a.id !== attachmentId));
                 toast.success("Вкладення видалено");
-            } catch (error) {
+            } catch {
                 toast.error("Не вдалося видалити вкладення");
             }
         });
@@ -350,7 +339,7 @@ export function TaskDetailView({
                 setShowDeleteDialog(false);
                 onClose();
                 onUpdate?.();
-            } catch (error) {
+            } catch {
                 toast.error("Не вдалося видалити завдання");
             }
         });
@@ -614,7 +603,7 @@ export function TaskDetailView({
                                                 <div className="flex flex-col min-w-0">
                                                     <span className="text-[13px] font-semibold truncate group-hover/att:text-foreground transition-colors">{att.name}</span>
                                                     <span className="text-[10px] text-muted-foreground/60 font-medium">
-                                                        {(att.size / 1024).toFixed(1)} KB
+                                                        {((att.size ?? 0) / 1024).toFixed(1)} KB
                                                     </span>
                                                 </div>
                                                 <div className="ml-auto flex items-center gap-1 opacity-0 group-hover/att:opacity-100 transition-all">
@@ -727,7 +716,7 @@ export function TaskDetailView({
                     <AlertDialogHeader>
                         <AlertDialogTitle>Ви впевнені?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Ця дія незворотна. Завдання "{task.title}" буде видалено назавжди.
+                            Ця дія незворотна. Завдання &quot;{task.title}&quot; буде видалено назавжди.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

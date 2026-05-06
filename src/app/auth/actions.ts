@@ -1,13 +1,17 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { crypto } from "crypto";
 import bcrypt from "bcryptjs";
 import { Resend } from "resend";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
-export async function forgotPasswordAction(prevState: any, formData: FormData) {
+interface ActionState {
+  error?: string;
+  success?: boolean;
+}
+
+export async function forgotPasswordAction(prevState: ActionState, formData: FormData) {
   const email = formData.get("email") as string;
   if (!email) return { error: "Введіть email" };
 
@@ -17,21 +21,18 @@ export async function forgotPasswordAction(prevState: any, formData: FormData) {
     });
 
     if (!user) {
-      // Для безпеки не кажемо, що юзера немає, але й нічого не робимо
       return { success: true };
     }
 
-    // Генерація токена
     const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-    const expires = new Date(Date.now() + 3600000); // 1 година
+    const expires = new Date(Date.now() + 3600000);
 
-    // Зберігаємо токен у базу
     await prisma.verificationToken.upsert({
-      where: { 
+      where: {
         identifier_token: {
           identifier: email.toLowerCase(),
           token: token
-        } 
+        }
       },
       update: { token, expires },
       create: {
@@ -63,7 +64,7 @@ export async function forgotPasswordAction(prevState: any, formData: FormData) {
   }
 }
 
-export async function resetPasswordAction(prevState: any, formData: FormData) {
+export async function resetPasswordAction(prevState: ActionState, formData: FormData) {
   const password = formData.get("password") as string;
   const confirmPassword = formData.get("confirmPassword") as string;
   const token = formData.get("token") as string;
@@ -85,19 +86,26 @@ export async function resetPasswordAction(prevState: any, formData: FormData) {
       return { error: "Посилання недійсне або термін його дії закінчився" };
     }
 
+    const user = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+      select: { id: true },
+    });
+
+    if (!user) {
+      return { error: "Користувача не знайдено" };
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Оновлюємо або створюємо пароль
     await prisma.userPassword.upsert({
-      where: { userId: (await prisma.user.findUnique({ where: { email: email.toLowerCase() } }))?.id },
+      where: { userId: user.id },
       update: { passwordHash: hashedPassword },
       create: {
-        userId: (await prisma.user.findUnique({ where: { email: email.toLowerCase() } }))?.id!,
+        userId: user.id,
         passwordHash: hashedPassword
       }
     });
 
-    // Видаляємо використаний токен
     await prisma.verificationToken.deleteMany({
       where: { identifier: email.toLowerCase() }
     });

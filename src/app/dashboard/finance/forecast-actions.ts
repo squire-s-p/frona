@@ -2,9 +2,8 @@
 
 import { prisma } from "@/lib/prisma";
 import { getAuthSession } from "@/lib/auth-session";
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { addDays, addMonths, isBefore, isAfter, startOfDay, endOfDay, format } from "date-fns";
+import { addDays, addMonths, format } from "date-fns";
 import { uk } from "date-fns/locale";
 
 async function requireUser() {
@@ -37,13 +36,13 @@ export async function generateForecast(options: ForecastOptions = { months: 6 })
         where: { userId: user.id, isArchived: false }
     });
 
-    let currentTotalBalance = accounts.reduce((sum: number, acc: any) => sum + Number(acc.balance), 0);
-    let currentLiquidBalance = accounts
-        .filter((acc: any) => (acc as any).role === "liquid" || acc.type === "cash")
-        .reduce((sum: number, acc: any) => sum + Number(acc.balance), 0);
+    const currentTotalBalance = accounts.reduce((sum: number, acc) => sum + Number(acc.balance), 0);
+    const currentLiquidBalance = accounts
+        .filter((acc) => acc.role === "liquid" || acc.type === "cash")
+        .reduce((sum: number, acc) => sum + Number(acc.balance), 0);
 
     // 2. Отримуємо рекурентні платежі, які впливають на прогноз
-    const recurring = await (prisma as any).recurringPayment.findMany({
+    const recurring = await prisma.recurringPayment.findMany({
         where: {
             userId: user.id,
             affectsForecast: true,
@@ -105,7 +104,7 @@ export async function generateForecast(options: ForecastOptions = { months: 6 })
         }
 
         // Б) Заплановані транзакції
-        const dayScheduled = scheduled.filter((t: any) => t.date.toDateString() === dStr);
+        const dayScheduled = scheduled.filter((t) => t.date.toDateString() === dStr);
         for (const t of dayScheduled) {
             const amount = Math.abs(Number(t.amount));
             if (t.type === "income") dayIncome += amount;
@@ -140,10 +139,11 @@ export async function generateForecast(options: ForecastOptions = { months: 6 })
     }
 
     // Групуємо по місяцях для звіту
-    const monthlyReport: any[] = [];
-    dailyProjections.forEach((p: any) => {
+    type MonthlyReportItem = { month: string; income: number; expense: number; endBalance: number; endLiquidBalance: number };
+    const monthlyReport: MonthlyReportItem[] = [];
+    dailyProjections.forEach((p) => {
         const monthKey = format(p.date, 'LLLL yyyy', { locale: uk });
-        let month = monthlyReport.find((m: any) => m.month === monthKey);
+        let month = monthlyReport.find((m) => m.month === monthKey);
         if (!month) {
             month = { month: monthKey, income: 0, expense: 0, endBalance: 0, endLiquidBalance: 0 };
             monthlyReport.push(month);
@@ -189,10 +189,10 @@ export async function getFinancialHealth() {
         where: { userId: user.id, includeInTotal: true, isArchived: false }
     });
 
-    const totalBalance = accounts.reduce((sum: number, acc: any) => sum + Number(acc.balance), 0);
+    const totalBalance = accounts.reduce((sum: number, acc) => sum + Number(acc.balance), 0);
     const liquidBalance = accounts
-        .filter((acc: any) => (acc as any).role === "liquid" || acc.type === "cash")
-        .reduce((sum: number, acc: any) => sum + Number(acc.balance), 0);
+        .filter((acc) => acc.role === "liquid" || acc.type === "cash")
+        .reduce((sum: number, acc) => sum + Number(acc.balance), 0);
 
     // 3. Runway
     const totalRunway = burnRate > 0 ? totalBalance / burnRate : Infinity;
@@ -224,7 +224,7 @@ export async function getFinancialHealth() {
 
     // Групуємо по місяцях
     const monthlyTotals: Record<string, number> = {};
-    monthlyIncomeTx.forEach((tx: any) => {
+    monthlyIncomeTx.forEach((tx) => {
         const key = format(tx.date, 'yyyy-MM');
         monthlyTotals[key] = (monthlyTotals[key] || 0) + Number(tx._sum.amount || 0);
     });

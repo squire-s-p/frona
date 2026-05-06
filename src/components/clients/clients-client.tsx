@@ -1,9 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Search, List, Grid, Filter, Receipt, Plus, ArrowUpDown } from "lucide-react";
+import { Search, List, Grid, Receipt, Plus, ArrowUpDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -13,7 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import {
@@ -31,7 +29,7 @@ type ClientRow = {
   name: string;
   activeProjects: number;
   totalProjects: number;
-  createdAt: Date;
+  createdAt: string;
 };
 
 type ProjectOption = {
@@ -61,7 +59,6 @@ export default function ClientsClient({
   clients: ClientRow[];
   projects: ProjectOption[];
 }) {
-  const router = useRouter();
   const [view, setView] = React.useState<ViewMode>("list");
   const [query, setQuery] = React.useState("");
   const [sortKey, setSortKey] = React.useState<SortKey>("name");
@@ -83,7 +80,7 @@ export default function ClientsClient({
       .sort((a, b) => {
         const dir = sortDir === "asc" ? 1 : -1;
         if (sortKey === "name") return a.name.localeCompare(b.name) * dir;
-        if (sortKey === "createdAt") return (a.createdAt.getTime() - b.createdAt.getTime()) * dir;
+        if (sortKey === "createdAt") return (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) * dir;
         if (sortKey === "activeProjects") return (a.activeProjects - b.activeProjects) * dir;
         if (sortKey === "totalProjects") return (a.totalProjects - b.totalProjects) * dir;
         return 0;

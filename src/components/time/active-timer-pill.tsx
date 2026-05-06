@@ -1,15 +1,14 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { stopActive } from "@/app/dashboard/time/actions";
 import { Button } from "@/components/ui/button";
 import { Briefcase, Coffee, Square } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type ActiveTimerDTO = {
-  id: string;
+type _ActiveTimerDTO = {
+  id?: string;
   mode: "work" | "break";
   startedAt: Date;
   project?: { id: string; name: string } | null;
@@ -29,7 +28,7 @@ function formatElapsed(ms: number) {
   return `${pad(h)}:${pad(m)}:${pad(s)}`;
 }
 
-export default function ActiveTimerPill({ active }: { active: any }) {
+export default function ActiveTimerPill({ active }: { active: _ActiveTimerDTO }) {
   const router = useRouter();
   const [mounted, setMounted] = React.useState(false);
   const [now, setNow] = React.useState(() => Date.now());
@@ -62,7 +61,7 @@ export default function ActiveTimerPill({ active }: { active: any }) {
 
   return (
     <div className={cn(
-      "flex items-center gap-2 rounded-full border px-1.5 py-1 pr-2 transition-all shadow-sm",
+      "flex items-center gap-2 rounded-full border px-1.5 py-1 pr-2 transition-colors shadow-none",
       isWork ? "bg-primary/5 border-primary/20" : "bg-muted border-muted-foreground/20"
     )}>
       <div className={cn(

@@ -19,7 +19,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { Volume2, VolumeX, Settings2, Music, Briefcase, BookOpen, Coffee } from "lucide-react"
+import { VolumeX, Settings2, Music, Briefcase, BookOpen, Coffee } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 function WaveformVisualizer({ analyser, active }: { analyser: AnalyserNode | null, active: boolean }) {

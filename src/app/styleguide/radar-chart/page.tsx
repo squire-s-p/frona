@@ -238,7 +238,7 @@ function ChartRadarLabelCustom() {
             />
             <PolarAngleAxis
               dataKey="month"
-              tick={({ x, y, textAnchor, index, verticalAnchor, ...props }: any) => {
+              tick={({ x, y, textAnchor, index, ...props }: any) => {
                 const data = chartDataMultiple[index];
                 const yValue = typeof y === "number" ? y : 0;
 

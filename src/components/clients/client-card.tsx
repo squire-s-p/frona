@@ -2,8 +2,6 @@
 
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 import { User, Calendar, Briefcase, ExternalLink, Activity } from "lucide-react";
 import { format } from "date-fns";
 import { uk } from "date-fns/locale";
@@ -13,7 +11,7 @@ export default function ClientCard(props: {
     name: string;
     activeProjects: number;
     totalProjects: number;
-    createdAt: Date;
+    createdAt: string;
 }) {
     return (
         <Link href={`/dashboard/clients/${props.id}`} className="group block">

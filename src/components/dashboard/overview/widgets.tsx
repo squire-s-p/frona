@@ -138,10 +138,6 @@ function formatRelativeTime(dateIso?: string) {
   return `${days} дн тому`;
 }
 
-function formatHours(seconds: number) {
-  return `${Math.round((seconds / 3600) * 10) / 10}г`;
-}
-
 function WidgetContainer({ icon: Icon, label, size, children, action, className = "", footer }: { icon: React.ElementType; label: string; size: WidgetLayout["size"]; children: React.ReactNode; action?: string; className?: string; footer?: string }) {
   return (
     <Card className={cn("overflow-hidden flex flex-col h-full border shadow-none group", className)}>

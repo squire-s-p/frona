@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { format, differenceInMonths, addMonths } from "date-fns";
+import { format } from "date-fns";
 import { uk } from "date-fns/locale";
 import {
     Card,
@@ -73,7 +73,7 @@ interface SavingsGoal {
 
 interface GoalsTabProps {
     goals: SavingsGoal[];
-    accounts: any[];
+    accounts: Array<{ id: string; name: string; currency: string; balance: number; role?: string; type?: string }>;
     onRefresh: () => void;
 }
 
@@ -156,7 +156,7 @@ export function GoalsTab({ goals, accounts, onRefresh }: GoalsTabProps) {
             setIsDialogOpen(false);
             resetForm();
             onRefresh();
-        } catch (error) {
+        } catch {
             toast.error("Помилка при збереженні");
         } finally {
             setIsSubmitting(false);
@@ -169,7 +169,7 @@ export function GoalsTab({ goals, accounts, onRefresh }: GoalsTabProps) {
             await deleteSavingsGoal(id);
             toast.success("Видалено");
             onRefresh();
-        } catch (error) {
+        } catch {
             toast.error("Помилка при видаленні");
         }
     };
@@ -193,7 +193,7 @@ export function GoalsTab({ goals, accounts, onRefresh }: GoalsTabProps) {
         return result || "Менше місяця";
     };
 
-    const getGoalTypeIcon = (type: string) => {
+    const _getGoalTypeIcon = (type: string) => {
         const goalType = GOAL_TYPES.find(t => t.value === type) || GOAL_TYPES[GOAL_TYPES.length - 1];
         const Icon = goalType.icon;
         return <Icon className={cn("h-4 w-4", goalType.color)} />;
@@ -258,10 +258,10 @@ export function GoalsTab({ goals, accounts, onRefresh }: GoalsTabProps) {
                                 <Label className="text-right text-xs">Рахунок</Label>
                                 <Select value={formData.accountId} onValueChange={v => setFormData({ ...formData, accountId: v })}>
                                     <SelectTrigger className="col-span-3">
-                                        <SelectValue placeholder="Прив'язати рахунок" />
+                                        <SelectValue placeholder="Прив&apos;язати рахунок" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="none">Без прив'язки (ручне керування)</SelectItem>
+                                        <SelectItem value="none">Без прив&apos;язки (ручне керування)</SelectItem>
                                         {accounts.filter(a => a.role !== 'liquid' || a.type === 'savings').map(a => (
                                             <SelectItem key={a.id} value={a.id}>{a.name} ({a.balance.toFixed(0)} {a.currency})</SelectItem>
                                         ))}

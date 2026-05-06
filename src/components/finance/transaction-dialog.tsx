@@ -9,10 +9,8 @@ import { uk } from "date-fns/locale";
 import {
     Loader2,
     Plus,
-    X,
     Calendar as CalendarIcon,
     Tags,
-    History,
     Layers,
     User as UserIcon,
     FileText,
@@ -34,7 +32,6 @@ import {
 import {
     Form,
     FormControl,
-    FormDescription,
     FormField,
     FormItem,
     FormLabel,
@@ -151,8 +148,7 @@ export function TransactionDialog({
             setCategories(cats);
             setTags(tgs);
             setClients(clis);
-        } catch (error) {
-            console.error("Failed to load data:", error);
+        } catch {
         }
     }, []);
 
@@ -185,7 +181,7 @@ export function TransactionDialog({
             setTags([...tags, tag]);
             setNewTagName("");
             toast.success("Тег створено");
-        } catch (error) {
+        } catch {
             toast.error("Помилка створення тегу");
         } finally {
             setIsCreatingTag(false);
@@ -225,8 +221,7 @@ export function TransactionDialog({
             toast.success("Транзакцію створено");
             onOpenChange(false);
             onSuccess?.();
-        } catch (error) {
-            console.error("Failed to create transaction:", error);
+        } catch {
             toast.error("Помилка створення транзакції");
         } finally {
             setIsLoading(false);

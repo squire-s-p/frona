@@ -11,13 +11,9 @@ import {
     Search,
     MoreVertical,
     FolderPlus,
-    FilePlus,
     Star,
     Network,
     Tag as TagIcon,
-    LayoutDashboard,
-    Database,
-    Upload,
     ArrowUpDown,
     Check,
     X
@@ -56,18 +52,12 @@ import {
     renameFolder,
     deleteNote,
     updateNote as updateNoteAction,
-    seedTestData,
     bulkCreateNotes,
     updateTag,
     deleteTag
 } from "@/app/dashboard/notes/actions";
 import { toast } from "sonner";
 import { useRouter, usePathname } from "next/navigation";
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "@/components/ui/popover";
 
 interface NotesExplorerProps {
     folders: any[];
@@ -109,7 +99,7 @@ export function NotesExplorer({ folders, notes, tags = [], view, className }: No
             const note = await createNote("Нова нотатка", folderId);
             toast.success("Нотатку створено");
             router.push(`/dashboard/notes/${note.id}`);
-        } catch (error) {
+        } catch {
             toast.error("Помилка створення");
         }
     };
@@ -133,7 +123,7 @@ export function NotesExplorer({ folders, notes, tags = [], view, className }: No
             }
             setDialogOpen(false);
             setDialogValue("");
-        } catch (error) {
+        } catch {
             toast.error("Помилка виконання дії");
         }
     };
@@ -155,12 +145,12 @@ export function NotesExplorer({ folders, notes, tags = [], view, className }: No
                 if (selectedTag === alertContext.name) setSelectedTag(null);
             }
             setAlertOpen(false);
-        } catch (error) {
+        } catch {
             toast.error("Помилка видалення");
         }
     };
 
-    const handleImportNotes = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const _handleImportNotes = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (!files || files.length === 0) return;
 
@@ -193,8 +183,7 @@ export function NotesExplorer({ folders, notes, tags = [], view, className }: No
             } else {
                 toast.error("Не знайдено валідних .txt файлів");
             }
-        } catch (error) {
-            console.error(error);
+        } catch {
             toast.error("Помилка під час імпорту");
         } finally {
             // Reset input
@@ -317,7 +306,7 @@ export function NotesExplorer({ folders, notes, tags = [], view, className }: No
                     onClick={() => router.push("/dashboard/notes?view=graph")}
                 >
                     <Network className={cn("h-3.5 w-3.5 transition-colors", currentView === "graph" ? "text-blue-500" : "text-zinc-400 group-hover:text-blue-500")} />
-                    Граф зв'язків
+                    Граф зв&apos;язків
                 </Button>
 
                 {allTags.length > 0 && (

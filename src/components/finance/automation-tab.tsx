@@ -49,8 +49,8 @@ interface AutomationRule {
 
 interface AutomationTabProps {
     rules: AutomationRule[];
-    categories: any[];
-    projects: any[];
+    categories: Array<{ id: string; name: string }>;
+    projects: Array<{ id: string; name: string }>;
     onRefresh: () => void;
 }
 
@@ -89,8 +89,8 @@ export function AutomationTab({ rules, categories, projects, onRefresh }: Automa
             setMaxAmount("");
             setCurrency("all");
             onRefresh();
-        } catch (error: any) {
-            toast.error(`Помилка: ${error.message}`);
+        } catch (error: unknown) {
+            toast.error(`Помилка: ${error instanceof Error ? error.message : "Unknown error"}`);
         } finally {
             setIsSubmitting(false);
         }
@@ -101,8 +101,8 @@ export function AutomationTab({ rules, categories, projects, onRefresh }: Automa
             await deleteAutomationRule(id);
             toast.success("Правило видалено");
             onRefresh();
-        } catch (error: any) {
-            toast.error(`Помилка: ${error.message}`);
+        } catch (error: unknown) {
+            toast.error(`Помилка: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     };
 
@@ -110,8 +110,8 @@ export function AutomationTab({ rules, categories, projects, onRefresh }: Automa
         try {
             await toggleAutomationRule(id, !current);
             onRefresh();
-        } catch (error: any) {
-            toast.error(`Помилка: ${error.message}`);
+        } catch (error: unknown) {
+            toast.error(`Помилка: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     };
 
@@ -252,7 +252,7 @@ export function AutomationTab({ rules, categories, projects, onRefresh }: Automa
                                             <div className="font-medium">{rule.name}</div>
                                             <div className="text-xs text-zinc-500 flex flex-wrap items-center gap-x-2 gap-y-1">
                                                 <span>Якщо містить</span>
-                                                <span className="text-zinc-900 dark:text-zinc-50 font-mono bg-zinc-100 dark:bg-zinc-800 px-1 rounded">"{rule.pattern}"</span>
+                                                <span className="text-zinc-900 dark:text-zinc-50 font-mono bg-zinc-100 dark:bg-zinc-800 px-1 rounded">&quot;{rule.pattern}&quot;</span>
                                                 {rule.currency && (
                                                     <Badge variant="outline" className="text-[10px] h-4 px-1">{rule.currency}</Badge>
                                                 )}

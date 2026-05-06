@@ -23,9 +23,9 @@ type Props = {
 };
 
 export default function ReportFilters({ metaData, filters, onChangeAction }: Props) {
-    const [teamOpen, setTeamOpen] = React.useState(false);
+    const [_teamOpen, _setTeamOpen] = React.useState(false);
     const [clientOpen, setClientOpen] = React.useState(false);
-    const [tagOpen, setTagOpen] = React.useState(false);
+    const [_tagOpen, _setTagOpen] = React.useState(false);
     const [projectOpen, setProjectOpen] = React.useState(false);
 
     const toggleFilter = (key: keyof ReportFilterState, id: string) => {

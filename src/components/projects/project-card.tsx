@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Calendar, Globe, Wallet, ExternalLink, User } from "lucide-react";
 import { format } from "date-fns";

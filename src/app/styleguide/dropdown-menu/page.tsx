@@ -11,9 +11,6 @@ import {
   MessageSquareIcon,
   Building2Icon,
   WalletIcon,
-  PencilIcon,
-  ShareIcon,
-  TrashIcon,
   DownloadIcon,
   EyeIcon,
   FileCodeIcon,
@@ -65,7 +62,7 @@ export default function DropdownMenuPage() {
     push: true,
   });
 
-  const [position, setPosition] = React.useState("bottom");
+  const [_position, _setPosition] = React.useState("bottom");
   const [paymentMethod, setPaymentMethod] = React.useState("card");
   const [theme, setTheme] = React.useState("light");
 

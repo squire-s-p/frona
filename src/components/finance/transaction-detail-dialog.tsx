@@ -43,8 +43,8 @@ interface TransactionDetailDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     transaction: any;
-    categories: any[];
-    projects: any[];
+    categories: Array<{ id: string; name: string }>;
+    projects: Array<{ id: string; name: string }>;
     onSuccess?: () => void;
 }
 
@@ -100,7 +100,7 @@ export function TransactionDetailDialog({
             } else {
                 toast.error("Помилка оновлення: " + res.error);
             }
-        } catch (error) {
+        } catch {
             toast.error("Сталася помилка");
         } finally {
             setIsSaving(false);
@@ -259,7 +259,7 @@ export function TransactionDetailDialog({
                                     htmlFor="applyToAll"
                                     className="text-[11px] font-medium text-zinc-500 cursor-pointer select-none"
                                 >
-                                    Застосувати до всіх "{transaction.description}" (та створити правило)
+                                    Застосувати до всіх &quot;{transaction.description}&quot; (та створити правило)
                                 </Label>
                             </div>
                         )}

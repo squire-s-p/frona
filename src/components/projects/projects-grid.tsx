@@ -1,4 +1,4 @@
-import { Folder, SearchX } from "lucide-react";
+import { SearchX } from "lucide-react";
 import ProjectCard from "./project-card";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -7,7 +7,7 @@ export type ProjectRow = {
   name: string;
   source: string | null;
   site: string | null;
-  cost: any | null; // Prisma Decimal
+  cost: number | null;
   createdAt: string | Date;
   updatedAt: string | Date;
   status: "active" | "completed" | "archived";

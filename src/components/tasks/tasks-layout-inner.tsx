@@ -27,6 +27,35 @@ import { TaskDialog } from "@/components/tasks/task-dialog";
 import { cn } from "@/lib/utils";
 import { formatSmartDateSuggestion } from "@/lib/smart-date";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import type { TaskRow, ProjectOption, TagOption } from "./tasks-client";
+import type { SmartDateResult } from "@/lib/smart-date";
+import type { SmartPriorityResult } from "@/lib/smart-priority";
+
+type TasksLayoutInnerProps = {
+    allTasks: TaskRow[];
+    filteredTasks: TaskRow[];
+    selectedTaskId: string | null;
+    setSelectedTaskId: (id: string | null) => void;
+    onToggleStatus: (taskId: string, isDone: boolean) => void;
+    selectedFilter: string;
+    setSelectedFilter: (filter: string) => void;
+    projects: ProjectOption[];
+    tags: TagOption[];
+    counts: { inbox: number; today: number; upcoming: number; completed: number };
+    quickAddValue: string;
+    setQuickAddValue: (value: string) => void;
+    onQuickAdd: () => void;
+    quickAddPending: boolean;
+    quickAddDate: SmartDateResult | null;
+    quickAddPriority: SmartPriorityResult | null;
+    priorityLabel: (p: string) => string;
+    setDialogOpen: (open: boolean) => void;
+    groupBy: "project" | "date" | "tag" | "priority" | "none";
+    setGroupBy: (g: "project" | "date" | "tag" | "priority" | "none") => void;
+    sortBy: "date" | "name" | "tag" | "priority";
+    setSortBy: (s: "date" | "name" | "tag" | "priority") => void;
+    dialogOpen: boolean;
+};
 
 export default function TasksLayoutInner({
     allTasks,
@@ -52,14 +81,14 @@ export default function TasksLayoutInner({
     sortBy,
     setSortBy,
     dialogOpen,
-}: any) {
+}: TasksLayoutInnerProps) {
     const { defaultLayout, onLayoutChanged } = useDefaultLayout({
         id: "tasks-v8", // Fresh ID to ensure clean start
         storage: window.localStorage,
     });
 
     const selectedTask = React.useMemo(() =>
-        allTasks.find((t: any) => t.id === selectedTaskId) || null
+        allTasks.find((t: TaskRow) => t.id === selectedTaskId) || null
         , [allTasks, selectedTaskId]);
     const [isMobile, setIsMobile] = React.useState(false);
     const [mobileSidebarOpen, setMobileSidebarOpen] = React.useState(false);
@@ -73,7 +102,7 @@ export default function TasksLayoutInner({
 
     if (isMobile) {
         return (
-            <div className="absolute inset-0 flex flex-col bg-background overflow-hidden border-0">
+            <div className="flex flex-1 min-h-0 flex-col bg-background overflow-hidden">
                 <div className="h-14 px-3 border-b flex items-center gap-2 shrink-0">
                     <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
                         <SheetTrigger asChild>
@@ -124,7 +153,7 @@ export default function TasksLayoutInner({
                 <TaskListView
                     tasks={filteredTasks}
                     selectedTaskId={selectedTaskId}
-                    onSelectTask={(task: any) => setSelectedTaskId(task.id)}
+                            onSelectTask={(task: TaskRow) => setSelectedTaskId(task.id)}
                     onToggleStatus={onToggleStatus}
                     groupBy={groupBy}
                 />
@@ -148,7 +177,7 @@ export default function TasksLayoutInner({
                     task={null}
                     projects={projects}
                     tags={tags}
-                    defaultProjectId={projects.find((p: any) => p.id === selectedFilter)?.id}
+                    defaultProjectId={projects.find((p: ProjectOption) => p.id === selectedFilter)?.id}
                     defaultStartDate={selectedFilter === "today" ? new Date() : null}
                 />
             </div>
@@ -156,7 +185,7 @@ export default function TasksLayoutInner({
     }
 
     return (
-        <div className="absolute inset-0 flex flex-col bg-background overflow-hidden border-0">
+        <div className="flex flex-1 min-h-0 flex-col bg-background overflow-hidden">
             <ResizablePanelGroup
                 id="tasks-v8"
                 key={defaultLayout ? "ready" : "loading"}
@@ -315,7 +344,7 @@ export default function TasksLayoutInner({
                         <TaskListView
                             tasks={filteredTasks}
                             selectedTaskId={selectedTaskId}
-                            onSelectTask={(task: any) => setSelectedTaskId(task.id)}
+                    onSelectTask={(task: TaskRow) => setSelectedTaskId(task.id)}
                             onToggleStatus={onToggleStatus}
                             groupBy={groupBy}
                         />
@@ -352,7 +381,7 @@ export default function TasksLayoutInner({
                 task={null}
                 projects={projects}
                 tags={tags}
-                defaultProjectId={projects.find((p: any) => p.id === selectedFilter)?.id}
+                defaultProjectId={projects.find((p: ProjectOption) => p.id === selectedFilter)?.id}
                 defaultStartDate={selectedFilter === "today" ? new Date() : null}
             />
         </div>

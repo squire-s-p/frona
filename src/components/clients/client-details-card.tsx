@@ -6,14 +6,12 @@ import { format } from "date-fns";
 import { uk } from "date-fns/locale";
 import { 
   PencilIcon, 
-  Save, 
   Trash2, 
   Loader2, 
   Mail, 
   MapPin, 
   Fingerprint, 
   Calendar,
-  ChevronRight
 } from "lucide-react";
 
 import { updateClient, deleteClient } from "@/app/dashboard/clients/actions";
@@ -87,8 +85,8 @@ export default function ClientDetailsCard({ client }: { client: ClientDTO }) {
         });
         exitEdit();
         router.refresh();
-      } catch (e: any) {
-        setError(e?.message ?? "Помилка збереження");
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : "Помилка збереження");
       }
     });
   }
@@ -101,8 +99,8 @@ export default function ClientDetailsCard({ client }: { client: ClientDTO }) {
         await deleteClient({ clientId: client.id });
         router.push("/dashboard/clients");
         router.refresh();
-      } catch (e: any) {
-        setError(e?.message ?? "Помилка видалення");
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : "Помилка видалення");
       }
     });
   }
@@ -206,7 +204,7 @@ export default function ClientDetailsCard({ client }: { client: ClientDTO }) {
           /* EDIT MODE */
           <div className="grid gap-4">
             <div className="grid gap-2">
-              <Label>Назва / Ім'я *</Label>
+              <Label>Назва / Ім&apos;я *</Label>
               <Input 
                 value={name} 
                 onChange={(e) => setName(e.target.value)} 

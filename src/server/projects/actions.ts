@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthSession } from "@/lib/auth-session";
 import { revalidatePath } from "next/cache";
 
-function requireUserId(session: any) {
+function requireUserId(session: { user?: { id?: string | null } } | null) {
   const id = session?.user?.id;
   if (!id) throw new Error("Unauthorized");
   return id as string;

@@ -8,7 +8,7 @@ type ClientRow = {
   name: string;
   activeProjects: number;
   totalProjects: number;
-  createdAt: Date;
+  createdAt: string;
 };
 
 export default function ClientsGrid({ clients }: { clients: ClientRow[] }) {

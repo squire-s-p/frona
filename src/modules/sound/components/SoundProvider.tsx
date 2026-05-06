@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useRef, useState } from "react"
 import { SoundEngine } from "../lib/engine"
-import { MODES } from "../lib/presets"
+import { MODES as _MODES } from "../lib/presets"
 import { getSoundFiles } from "../lib/sound-actions"
 
 type SoundState = {

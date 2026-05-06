@@ -4,10 +4,8 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { setProjectStatus, deleteProject } from "@/app/dashboard/projects/actions";
+import { setProjectStatus } from "@/app/dashboard/projects/actions";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 import DeleteProjectDialog from "@/components/projects/delete-project-dialog";
 import {
   Table,
@@ -70,7 +68,7 @@ function StatusBadge({ status }: { status: ProjectRow["status"] }) {
 
 export default function ProjectsTable({ projects }: { projects: ProjectRow[] }) {
   const router = useRouter();
-  const [pendingId, setPendingId] = React.useState<string | null>(null);
+  const [_pendingId, setPendingId] = React.useState<string | null>(null);
 
   async function onComplete(id: string) {
     try {

@@ -1,32 +1,24 @@
 "use client";
 
 import * as React from "react";
-import { format } from "date-fns";
-import { uk } from "date-fns/locale";
 import {
-    ArrowLeftRight,
     Search,
     Filter,
-    ArrowUpRight,
-    ArrowDownLeft,
     Plus,
-    History
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { TransferDialog } from "./transfer-dialog";
 import { getTransfers } from "@/app/dashboard/finance/phase1-actions";
 
 interface TransfersTabProps {
-    accounts: any[];
+    accounts: Array<{ id: string; name: string; currency: string; balance: number }>;
     onRefresh: () => void;
 }
 
 export function TransfersTab({ accounts, onRefresh }: TransfersTabProps) {
-    const [transfers, setTransfers] = React.useState<any[]>([]);
-    const [isLoading, setIsLoading] = React.useState(true);
+    const [transfers, setTransfers] = React.useState<Array<{ id: string; note?: string | null; fromAccount?: { name: string }; toAccount?: { name: string } }>>([]);
+    const [_isLoading, setIsLoading] = React.useState(true);
     const [transferDialogOpen, setTransferDialogOpen] = React.useState(false);
     const [searchQuery, setSearchQuery] = React.useState("");
 
@@ -46,7 +38,7 @@ export function TransfersTab({ accounts, onRefresh }: TransfersTabProps) {
         fetchTransfers();
     }, [fetchTransfers]);
 
-    const filteredTransfers = transfers.filter(t =>
+    const _filteredTransfers = transfers.filter(t =>
         t.note?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         t.fromAccount?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         t.toAccount?.name.toLowerCase().includes(searchQuery.toLowerCase())

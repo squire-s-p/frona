@@ -20,7 +20,7 @@ function createPrismaClient() {
       adapter,
       log: process.env.NODE_ENV === "development" ? ["error"] : ["error"],
     });
-  } catch (error) {
+  } catch {
     // Якщо навіть адаптер не створився, повертаємо стандартний клієнт
     return new PrismaClient();
   }

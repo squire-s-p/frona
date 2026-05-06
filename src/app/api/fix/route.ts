@@ -1,18 +1,24 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getAuthSession } from "@/lib/auth-session";
 
 export async function GET() {
+  const session = await getAuthSession();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
-    const bankAccounts = await (prisma as any).bankAccount.findMany();
+    const bankAccounts = await prisma.bankAccount.findMany();
     let fixed = 0;
     
     for (const b of bankAccounts) {
-      const existing = await (prisma as any).financeAccount.findUnique({ 
+      const existing = await prisma.financeAccount.findUnique({ 
         where: { id: b.monoAccountId } 
       });
       
       if (!existing) {
-        await (prisma as any).financeAccount.create({
+        await prisma.financeAccount.create({
           data: {
             id: b.monoAccountId,
             userId: b.userId,
@@ -27,7 +33,8 @@ export async function GET() {
       }
     }
     return NextResponse.json({ success: true, fixed });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return NextResponse.json({ success: false, error: message });
   }
 }

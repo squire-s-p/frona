@@ -5,7 +5,6 @@ import { getAuthSession } from "@/lib/auth-session";
 import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
-import { promises as fs } from "fs";
 import path from "path";
 import { put, del } from "@vercel/blob";
 

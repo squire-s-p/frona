@@ -47,10 +47,17 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+type FinanceAccount = {
+    id: string;
+    name: string;
+    currency: string;
+    balance: number;
+};
+
 interface TransferDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    accounts: any[];
+    accounts: FinanceAccount[];
     onSuccess?: () => void;
 }
 
