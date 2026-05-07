@@ -43,7 +43,7 @@ interface TransactionDetailDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     transaction: any;
-    categories: Array<{ id: string; name: string }>;
+    categories: Array<{ id: string; name: string; type: string }>;
     projects: Array<{ id: string; name: string }>;
     onSuccess?: () => void;
 }
@@ -110,8 +110,9 @@ export function TransactionDetailDialog({
     const isTransfer = transaction.type === "transfer" || transaction.isTransfer;
     const isIncome = transaction.type === "income";
 
-    // Show all categories instead of filtering by type to avoid hiding options
-    const displayCategories = [...categories].sort((a, b) => a.name.localeCompare(b.name));
+    const displayCategories = [...categories]
+        .filter((c) => c.type === transaction.type)
+        .sort((a, b) => a.name.localeCompare(b.name));
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>

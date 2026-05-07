@@ -41,3 +41,5 @@ next-env.d.ts
 
 # prisma generated
 /src/generated/prisma
+priv.pem
+pub.pem

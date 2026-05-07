@@ -2,15 +2,8 @@
 
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
-import { getAuthSession } from "@/lib/auth-session";
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-
-async function requireUser() {
-    const session = await getAuthSession();
-    if (!session?.user) redirect("/login");
-    return session.user;
-}
+import { requireUser } from "@/lib/require-user";
 
 export async function getAutomationRules() {
     const user = await requireUser();
@@ -85,32 +78,30 @@ export async function applyRulesToTransaction(transactionId: string) {
         where: { userId: user.id, isActive: true }
     }) as { pattern: string; type: string; targetId: string; minAmount: Prisma.Decimal | null; maxAmount: Prisma.Decimal | null; currency: string | null; isActive: boolean }[];
 
+    const updates: Record<string, string> = {};
+
     for (const rule of rules) {
-        // 1. Опис (pattern)
         const pattern = rule.pattern.toLowerCase();
         const description = transaction.description?.toLowerCase() || "";
         if (!description.includes(pattern)) continue;
 
-        // 2. Валюта (якщо вказана в правилі)
         if (rule.currency && transaction.account.currency !== rule.currency) continue;
 
-        // 3. Сума (якщо вказані пороги)
         const amount = Math.abs(Number(transaction.amount));
         if (rule.minAmount !== null && amount < Number(rule.minAmount)) continue;
         if (rule.maxAmount !== null && amount > Number(rule.maxAmount)) continue;
 
-        // Якщо всі умови пройдені - застосовуємо
         if (rule.type === "category") {
-            await prisma.transaction.update({
-                where: { id: transactionId },
-                data: { categoryId: rule.targetId }
-            });
+            updates.categoryId = rule.targetId;
         } else if (rule.type === "project") {
-            await prisma.transaction.update({
-                where: { id: transactionId },
-                data: { projectId: rule.targetId }
-            });
+            updates.projectId = rule.targetId;
         }
-        break;
+    }
+
+    if (Object.keys(updates).length > 0) {
+        await prisma.transaction.update({
+            where: { id: transactionId },
+            data: updates
+        });
     }
 }

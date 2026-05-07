@@ -17,7 +17,8 @@ import {
     Target,
     BarChart3,
     Receipt,
-    CalendarClock
+    CalendarClock,
+    Wallet
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -36,6 +37,8 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
 import {
     getFinanceAccounts,
     getRecentTransactions,
@@ -133,6 +136,7 @@ export function FinancePageClient() {
     const [isDatePopoverOpen, setIsDatePopoverOpen] = React.useState(false);
     const [debouncedSearch, setDebouncedSearch] = React.useState("");
     const [_historyTotals, setHistoryTotals] = React.useState({ income: 0, expense: 0 });
+    const [loadedTabs, setLoadedTabs] = React.useState<Set<string>>(new Set());
 
     React.useEffect(() => {
         const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
@@ -140,7 +144,6 @@ export function FinancePageClient() {
     }, [searchQuery]);
 
     const [activeTab, setActiveTab] = React.useState("overview");
-    const [_showLoadMore, setShowLoadMore] = React.useState(false);
     const cardContentRef = React.useRef<HTMLDivElement>(null);
     const loadMoreSentinelRef = React.useRef<HTMLDivElement>(null);
 
@@ -217,10 +220,7 @@ export function FinancePageClient() {
             const observer = new IntersectionObserver(
                 ([entry]) => {
                     if (entry.isIntersecting && !isLoadingMore && hasMore) {
-                        setShowLoadMore(true);
                         loadMoreTransactions();
-                    } else {
-                        setShowLoadMore(false);
                     }
                 },
                 {
@@ -255,28 +255,21 @@ export function FinancePageClient() {
 
     const fetchData = React.useCallback(async () => {
         try {
-            const [accs, bankAccs, txsRes, projs, chartData, currentRates, userBudgets, stats, planning, health, forecast, profitability, clientProfitability, taxes, rules, fetchedCategories] = await Promise.all([
+            // Core data needed for overview + history
+            const [accs, bankAccs, txsRes, projs, currentRates, fetchedCategories] = await Promise.all([
                 getFinanceAccounts(),
                 getBankAccounts(),
                 getRecentTransactions(20),
                 getProjects(),
-                getSpendingAnalytics(),
                 getExchangeRates(),
-                getBudgets(),
-                getFinancialStats(),
-                getPlanningData(),
-                getFinancialHealth(),
-                generateForecast({ months: 6, whatIf: whatIfScenarios }),
-                getProjectsProfitability(),
-                getClientsProfitability(),
-                getTaxStats(),
-                getAutomationRules(),
                 getCategories()
             ]);
             setAccounts(accs);
             setBankAccounts(bankAccs);
+            setProjects(projs);
+            setRates(currentRates);
+            setCategories(fetchedCategories);
 
-            // Handle Transactions specifically
             const isFiltered = debouncedSearch || selectedProject !== "all" || selectedCategory !== "all" || selectedAccount !== "all" || (dateRange?.from !== undefined);
 
             if (!isFiltered) {
@@ -300,30 +293,84 @@ export function FinancePageClient() {
                     setHasMore(txsRes.hasMore);
                 }
             }
-
-            setProjects(projs);
-            setAnalytics(chartData);
-            setRates(currentRates);
-            setBudgets(userBudgets);
-            setFinancialStats(stats);
-            setFinancialHealth(health);
-            setForecastData(forecast);
-            setProjectsProfitability(profitability);
-            setClientsProfitability(clientProfitability);
-            setTaxStats(taxes);
-            setAutomationRules(rules);
-            setCategories(fetchedCategories);
-            setPlanningData({
-                goals: planning.goals || [],
-                payments: planning.payments || [],
-                shoppingItems: planning.shoppingItems || []
-            });
         } catch (error) {
             console.error(error);
         } finally {
             setIsLoading(false);
         }
-    }, [debouncedSearch, selectedProject, selectedCategory, selectedAccount, dateRange, whatIfScenarios]);
+    }, [debouncedSearch, selectedProject, selectedCategory, selectedAccount, dateRange, transactions.length]);
+
+    const fetchOverviewData = React.useCallback(async () => {
+        try {
+            const forecast = await generateForecast({ months: 6, whatIf: whatIfScenarios });
+            const [chartData, userBudgets, stats, health] = await Promise.all([
+                getSpendingAnalytics(),
+                getBudgets(),
+                getFinancialStats(),
+                getFinancialHealth(forecast),
+            ]);
+            setAnalytics(chartData);
+            setBudgets(userBudgets);
+            setFinancialStats(stats);
+            setFinancialHealth(health);
+            setForecastData(forecast);
+        } catch (error) {
+            console.error(error);
+        }
+    }, [whatIfScenarios]);
+
+    const fetchTabData = React.useCallback(async (tab: string) => {
+        try {
+            switch (tab) {
+                case "planning": {
+                    const planning = await getPlanningData();
+                    setPlanningData({
+                        goals: planning.goals || [],
+                        payments: planning.payments || [],
+                        shoppingItems: planning.shoppingItems || []
+                    });
+                    break;
+                }
+                case "forecast": {
+                    const forecast = await generateForecast({ months: 6, whatIf: whatIfScenarios });
+                    setForecastData(forecast);
+                    const health = await getFinancialHealth(forecast);
+                    setFinancialHealth(health);
+                    break;
+                }
+                case "analytics": {
+                    const [profitability, clientProfitability] = await Promise.all([
+                        getProjectsProfitability(),
+                        getClientsProfitability(),
+                    ]);
+                    setProjectsProfitability(profitability);
+                    setClientsProfitability(clientProfitability);
+                    break;
+                }
+                case "tax": {
+                    const taxes = await getTaxStats();
+                    setTaxStats(taxes);
+                    break;
+                }
+                case "automation": {
+                    const rules = await getAutomationRules();
+                    setAutomationRules(rules);
+                    break;
+                }
+                case "goals": {
+                    const planning = await getPlanningData();
+                    setPlanningData({
+                        goals: planning.goals || [],
+                        payments: planning.payments || [],
+                        shoppingItems: planning.shoppingItems || []
+                    });
+                    break;
+                }
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    }, [whatIfScenarios]);
 
     const handleSync = React.useCallback(async (showToast = true) => {
         if (isSyncing) return;
@@ -363,9 +410,18 @@ export function FinancePageClient() {
     React.useEffect(() => {
         setIsMounted(true);
         fetchData();
-        // Ми не додаємо fetchData в залежності, щоб уникнути циклу при ініціалізації
+        fetchOverviewData();
+        setLoadedTabs(prev => new Set(prev).add("overview"));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    // Lazy-load tab data on first visit
+    React.useEffect(() => {
+        if (!isMounted) return;
+        if (loadedTabs.has(activeTab)) return;
+        setLoadedTabs(prev => new Set(prev).add(activeTab));
+        fetchTabData(activeTab);
+    }, [activeTab, isMounted]);
 
     const refreshForecast = React.useCallback(async () => {
         try {
@@ -406,15 +462,52 @@ export function FinancePageClient() {
         return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
     }, [lastSyncedAt, handleSync]);
 
-    // Totals
-    const _totalBalanceUAH = accounts.reduce((sum: number, acc: any) => {
-        if (acc.currency === "USD") return sum + (acc.balance * rates.USD);
-        if (acc.currency === "EUR") return sum + (acc.balance * rates.EUR);
-        return sum + acc.balance;
-    }, 0);
-
     if (!isMounted) {
-        return <div className="p-6" />;
+        return (
+            <div className="flex-1 flex flex-col gap-6 p-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="space-y-2">
+                        <Skeleton className="h-9 w-36" />
+                        <Skeleton className="h-4 w-64" />
+                    </div>
+                    <Skeleton className="h-9 w-32" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                        <Skeleton key={i} className="h-28 rounded-xl" />
+                    ))}
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <Skeleton className="h-[300px] rounded-xl" />
+                    <Skeleton className="h-[300px] rounded-xl" />
+                </div>
+                <Skeleton className="h-48 rounded-xl" />
+            </div>
+        );
+    }
+
+    if (_isLoading) {
+        return (
+            <div className="flex-1 flex flex-col gap-6 p-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="space-y-2">
+                        <h1 className="text-3xl font-bold tracking-tight text-foreground">Фінанси</h1>
+                        <p className="text-muted-foreground mt-1">Огляд ваших активів та витрат</p>
+                    </div>
+                    <Skeleton className="h-9 w-32" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                        <Skeleton key={i} className="h-28 rounded-xl" />
+                    ))}
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <Skeleton className="h-[300px] rounded-xl" />
+                    <Skeleton className="h-[300px] rounded-xl" />
+                </div>
+                <Skeleton className="h-48 rounded-xl" />
+            </div>
+        );
     }
 
     return (
@@ -504,6 +597,46 @@ export function FinancePageClient() {
                           <DashboardSurface className="p-0">
                             <div className="p-4 md:p-6 flex flex-col gap-6">
                             <FinancialHealthCards data={financialHealth} />
+
+                            {_budgets.length > 0 && (
+                                <Card className="shadow-none">
+                                    <CardHeader>
+                                        <CardTitle className="text-lg font-medium flex items-center gap-2">
+                                            <Wallet className="h-4 w-4" />
+                                            Бюджети
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            {_budgets.map((b: any) => (
+                                                <div key={b.id} className="space-y-2">
+                                                    <div className="flex items-center justify-between text-sm">
+                                                        <span className="font-medium truncate">{b.categoryName}</span>
+                                                        <span className={cn(
+                                                            "text-xs font-bold tabular-nums",
+                                                            b.percentage >= 100 ? "text-red-600" : b.percentage >= 80 ? "text-amber-600" : "text-zinc-500"
+                                                        )}>
+                                                            {b.percentage}%
+                                                        </span>
+                                                    </div>
+                                                    <Progress
+                                                        value={Math.min(b.percentage, 100)}
+                                                        className={cn(
+                                                            "h-2",
+                                                            b.percentage >= 100 && "[&>div]:bg-red-500",
+                                                            b.percentage >= 80 && b.percentage < 100 && "[&>div]:bg-amber-500"
+                                                        )}
+                                                    />
+                                                    <div className="flex justify-between text-[10px] text-zinc-400">
+                                                        <span>{new Intl.NumberFormat('uk-UA').format(b.spent)} ₴ витрачено</span>
+                                                        <span>{new Intl.NumberFormat('uk-UA').format(b.limit)} ₴ ліміт</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
 
                             {/* Charts grid */}
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -602,7 +735,7 @@ export function FinancePageClient() {
                             </div>
 
                             {/* Account Management */}
-                            <AccountManagement accounts={accounts} onRefresh={fetchData} />
+                            <AccountManagement accounts={accounts} bankAccounts={_bankAccounts} onRefresh={fetchData} />
                             </div>
                           </DashboardSurface>
                         </TabsContent>
@@ -639,6 +772,11 @@ export function FinancePageClient() {
                                     <div className="flex items-center gap-2">
                                         <CardTitle className="text-lg font-medium">Історія операцій</CardTitle>
                                         {isFiltering && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                                        {_historyTotals.income > 0 || _historyTotals.expense > 0 ? (
+                                            <span className="text-[10px] font-medium text-zinc-400 tracking-wide">
+                                                +{new Intl.NumberFormat('uk-UA').format(_historyTotals.income)} / -{new Intl.NumberFormat('uk-UA').format(_historyTotals.expense)} ₴
+                                            </span>
+                                        ) : null}
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <div className="hidden lg:flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">

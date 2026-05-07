@@ -48,7 +48,7 @@ export function WeeklySparkline({ data, maxSeconds = 8 * 3600, className, select
                                     ? "bg-primary shadow-[0_0_12px_rgba(var(--primary-rgb),0.3)]"
                                     : "bg-muted-foreground/15 group-hover:bg-muted-foreground/25"
                             )}
-                            style={{ height: `${Math.max(6, (heightPct * 24) / 100)}px` }}
+                            style={{ height: `${Math.max(6, (heightPct * 48) / 100)}px` }}
                         />
                     </div>
                 );

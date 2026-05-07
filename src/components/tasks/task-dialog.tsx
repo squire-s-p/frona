@@ -272,6 +272,7 @@ export function TaskDialog({
   tags,
   defaultProjectId,
   defaultStartDate,
+  onCreated,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -280,6 +281,7 @@ export function TaskDialog({
   tags: TagOption[];
   defaultProjectId?: string | null;
   defaultStartDate?: Date | null;
+  onCreated?: (task: { id: string; projectId: string | null }) => void;
 }) {
   const isExisting = !!task;
 
@@ -564,6 +566,10 @@ export function TaskDialog({
             size: att.size,
           });
         }
+      }
+
+      if (!task && savedTask) {
+        onCreated?.({ id: savedTask.id, projectId: savedTask.projectId ?? null });
       }
 
       onOpenChange(false);

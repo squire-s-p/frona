@@ -12,6 +12,16 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { AccountDialog } from "./account-dialog";
 import { TransferDialog } from "./transfer-dialog";
 import { deleteAccount } from "@/app/dashboard/finance/phase1-actions";
@@ -32,12 +42,12 @@ const accountTypeIcons = {
 type FinanceAccount = {
     id: string;
     name: string;
-    type: string;
-    currency: string;
+    type: "checking" | "savings" | "cash" | "credit" | "investment" | "tax_reserve" | string;
+    currency: "UAH" | "USD" | "EUR" | string;
     balance: number;
     color?: string;
     includeInTotal?: boolean;
-    role?: string;
+    role?: "liquid" | "savings" | "investment" | "tax_reserve" | string;
     isArchived?: boolean;
     updatedAt?: string | Date;
     lastSyncedAt?: string | Date | null;
@@ -53,18 +63,26 @@ export function AccountManagement({ accounts, bankAccounts = [], onRefresh }: Ac
     const [accountDialogOpen, setAccountDialogOpen] = React.useState(false);
     const [transferDialogOpen, setTransferDialogOpen] = React.useState(false);
     const [editingAccount, setEditingAccount] = React.useState<FinanceAccount | undefined>(undefined);
+    const [archiveId, setArchiveId] = React.useState<string | null>(null);
 
     const handleEdit = (account: FinanceAccount) => {
         setEditingAccount(account);
         setAccountDialogOpen(true);
     };
 
-    const handleArchive = async (accountId: string) => {
+    const handleArchive = (accountId: string) => {
+        setArchiveId(accountId);
+    };
+
+    const confirmArchive = async () => {
+        if (!archiveId) return;
         try {
-            await deleteAccount(accountId);
+            await deleteAccount(archiveId);
             onRefresh();
         } catch (error) {
             console.error("Failed to archive account:", error);
+        } finally {
+            setArchiveId(null);
         }
     };
 
@@ -254,7 +272,7 @@ export function AccountManagement({ accounts, bankAccounts = [], onRefresh }: Ac
             <AccountDialog
                 open={accountDialogOpen}
                 onOpenChange={handleDialogClose}
-                account={editingAccount}
+                account={editingAccount as any}
                 onSuccess={onRefresh}
             />
 
@@ -264,6 +282,19 @@ export function AccountManagement({ accounts, bankAccounts = [], onRefresh }: Ac
                 accounts={accounts}
                 onSuccess={onRefresh}
             />
+
+            <AlertDialog open={!!archiveId} onOpenChange={(open) => { if (!open) setArchiveId(null); }}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Заархівувати рахунок?</AlertDialogTitle>
+                        <AlertDialogDescription>Ви впевнені, що хочете заархівувати цей рахунок?</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Скасувати</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmArchive}>Заархівувати</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

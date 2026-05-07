@@ -1,16 +1,17 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getAuthSession } from "@/lib/auth-session";
-import { redirect } from "next/navigation";
+import { Prisma } from "@prisma/client";
 import { startOfYear, endOfYear, startOfQuarter, endOfQuarter, format, subQuarters } from "date-fns";
 import { revalidatePath } from "next/cache";
+import { requireUser } from "@/lib/require-user";
 
-async function requireUser() {
-    const session = await getAuthSession();
-    if (!session?.user) redirect("/login");
-    return session.user;
-}
+const TAX_CONFIG = {
+    epRate: Number(process.env.TAX_EP_RATE) || 0.05,
+    vzRate: Number(process.env.TAX_VZ_RATE) || 0.01,
+    esvQuarterly: Number(process.env.TAX_ESV_QUARTERLY) || 5280,
+    fopLimit3Group: Number(process.env.TAX_FOP_LIMIT_3_GROUP) || 10091049,
+};
 
 export async function getTaxStats() {
     const user = await requireUser();
@@ -73,51 +74,36 @@ export async function getTaxStats() {
         .reduce((sum: number, tx: any) => sum + Number(tx.amount), 0);
 
     // Розрахунок податків для 3-ї групи ФОП (5% ЄП + 1% ВЗ)
-    const epRate = 0.05;
-    const vzRate = 0.01;
+    const tax5Yearly = yearlyTaxableIncome * TAX_CONFIG.epRate;
+    const tax1Yearly = yearlyTaxableIncome * TAX_CONFIG.vzRate;
 
-    const tax5Yearly = yearlyTaxableIncome * epRate;
-    const tax1Yearly = yearlyTaxableIncome * vzRate;
+    const tax5Quarterly = quarterlyTaxableIncome * TAX_CONFIG.epRate;
+    const tax1Quarterly = quarterlyTaxableIncome * TAX_CONFIG.vzRate;
 
-    const tax5Quarterly = quarterlyTaxableIncome * epRate;
-    const tax1Quarterly = quarterlyTaxableIncome * vzRate;
-
-    // ЄСВ (стала сума: 5280 грн на квартал)
-    const ESV_QUARTERLY = 5280;
     const currentQuarter = Math.floor(now.getMonth() / 3) + 1;
-    const esvYearly = ESV_QUARTERLY * currentQuarter;
+    const esvYearly = TAX_CONFIG.esvQuarterly * currentQuarter;
 
     // Ліміт доходу для 3-ї групи
-    const FOP_LIMIT_3_GROUP = 10091049;
-    const limitPercentage = (totalYearlyIncome / FOP_LIMIT_3_GROUP) * 100;
+    const limitPercentage = (totalYearlyIncome / TAX_CONFIG.fopLimit3Group) * 100;
 
-    // Отримуємо або створюємо категорію "Податки"
-    let taxCategory = await prisma.category.findFirst({
+    // Отримуємо категорію "Податки" (без автостворення)
+    const taxCategory = await prisma.category.findFirst({
         where: { userId: user.id, name: "Податки" }
     });
 
-    if (!taxCategory) {
-        taxCategory = await prisma.category.create({
-            data: {
+    const taxPayments = taxCategory
+        ? await prisma.transaction.findMany({
+            where: {
                 userId: user.id,
-                name: "Податки",
-                type: "expense",
-                isTaxable: false
-            }
-        });
-    }
-
-    const taxPayments = await prisma.transaction.findMany({
-        where: {
-            userId: user.id,
-            categoryId: taxCategory.id,
-            date: {
-                gte: subQuarters(yearStart, 2), // Захоплюємо півгодини минулого року для врахування запізнілих платежів
-                lte: yearEnd
-            }
-        },
-        orderBy: { date: "desc" }
-    });
+                categoryId: taxCategory.id,
+                date: {
+                    gte: subQuarters(yearStart, 2),
+                    lte: yearEnd
+                }
+            },
+            orderBy: { date: "desc" }
+        })
+        : [];
 
     // Функція для визначення періоду (квартал та рік) з нотатки або дати
     const getTaxPeriod = (tx: any) => {
@@ -152,7 +138,7 @@ export async function getTaxStats() {
     const reserveBalance = taxAccount ? Number(taxAccount.balance) : 0;
 
     // Розрахунок Tax Gap (скільки треба додати в резерв для покриття квартальних зобов'язань)
-    const quarterlyObligations = tax5Quarterly + tax1Quarterly + ESV_QUARTERLY;
+    const quarterlyObligations = tax5Quarterly + tax1Quarterly + TAX_CONFIG.esvQuarterly;
     const currentPaid = paidByQuarter[`${now.getFullYear()}-${currentQuarter}`] || 0;
     const taxGap = Math.max(0, quarterlyObligations - currentPaid - reserveBalance);
 
@@ -173,7 +159,7 @@ export async function getTaxStats() {
     const chartData = Object.entries(monthlyIncome).map(([name, value]) => ({
         name,
         income: Math.round(value),
-        tax: Math.round(value * (epRate + vzRate))
+        tax: Math.round(        value * (TAX_CONFIG.epRate + TAX_CONFIG.vzRate))
     }));
 
     return {
@@ -193,7 +179,7 @@ export async function getTaxStats() {
             taxableIncome: quarterlyTaxableIncome,
             tax5: tax5Quarterly,
             tax1: tax1Quarterly,
-            esv: ESV_QUARTERLY,
+            esv: TAX_CONFIG.esvQuarterly,
             totalTax: quarterlyObligations,
             paid: currentPaid
         },
@@ -222,7 +208,7 @@ export async function getTaxStats() {
             const yNum = prevQDate.getFullYear();
 
             const prevPaid = paidByQuarter[`${yNum}-${qNum}`] || 0;
-            const prevObligations = (prevTaxable * (epRate + vzRate)) + ESV_QUARTERLY;
+            const prevObligations = (prevTaxable * (TAX_CONFIG.epRate + TAX_CONFIG.vzRate)) + TAX_CONFIG.esvQuarterly;
 
             return {
                 quarter: qNum,
@@ -234,7 +220,7 @@ export async function getTaxStats() {
             };
         })(),
         limit: {
-            total: FOP_LIMIT_3_GROUP,
+            total: TAX_CONFIG.fopLimit3Group,
             current: totalYearlyIncome,
             percentage: limitPercentage
         },
@@ -279,8 +265,13 @@ export async function moveToTaxReserve(amount: number, fromAccountId: string) {
         throw new Error("Джерело та ціль однакові.");
     }
 
-    // Виконуємо трансфер
-    await prisma.$transaction(async (tx: any) => {
+    const sourceAccount = await prisma.financeAccount.findFirst({
+        where: { id: fromAccountId, userId: user.id },
+    });
+    if (!sourceAccount) throw new Error("Рахунок-джерело не знайдено");
+    if (Number(sourceAccount.balance) < amount) throw new Error("Недостатньо коштів на рахунку");
+
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         // 1. Списуємо з основного
         await tx.financeAccount.update({
             where: { id: fromAccountId },
@@ -293,9 +284,56 @@ export async function moveToTaxReserve(amount: number, fromAccountId: string) {
             data: { balance: { increment: amount } }
         });
 
-        // 3. Створюємо запис (хоча б один для історії)
-        // В ідеалі це два записи (expense і income) з категорією "Transfer"
-        // Але поки обмежимось оновленням балансів
+        // 3. Find or create "Податки" category for audit trail
+        const taxCat = await tx.category.upsert({
+            where: { userId_type_name: { userId: user.id, type: "expense", name: "Податки" } },
+            create: { userId: user.id, type: "expense", name: "Податки" },
+            update: {},
+        });
+
+        await tx.transaction.create({
+            data: {
+                userId: user.id,
+                accountId: fromAccountId,
+                categoryId: taxCat.id,
+                type: "expense",
+                amount: amount,
+                description: "Резервування на податки",
+                date: new Date(),
+            }
+        });
+
+        // 4. Створюємо income-запис на податковому рахунку
+        const taxIncomeCat = await tx.category.upsert({
+            where: { userId_type_name: { userId: user.id, type: "income", name: "Податки" } },
+            create: { userId: user.id, type: "income", name: "Податки" },
+            update: {},
+        });
+
+        await tx.transaction.create({
+            data: {
+                userId: user.id,
+                accountId: taxAccount.id,
+                categoryId: taxIncomeCat.id,
+                type: "expense",
+                amount: amount,
+                description: "Резервування на податки",
+                date: new Date(),
+            }
+        });
+
+        // 4. Створюємо income-запис на податковому рахунку
+        await tx.transaction.create({
+            data: {
+                userId: user.id,
+                accountId: taxAccount.id,
+                categoryId: taxCat?.id ?? undefined,
+                type: "income",
+                amount: amount,
+                description: "Надходження до податкового резерву",
+                date: new Date(),
+            }
+        });
     });
 
     revalidatePath("/dashboard/finance");

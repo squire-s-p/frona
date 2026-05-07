@@ -43,7 +43,7 @@ import { cn } from "@/lib/utils";
 
 const formSchema = z.object({
     name: z.string().min(1, "Введіть назву"),
-    amount: z.coerce.number(),
+    amount: z.coerce.number().positive("Сума має бути більше 0"),
     frequency: z.enum(["once", "weekly", "monthly", "yearly"]),
     nextPaymentDate: z.date(),
     categoryId: z.string().optional(),

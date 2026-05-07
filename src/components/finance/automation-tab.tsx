@@ -33,6 +33,16 @@ import {
     deleteAutomationRule,
     toggleAutomationRule
 } from "@/app/dashboard/finance/automation-actions";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
 interface AutomationRule {
@@ -63,6 +73,7 @@ export function AutomationTab({ rules, categories, projects, onRefresh }: Automa
     const [maxAmount, setMaxAmount] = React.useState("");
     const [currency, setCurrency] = React.useState("all");
     const [isSubmitting, setIsSubmitting] = React.useState(false);
+    const [deleteId, setDeleteId] = React.useState<string | null>(null);
 
     const handleCreate = async () => {
         if (!newName || !newPattern || !newTargetId) {
@@ -96,13 +107,20 @@ export function AutomationTab({ rules, categories, projects, onRefresh }: Automa
         }
     };
 
-    const handleDelete = async (id: string) => {
+    const handleDelete = (id: string) => {
+        setDeleteId(id);
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteId) return;
         try {
-            await deleteAutomationRule(id);
+            await deleteAutomationRule(deleteId);
             toast.success("Правило видалено");
             onRefresh();
         } catch (error: unknown) {
             toast.error(`Помилка: ${error instanceof Error ? error.message : "Unknown error"}`);
+        } finally {
+            setDeleteId(null);
         }
     };
 
@@ -283,6 +301,18 @@ export function AutomationTab({ rules, categories, projects, onRefresh }: Automa
                     })
                 )}
             </div>
+            <AlertDialog open={!!deleteId} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Видалити правило?</AlertDialogTitle>
+                        <AlertDialogDescription>Ви впевнені, що хочете видалити це правило?</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Скасувати</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmDelete}>Видалити</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

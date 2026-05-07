@@ -27,6 +27,9 @@ import { signIn } from "next-auth/react";
 import { BankConnectWidget } from "@/modules/bank/BankConnectWidget";
 import { disconnectMonobankAccounts } from "@/modules/bank/bank.actions";
 import { disconnectGoogleAction } from "@/app/dashboard/settings/actions";
+import { isProviderAuthAvailable } from "@/modules/finance/providers/monobank/actions/monobank-connection.actions";
+import { BankConnectionsCard } from "@/modules/finance/providers/monobank/client/bank-connections-card";
+import { ConnectMonobankDialog } from "@/modules/finance/providers/monobank/client/connect-monobank-dialog";
 
 export function IntegrationsForm({ 
   isMonoConnected, 
@@ -37,6 +40,12 @@ export function IntegrationsForm({
 }) {
   const [isDisconnecting, setIsDisconnecting] = React.useState(false);
   const [isGoogleDisconnecting, setIsGoogleDisconnecting] = React.useState(false);
+  const [providerAuthAvailable, setProviderAuthAvailable] = React.useState(false);
+  const [qrDialogOpen, setQrDialogOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    isProviderAuthAvailable().then(setProviderAuthAvailable);
+  }, []);
 
   const handleDisconnect = async () => {
     setIsDisconnecting(true);
@@ -60,6 +69,11 @@ export function IntegrationsForm({
     } else {
       toast.error(res.error || "Помилка при відключенні");
     }
+  };
+
+  const handleQrConnected = () => {
+    setQrDialogOpen(false);
+    toast.success("Monobank успішно підключено!");
   };
 
   return (
@@ -117,14 +131,27 @@ export function IntegrationsForm({
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
+                  ) : providerAuthAvailable ? (
+                    <Button
+                      variant="outline"
+                      className="rounded-xl h-9 gap-2"
+                      onClick={() => setQrDialogOpen(true)}
+                    >
+                      <CreditCard className="h-3.5 w-3.5" />
+                      Підключити через QR
+                    </Button>
                   ) : (
                     <BankConnectWidget useEnvToken={false} onConnected={() => toast.success("Monobank успішно підключено!")} />
                   )}
                 </div>
               </div>
             </div>
+
+            {providerAuthAvailable && !isMonoConnected && (
+              <BankConnectionsCard />
+            )}
             
-            {!isMonoConnected && (
+            {!isMonoConnected && !providerAuthAvailable && (
               <div className="p-4 border border-dashed rounded-xl bg-muted/5 flex items-start gap-3">
                 <AlertCircle className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
                 <div>
@@ -240,6 +267,12 @@ export function IntegrationsForm({
 
         </CardContent>
       </Card>
+
+      <ConnectMonobankDialog
+        open={qrDialogOpen}
+        onOpenChange={setQrDialogOpen}
+        onConnected={handleQrConnected}
+      />
     </div>
   );
 }

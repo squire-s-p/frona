@@ -37,12 +37,15 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { createAccount, updateAccount } from "@/app/dashboard/finance/phase1-actions";
+import { toast } from "sonner";
 
 const accountTypes = [
-    { value: "bank", label: "Банківський рахунок", icon: CreditCard },
+    { value: "checking", label: "Поточний рахунок", icon: CreditCard },
+    { value: "savings", label: "Накопичення", icon: PiggyBank },
     { value: "cash", label: "Готівка", icon: Banknote },
-    { value: "crypto", label: "Крипто", icon: Bitcoin },
-    { value: "savings", label: "Накоп ичення", icon: PiggyBank },
+    { value: "credit", label: "Кредитний", icon: CreditCard },
+    { value: "investment", label: "Інвестиційний", icon: Bitcoin },
+    { value: "tax_reserve", label: "Податковий резерв", icon: Banknote },
 ] as const;
 
 const accountColors = [
@@ -54,12 +57,12 @@ const accountColors = [
 
 const formSchema = z.object({
     name: z.string().min(1, "Введіть назву"),
-    type: z.string(),
-    currency: z.string(),
+    type: z.enum(["checking", "savings", "cash", "credit", "investment", "tax_reserve"]),
+    currency: z.enum(["UAH", "USD", "EUR"]),
     balance: z.coerce.number(),
     color: z.string().optional(),
     includeInTotal: z.boolean().default(true),
-    role: z.string().default("liquid"),
+    role: z.enum(["liquid", "savings", "investment", "tax_reserve"]).default("liquid"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -67,12 +70,12 @@ type FormValues = z.infer<typeof formSchema>;
 type FinanceAccount = {
     id: string;
     name: string;
-    type: string;
-    currency: string;
+    type: FormValues["type"];
+    currency: FormValues["currency"];
     balance: number;
     color?: string;
     includeInTotal?: boolean;
-    role?: string;
+    role?: FormValues["role"];
 };
 
 interface AccountDialogProps {
@@ -95,12 +98,12 @@ export function AccountDialog({
         resolver: zodResolver(formSchema) as any,
         defaultValues: {
             name: account?.name || "",
-            type: account?.type || "bank",
-            currency: account?.currency || "UAH",
+            type: (account?.type || "checking") as FormValues["type"],
+            currency: (account?.currency || "UAH") as FormValues["currency"],
             balance: account?.balance || 0,
             color: account?.color || "#18181b",
             includeInTotal: account?.includeInTotal ?? true,
-            role: account?.role || "liquid",
+            role: (account?.role || "liquid") as FormValues["role"],
         },
     });
 
@@ -108,17 +111,17 @@ export function AccountDialog({
         if (account) {
             form.reset({
                 name: account.name,
-                type: account.type,
-                currency: account.currency,
+                type: (account.type as FormValues["type"]) || "checking",
+                currency: (account.currency as FormValues["currency"]) || "UAH",
                 balance: account.balance,
                 color: account.color || "#18181b",
                 includeInTotal: account.includeInTotal ?? true,
-                role: account.role || "liquid",
+                role: (account.role as FormValues["role"]) || "liquid",
             });
         } else {
             form.reset({
                 name: "",
-                type: "bank",
+                type: "checking",
                 currency: "UAH",
                 balance: 0,
                 color: "#18181b",
@@ -156,6 +159,7 @@ export function AccountDialog({
             onSuccess?.();
         } catch (error) {
             console.error("Failed to save account:", error);
+            toast.error("Не вдалося створити рахунок");
         } finally {
             setIsLoading(false);
         }

@@ -14,16 +14,9 @@ import {
     upsertBankAccount,
 } from "./bank.repository";
 import { mapMonoAccountMeta, buildAccountName } from "./bank.mapper";
-import { getAuthSession } from "@/lib/auth-session";
-import { redirect } from "next/navigation";
+import { requireUser } from "@/lib/require-user";
 import type { BankAccountRecord } from "./bank.types";
 import { ensureFinanceAccount } from "./bank.bridge";
-
-async function requireUser() {
-    const session = await getAuthSession();
-    if (!session?.user) redirect("/login");
-    return session.user as { id: string; email: string; name?: string | null };
-}
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
@@ -125,6 +118,31 @@ export async function disconnectMonobankAccounts(): Promise<{ success: boolean; 
     const user = await requireUser();
     try {
         const { prisma } = await import("@/lib/prisma");
+
+        // Get all bank account IDs before deleting to clean up related records
+        const bankAccounts = await prisma.bankAccount.findMany({
+            where: { userId: user.id },
+            select: { id: true },
+        });
+        const bankAccountIds = bankAccounts.map(ba => ba.id);
+
+        if (bankAccountIds.length > 0) {
+            // Archive FinanceAccounts whose IDs match Monobank account IDs
+            // (bridge-created accounts use monoAccountId as FinanceAccount.id)
+            const bridgeMonoIds = await prisma.bankAccount.findMany({
+                where: { id: { in: bankAccountIds } },
+                select: { monoAccountId: true },
+            });
+            const monoAccountIds = bridgeMonoIds.map(b => b.monoAccountId).filter(Boolean);
+
+            if (monoAccountIds.length > 0) {
+                await prisma.financeAccount.updateMany({
+                    where: { id: { in: monoAccountIds }, userId: user.id },
+                    data: { isArchived: true },
+                });
+            }
+        }
+
         await prisma.bankAccount.deleteMany({
             where: { userId: user.id }
         });
@@ -233,12 +251,7 @@ export async function refreshAllBankAccounts(): Promise<{
     if (accounts.length > 0) {
         try {
             const firstAccount = await findBankAccountWithToken(accounts[0].id);
-            let token: string;
-            try {
-                token = decryptToken(firstAccount.monoToken);
-            } catch {
-                token = Buffer.from(firstAccount.monoToken, "base64").toString("utf8");
-            }
+            const token = decryptToken(firstAccount.monoToken);
             const service = new MonoBankService(token);
             const clientInfo = await service.getClientInfo();
 

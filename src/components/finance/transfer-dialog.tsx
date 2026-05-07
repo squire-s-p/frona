@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { createTransfer } from "@/app/dashboard/finance/phase1-actions";
+import { toast } from "sonner";
 
 const formSchema = z.object({
     fromAccountId: z.string().min(1, "Виберіть рахунок"),
@@ -113,6 +114,7 @@ export function TransferDialog({
             onSuccess?.();
         } catch (error) {
             console.error("Failed to create transfer:", error);
+            toast.error("Не вдалося створити переказ");
         } finally {
             setIsLoading(false);
         }

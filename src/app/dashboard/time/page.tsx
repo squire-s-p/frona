@@ -5,7 +5,7 @@ export const metadata: Metadata = {
 };
 
 import TimePageClient from "@/components/time/time-page-client";
-import { getTimeDayData, getRelevantTasks } from "./actions";
+import { getTimeDayData, getRelevantTasks, getTimezone } from "./actions";
 import { DashboardPage } from "@/components/layout/dashboard-page";
 
 function isoTodayInTZ(timeZone: string) {
@@ -33,19 +33,18 @@ function normalizeDateISO(input: unknown): string | null {
 export default async function TimePage({
   searchParams,
 }: {
-  searchParams: any;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const sp = await searchParams;
 
-  // Спочатку тягнемо дані "сьогодні" (для timezone), потім якщо date передали — перезавантажимо.
-  const todayData = await getTimeDayData("2000-01-01");
-  const todayISO = isoTodayInTZ(todayData.timezone);
+  const timezone = await getTimezone();
+  const todayISO = isoTodayInTZ(timezone);
 
   const normalized = normalizeDateISO(sp?.date);
   const dateISO = normalized ?? todayISO;
 
   const [data, relevantTasks] = await Promise.all([
-    dateISO === "2000-01-01" ? todayData : getTimeDayData(dateISO),
+    getTimeDayData(dateISO),
     getRelevantTasks(),
   ]);
 
@@ -59,6 +58,7 @@ export default async function TimePage({
         projects={data.projects}
         tags={data.tags}
         relevantTasks={relevantTasks}
+        dailyTargetHours={data.dailyTargetHours}
       />
     </DashboardPage>
   );

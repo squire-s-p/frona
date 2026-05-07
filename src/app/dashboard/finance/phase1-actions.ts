@@ -2,15 +2,29 @@
 
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
-import { getAuthSession } from "@/lib/auth-session";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { z } from "zod";
+import { requireUser } from "@/lib/require-user";
 
-async function requireUser() {
-    const session = await getAuthSession();
-    if (!session?.user) redirect("/login");
-    return session.user;
-}
+const createAccountSchema = z.object({
+    name: z.string().min(1).max(100),
+    type: z.enum(["checking", "savings", "cash", "credit", "investment", "tax_reserve"]),
+    currency: z.enum(["UAH", "USD", "EUR"]),
+    balance: z.number().finite(),
+    color: z.string().optional(),
+    includeInTotal: z.boolean().optional(),
+    role: z.enum(["liquid", "savings", "tax_reserve", "investment"]).optional(),
+});
+
+const createTransferSchema = z.object({
+    fromAccountId: z.string().cuid(),
+    toAccountId: z.string().cuid(),
+    amount: z.number().positive(),
+    fee: z.number().min(0).optional(),
+    exchangeRate: z.number().positive().optional(),
+    note: z.string().max(500).optional(),
+    date: z.date(),
+});
 
 // ========================
 // ACCOUNT MANAGEMENT
@@ -19,27 +33,20 @@ async function requireUser() {
 /**
  * Створити новий фінансовий рахунок
  */
-export async function createAccount(data: {
-    name: string;
-    type: string;
-    currency: string;
-    balance: number;
-    color?: string;
-    includeInTotal?: boolean;
-    role?: string;
-}) {
+export async function createAccount(data: z.infer<typeof createAccountSchema>) {
     const user = await requireUser();
+    const validated = createAccountSchema.parse(data);
 
     const account = await prisma.financeAccount.create({
         data: {
             userId: user.id,
-            name: data.name,
-            type: data.type,
-            currency: data.currency,
-            balance: data.balance,
-            color: data.color,
-            includeInTotal: data.includeInTotal ?? true,
-            role: data.role || "liquid",
+            name: validated.name,
+            type: validated.type,
+            currency: validated.currency,
+            balance: validated.balance,
+            color: validated.color,
+            includeInTotal: validated.includeInTotal ?? true,
+            role: validated.role || "liquid",
         }
     });
 
@@ -131,29 +138,31 @@ export async function getAccountHistory(
 /**
  * Створити трансфер між рахунками
  */
-export async function createTransfer(data: {
-    fromAccountId: string;
-    toAccountId: string;
-    amount: number;
-    fee?: number;
-    exchangeRate?: number;
-    note?: string;
-    date: Date;
-}) {
+export async function createTransfer(data: z.infer<typeof createTransferSchema>) {
     const user = await requireUser();
+    const validated = createTransferSchema.parse(data);
 
     // Перевіряємо рахунки
     const [fromAccount, toAccount] = await Promise.all([
         prisma.financeAccount.findFirst({
-            where: { id: data.fromAccountId, userId: user.id },
+            where: { id: validated.fromAccountId, userId: user.id },
         }),
         prisma.financeAccount.findFirst({
-            where: { id: data.toAccountId, userId: user.id },
+            where: { id: validated.toAccountId, userId: user.id },
         }),
     ]);
 
     if (!fromAccount || !toAccount) {
         throw new Error("Account not found");
+    }
+
+    if (validated.fromAccountId === validated.toAccountId) {
+        throw new Error("Рахунки джерела та призначення мають відрізнятися");
+    }
+
+    const totalDebit = new Prisma.Decimal(validated.amount).plus(new Prisma.Decimal(validated.fee || 0));
+    if (new Prisma.Decimal(fromAccount.balance).lessThan(totalDebit)) {
+        throw new Error("Недостатньо коштів на рахунку");
     }
 
     // Створюємо переказ
@@ -162,24 +171,23 @@ export async function createTransfer(data: {
         const newTransfer = await tx.transfer.create({
             data: {
                 userId: user.id,
-                fromAccountId: data.fromAccountId,
-                toAccountId: data.toAccountId,
-                amount: data.amount,
-                fee: data.fee || 0,
-                exchangeRate: data.exchangeRate,
-                note: data.note,
-                date: data.date || new Date(),
+                fromAccountId: validated.fromAccountId,
+                toAccountId: validated.toAccountId,
+                amount: validated.amount,
+                fee: validated.fee || 0,
+                exchangeRate: validated.exchangeRate,
+                note: validated.note,
+                date: validated.date || new Date(),
             },
         });
 
         // Оновлюємо баланси
-        const totalDebit = data.amount + (data.fee || 0);
-        const creditAmount = data.exchangeRate
-            ? data.amount * data.exchangeRate
-            : data.amount;
+        const creditAmount = validated.exchangeRate
+            ? new Prisma.Decimal(validated.amount).times(new Prisma.Decimal(validated.exchangeRate)).toDecimalPlaces(2)
+            : new Prisma.Decimal(validated.amount);
 
         await tx.financeAccount.update({
-            where: { id: data.fromAccountId },
+            where: { id: validated.fromAccountId },
             data: {
                 balance: {
                     decrement: totalDebit,
@@ -188,7 +196,7 @@ export async function createTransfer(data: {
         });
 
         await tx.financeAccount.update({
-            where: { id: data.toAccountId },
+            where: { id: validated.toAccountId },
             data: {
                 balance: {
                     increment: creditAmount,
@@ -263,6 +271,13 @@ export async function createCategory(data: {
     isTaxable?: boolean;
 }) {
     const user = await requireUser();
+
+    const existing = await prisma.category.findFirst({
+        where: { userId: user.id, name: data.name, type: data.type },
+    });
+    if (existing) {
+        return { ...existing, alreadyExists: true };
+    }
 
     const category = await prisma.category.create({
         data: {
@@ -382,6 +397,25 @@ export async function createTransactionWithTags(data: {
 }) {
     const user = await requireUser();
 
+    const account = await prisma.financeAccount.findFirst({
+        where: { id: data.accountId, userId: user.id },
+    });
+    if (!account) throw new Error("Account not found or access denied");
+
+    // Validate categoryId belongs to user
+    const category = await prisma.category.findFirst({
+        where: { id: data.categoryId, userId: user.id },
+    });
+    if (!category) throw new Error("Category not found or access denied");
+
+    // Validate projectId belongs to user
+    if (data.projectId && data.projectId !== "none") {
+        const proj = await prisma.project.findFirst({
+            where: { id: data.projectId, userId: user.id },
+        });
+        if (!proj) throw new Error("Project not found or access denied");
+    }
+
     const transaction = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         // Створюємо транзакцію
         const newTx = await tx.transaction.create({
@@ -462,25 +496,43 @@ export async function createFullSplitTransaction(data: {
 }) {
     const user = await requireUser();
 
+    const account = await prisma.financeAccount.findFirst({
+        where: { id: data.accountId, userId: user.id },
+    });
+    if (!account) throw new Error("Account not found or access denied");
+
+    // Validate all split categoryIds belong to user
+    const splitCategoryIds = [...new Set(data.splits.map(s => s.categoryId))];
+    const validCategories = await prisma.category.findMany({
+        where: { id: { in: splitCategoryIds }, userId: user.id },
+        select: { id: true },
+    });
+    const validCatIds = new Set(validCategories.map(c => c.id));
+    for (const cid of splitCategoryIds) {
+        if (!validCatIds.has(cid)) throw new Error("Category not found or access denied");
+    }
+
+    const splitsTotal = data.splits.reduce((sum, s) => sum + s.amount, 0);
+
     const transaction = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-        // 1. Створюємо головну транзакцію (батьківську)
+        // 1. Створюємо головну транзакцію (батьківську) з сумою 0 — вона лише групує split
         const parentTx = await tx.transaction.create({
             data: {
                 userId: user.id,
                 accountId: data.accountId,
-                categoryId: data.splits[0].categoryId, // Використовуємо першу категорію як дефолт
+                categoryId: data.splits[0].categoryId,
                 type: data.type,
-                amount: data.amount,
+                amount: 0,
                 date: data.date,
                 description: data.description,
                 tagIds: data.tagIds || [],
-                note: "[PARENT] " + (data.splits[0].note || ""),
+                note: "[SPLIT]",
                 clientId: data.clientId !== "none" && data.clientId !== "" ? data.clientId : null,
                 projectId: data.projectId || null,
             },
         });
 
-        // 2. Створюємо дочірні транзакції
+        // 2. Створюємо дочірні транзакції (кожна з реальною сумою)
         for (const split of data.splits) {
             await tx.transaction.create({
                 data: {
@@ -500,8 +552,8 @@ export async function createFullSplitTransaction(data: {
             });
         }
 
-        // 3. Оновлюємо баланс (тільки на суму головної транзакції)
-        const balanceChange = data.type === "income" ? data.amount : -data.amount;
+        // 3. Оновлюємо баланс на суму всіх split-ів
+        const balanceChange = data.type === "income" ? splitsTotal : -splitsTotal;
         await tx.financeAccount.update({
             where: { id: data.accountId },
             data: {
@@ -539,14 +591,36 @@ export async function updateTransaction(data: {
 }) {
     const user = await requireUser();
 
-    // Отримуємо стару транзакцію для корекції балансу
-    const oldTx = await prisma.transaction.findUnique({
-        where: { id: data.id, userId: user.id },
-    });
-
-    if (!oldTx) throw new Error("Transaction not found");
-
     const transaction = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+        const oldTx = await tx.transaction.findUnique({
+            where: { id: data.id, userId: user.id },
+        });
+        if (!oldTx) throw new Error("Transaction not found");
+
+        // Validate new accountId belongs to user
+        if (data.accountId !== oldTx.accountId) {
+            const newAcc = await tx.financeAccount.findFirst({
+                where: { id: data.accountId, userId: user.id },
+            });
+            if (!newAcc) throw new Error("Target account not found or access denied");
+        }
+
+        // Validate categoryId belongs to user
+        if (data.categoryId) {
+            const cat = await tx.category.findFirst({
+                where: { id: data.categoryId, userId: user.id },
+            });
+            if (!cat) throw new Error("Category not found or access denied");
+        }
+
+        // Validate projectId belongs to user
+        if (data.projectId && data.projectId !== "none") {
+            const proj = await tx.project.findFirst({
+                where: { id: data.projectId, userId: user.id },
+            });
+            if (!proj) throw new Error("Project not found or access denied");
+        }
+
         // 1. Повертаємо баланс назад
         const oldBalanceChange = oldTx.type === "income" ? -Number(oldTx.amount) : Number(oldTx.amount);
         await tx.financeAccount.update({
@@ -594,13 +668,13 @@ export async function updateTransaction(data: {
 export async function deleteTransaction(id: string) {
     const user = await requireUser();
 
-    const transaction = await prisma.transaction.findUnique({
-        where: { id, userId: user.id },
-    });
-
-    if (!transaction) throw new Error("Transaction not found");
-
     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+        const transaction = await tx.transaction.findUnique({
+            where: { id, userId: user.id },
+        });
+
+        if (!transaction) throw new Error("Transaction not found");
+
         // Коригуємо баланс
         const balanceChange = transaction.type === "income" ? -Number(transaction.amount) : Number(transaction.amount);
         await tx.financeAccount.update({
@@ -644,7 +718,26 @@ export async function processRecurringPayments() {
         const pCategoryId = payment.categoryId;
 
         await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-            // Створюємо транзакцію
+            const fresh = await tx.recurringPayment.findUnique({
+                where: { id: payment.id },
+                select: { nextPaymentDate: true, lastGenerated: true },
+            });
+            if (!fresh) return;
+            // Optimistic lock: if nextPaymentDate changed or already generated this cycle, skip
+            if (fresh.nextPaymentDate.getTime() !== payment.nextPaymentDate.getTime()) return;
+            if (fresh.lastGenerated && fresh.lastGenerated.getTime() >= now.getTime() - 60000) return;
+
+            // Check for duplicate: if a transaction already exists for this recurring payment at this date
+            const existing = await tx.transaction.findFirst({
+                where: {
+                    userId: user.id,
+                    accountId: pAccountId,
+                    date: payment.nextPaymentDate,
+                    description: `[Auto] ${payment.name}`,
+                }
+            });
+            if (existing) return;
+
             await tx.transaction.create({
                 data: {
                     userId: user.id,

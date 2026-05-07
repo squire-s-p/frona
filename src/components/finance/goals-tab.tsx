@@ -40,6 +40,16 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
@@ -90,6 +100,7 @@ export function GoalsTab({ goals, accounts, onRefresh }: GoalsTabProps) {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingGoal, setEditingGoal] = useState<SavingsGoal | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [deleteId, setDeleteId] = useState<string | null>(null);
 
     // Form State
     const [formData, setFormData] = useState({
@@ -163,14 +174,20 @@ export function GoalsTab({ goals, accounts, onRefresh }: GoalsTabProps) {
         }
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm("Ви впевнені, що хочете видалити цю ціль?")) return;
+    const handleDelete = (id: string) => {
+        setDeleteId(id);
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteId) return;
         try {
-            await deleteSavingsGoal(id);
+            await deleteSavingsGoal(deleteId);
             toast.success("Видалено");
             onRefresh();
         } catch {
             toast.error("Помилка при видаленні");
+        } finally {
+            setDeleteId(null);
         }
     };
 
@@ -396,6 +413,19 @@ export function GoalsTab({ goals, accounts, onRefresh }: GoalsTabProps) {
                     </div>
                 )}
             </div>
+
+            <AlertDialog open={!!deleteId} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Видалити ціль?</AlertDialogTitle>
+                        <AlertDialogDescription>Ви впевнені, що хочете видалити цю ціль?</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Скасувати</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmDelete}>Видалити</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

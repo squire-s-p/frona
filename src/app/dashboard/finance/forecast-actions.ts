@@ -1,16 +1,9 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getAuthSession } from "@/lib/auth-session";
-import { redirect } from "next/navigation";
 import { addDays, addMonths, format } from "date-fns";
 import { uk } from "date-fns/locale";
-
-async function requireUser() {
-    const session = await getAuthSession();
-    if (!session?.user) redirect("/login");
-    return session.user;
-}
+import { requireUser } from "@/lib/require-user";
 
 export interface ForecastOptions {
     months?: number;
@@ -89,6 +82,8 @@ export async function generateForecast(options: ForecastOptions = { months: 6 })
             } else {
                 // Для циклічних платежів шукаємо всі входження у майбутньому
                 while (nextDate <= endDate) {
+                    if (payment.endDate && nextDate > payment.endDate) break;
+
                     if (nextDate.toDateString() === dStr) {
                         const amount = Number(payment.amount);
                         if (payment.type === "income" || amount > 0) dayIncome += Math.abs(amount);
@@ -166,7 +161,7 @@ export async function generateForecast(options: ForecastOptions = { months: 6 })
 /**
  * Отримує метрики фінансового здоров’я
  */
-export async function getFinancialHealth() {
+export async function getFinancialHealth(prefetchedForecast?: Awaited<ReturnType<typeof generateForecast>>) {
     const user = await requireUser();
     const now = new Date();
     const lastMonth = addMonths(now, -1);
@@ -242,8 +237,8 @@ export async function getFinancialHealth() {
         stabilityScore = 50; // Мало даних
     }
 
-    // 6. Прогнозовані залишки (30, 60, 90 днів)
-    const forecast = await generateForecast({ months: 3 });
+    // 6. Прогнозовані залишки (30, 60, 90 днів) — reuse forecast if provided
+    const forecast = prefetchedForecast || await generateForecast({ months: 3 });
     const getBalanceAtDay = (days: number) => {
         const targetDate = addDays(now, days);
         const dayReport = forecast.daily.find(d =>

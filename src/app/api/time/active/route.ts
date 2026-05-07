@@ -10,18 +10,17 @@ export async function GET() {
     return NextResponse.json(null);
   }
 
-  const active = await prisma.timeEntry.findFirst({
-    where: { userId, endAt: null },
-    orderBy: { startAt: "desc" },
-    select: { id: true, projectId: true, taskId: true, startAt: true },
+  const active = await prisma.activeTimer.findUnique({
+    where: { userId },
+    select: { userId: true, mode: true, projectId: true, taskId: true, startedAt: true },
   });
 
   if (!active) return NextResponse.json(null);
 
   return NextResponse.json({
-    id: active.id,
+    mode: active.mode,
     projectId: active.projectId,
     taskId: active.taskId ?? null,
-    startAt: active.startAt.toISOString(),
+    startAt: active.startedAt.toISOString(),
   });
 }

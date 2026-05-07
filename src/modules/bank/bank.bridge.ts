@@ -10,7 +10,6 @@
 // It is the ONLY place where bank ↔ finance coupling is allowed.
 
 import { prisma } from "@/lib/prisma";
-import type { BankTransactionRow } from "./bank.repository";
 import { findBankAccounts } from "./bank.repository";
 
 // ─── MCC → Category mapping (mirrors finance/actions.ts) ─────────────────────
@@ -42,14 +41,14 @@ const MCC_GROUPS: Record<number, { name: string; type: "income" | "expense" }> =
     5311: { name: "Одяг та Взуття", type: "expense" },
 };
 
-/** Cache to avoid N+1 category lookups within a single bridge call */
-const categoryCache = new Map<string, string>();
+/** Per-call cache — passed as parameter to avoid race conditions across concurrent syncs */
 
 async function getOrCreateCategory(
     userId: string,
     type: "income" | "expense",
     mcc: number,
-    isInternalTransfer = false
+    isInternalTransfer = false,
+    cache = new Map<string, string>()
 ): Promise<string> {
     const mccInfo = MCC_GROUPS[mcc];
     let name = mccInfo?.name ?? (type === "income" ? "Дохід" : "Інше");
@@ -60,8 +59,8 @@ async function getOrCreateCategory(
 
     const cacheKey = `${userId}:${type}:${name}`;
 
-    if (categoryCache.has(cacheKey)) {
-        return categoryCache.get(cacheKey)!;
+    if (cache.has(cacheKey)) {
+        return cache.get(cacheKey)!;
     }
 
     let category = await prisma.category.findFirst({
@@ -74,7 +73,7 @@ async function getOrCreateCategory(
         });
     }
 
-    categoryCache.set(cacheKey, category.id);
+    cache.set(cacheKey, category.id);
     return category.id;
 }
 
@@ -93,56 +92,6 @@ async function getOrCreateCategory(
  * @param monoAccountId    The Monobank account ID — used as FinanceAccount.id
  * @param internalIbans    Optional set of IBANs belonging to the user
  */
-async function _bridgeTransaction(
-    row: BankTransactionRow,
-    userId: string,
-    monoAccountId: string,   // = FinanceAccount.id in the old finance module
-    internalIbans?: Set<string>
-): Promise<boolean> {
-    // Already bridged? Skip (idempotent)
-    const existing = await prisma.transaction.findUnique({
-        where: { id: row.monoTransactionId },
-        select: { id: true },
-    });
-    if (existing) return false;
-
-    const amount = Math.abs(row.amount) / 100;          // kopecks → hryvnias
-    const type: "income" | "expense" = row.amount > 0 ? "income" : "expense";
-    const description = row.description + (row.comment ? `: ${row.comment}` : "");
-
-    // Internal Transfer Detection
-    let isInternal = false;
-    if (internalIbans && row.counterIban && internalIbans.has(row.counterIban)) {
-        isInternal = true;
-    } else {
-        // Fallback to keyword detection for Monobank specific internal labels
-        const lowerDesc = description.toLowerCase();
-        if (lowerDesc.includes("своєї карти") || lowerDesc.includes("своєї картки") || lowerDesc.includes("свій рахунок")) {
-            // But only if it's a transfer MCC or similar
-            if (row.mcc === 4829 || row.mcc === 6538 || row.mcc === 6012) {
-                isInternal = true;
-            }
-        }
-    }
-
-    const categoryId = await getOrCreateCategory(userId, type, row.mcc, isInternal);
-
-    await prisma.transaction.create({
-        data: {
-            id: row.monoTransactionId,  // Monobank ID as PK = guaranteed dedup
-            userId,
-            accountId: monoAccountId,   // FinanceAccount.id = Monobank account ID
-            categoryId,
-            amount,
-            type,
-            date: row.time,
-            description,
-        },
-    });
-
-    return true;
-}
-
 /**
  * Bridge all BankTransactions for a given BankAccount that haven't been bridged yet.
  * Called after each sync to keep Finance table in sync.
@@ -161,7 +110,7 @@ export async function bridgeAccountTransactions(
     userId: string,
     since?: Date
 ): Promise<number> {
-    categoryCache.clear();
+    const localCategoryCache = new Map<string, string>();
 
     const rows = await prisma.bankTransaction.findMany({
         where: {
@@ -211,7 +160,7 @@ export async function bridgeAccountTransactions(
             }
         }
 
-        const categoryId = await getOrCreateCategory(userId, type, row.mcc, isInternal);
+        const categoryId = await getOrCreateCategory(userId, type, row.mcc, isInternal, localCategoryCache);
         resolvedCategories.set(row.monoTransactionId, categoryId);
     }
 
@@ -278,10 +227,10 @@ export async function ensureFinanceAccount(
         });
         console.log(`[bank.bridge] created FinanceAccount for ${monoAccountId}`);
     } else {
-        // Update balance
+        const role = meta.type === "fop" ? "tax" : "liquid";
         await prisma.financeAccount.update({
             where: { id: monoAccountId },
-            data: { balance: meta.balance, lastSyncedAt: new Date() },
+            data: { balance: meta.balance, name: meta.name, type: meta.type === "fop" ? "fop" : "bank", role, lastSyncedAt: new Date() },
         });
     }
 }

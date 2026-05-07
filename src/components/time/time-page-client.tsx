@@ -15,6 +15,7 @@ import {
   BarChart3,
   History,
   CalendarClock,
+  Download,
 } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
@@ -28,11 +29,15 @@ import {
   stopActive,
   getTasksForProject,
   createManualWorkEntry,
+  createManualBreakEntry,
   patchActiveTimer,
   updateWorkEntry,
   bulkUpdateTimeEntries,
   deleteTimeEntry,
   getWeeklySummary,
+  updateDailyTarget,
+  exportTimeCSV,
+  getWeekViewData,
 } from "@/app/dashboard/time/actions";
 
 import {
@@ -47,10 +52,16 @@ import {
 
 
 
+import { toast } from "sonner";
+
+import { calculateBreakAndWork } from "@/lib/time/break-calculator";
+import { formatDurationUa } from "@/lib/time/format-duration";
+
 import TimeTimeline from "@/components/time/time-timeline";
 import TimeEntriesList from "@/components/time/time-entries-list";
 import WorkEntryDialog from "@/components/time/work-entry-dialog";
 import { WeeklySparkline } from "@/components/time/weekly-sparkline";
+import WeekView from "@/components/time/week-view";
 
 import { TaskDialog } from "@/components/tasks/task-dialog";
 
@@ -63,6 +74,7 @@ type Entry = {
   endAt: Date | null;
   durationSec: number | null;
   note: string | null;
+  billable: boolean;
   project: { id: string; name: string } | null;
   task: { id: string; title: string } | null;
 };
@@ -88,16 +100,6 @@ function toLocalMinuteISO(d: Date) {
   return dfFormat(d, "yyyy-MM-dd'T'HH:mm");
 }
 
-function formatDurationUa(sec: number) {
-  const safe = Math.max(0, Math.floor(sec));
-  const h = Math.floor(safe / 3600);
-  const m = Math.floor((safe % 3600) / 60);
-
-  if (h <= 0) return `${m} хв`;
-  if (m <= 0) return `${h} год`;
-  return `${h} год ${m} хв`;
-}
-
 export default function TimePageClient({
   dateISO,
   timezone,
@@ -106,6 +108,7 @@ export default function TimePageClient({
   projects,
   tags,
   relevantTasks = [],
+  dailyTargetHours = 8,
 }: {
   dateISO: string;
   timezone: string;
@@ -122,6 +125,7 @@ export default function TimePageClient({
     dueAt: Date | null;
     priority: string;
   }>;
+  dailyTargetHours?: number;
 }) {
 
   const router = useRouter();
@@ -156,32 +160,12 @@ export default function TimePageClient({
   const isRunning = !!hydratedActiveTimer;
 
   const totals = React.useMemo(() => {
-    let work = 0;
-    let brk = 0;
-
-    // Враховуємо лише робочі записи
-    const workEntries = hydratedEntries
-      .filter((e) => e.type === "work")
-      .sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
-
-    for (let i = 0; i < workEntries.length; i++) {
-      const e = workEntries[i];
-      work += e.durationSec ?? 0;
-
-      // перерва - це проміжок між поточним endAt та наступним startAt (тільки для роботи)
-      if (i < workEntries.length - 1) {
-        const next = workEntries[i + 1];
-        if (e.endAt && next.startAt > e.endAt) {
-          brk += Math.floor((next.startAt.getTime() - e.endAt.getTime()) / 1000);
-        }
-      }
-    }
-
+    const { workSec: work, breakSec: brk } = calculateBreakAndWork(hydratedEntries);
     return { work, brk, total: work + brk };
   }, [entries]);
 
   // ✅ Active duration tick
-  const [now, setNow] = React.useState(() => Date.now());
+  const [tick, setTick] = React.useState(0);
   const activeStartedMs = React.useMemo(() => {
     if (!hydratedActiveTimer) return null;
     const d = hydratedActiveTimer.startedAt;
@@ -190,39 +174,40 @@ export default function TimePageClient({
 
   React.useEffect(() => {
     if (!activeStartedMs) return;
-    setNow(Date.now());
-    const t = window.setInterval(() => setNow(Date.now()), 1000);
+    setTick((t) => t + 1);
+    const t = window.setInterval(() => setTick((t) => t + 1), 1000);
     return () => window.clearInterval(t);
   }, [activeStartedMs]);
 
-  const activeDurationSec = activeTimer && activeStartedMs ? Math.max(0, Math.floor((now - activeStartedMs) / 1000)) : 0;
+  const activeDurationSec = activeTimer && activeStartedMs ? Math.max(0, Math.floor((Date.now() - activeStartedMs) / 1000)) : 0;
 
-  // Adjustable Daily Goal (default 8h)
-  const [goalHours, setGoalHours] = React.useState(8);
-  
-  // Load goal from localStorage on mount
+  const [goalHours, setGoalHours] = React.useState(dailyTargetHours);
+
   React.useEffect(() => {
-    const saved = localStorage.getItem("frona_daily_goal_hours");
-    if (saved) {
-      const parsed = parseInt(saved, 10);
-      if (!isNaN(parsed) && parsed >= 2 && parsed <= 24) {
-        setGoalHours(parsed);
-      }
-    }
-  }, []);
+    setGoalHours(dailyTargetHours);
+  }, [dailyTargetHours]);
 
   const GOAL_SEC = goalHours * 3600;
 
   const handleGoalChange = () => {
     const next = goalHours >= 12 ? 4 : goalHours + 2;
-    setGoalHours(next);
-    localStorage.setItem("frona_daily_goal_hours", next.toString());
+    startTransition(async () => {
+      await updateDailyTarget(next);
+      setGoalHours(next);
+      router.refresh();
+    });
   };
 
   // Audio Notification Logic
+  const audioCtxRef = React.useRef<AudioContext | null>(null);
+
   const playBeep = React.useCallback((freq = 440, duration = 0.2) => {
     try {
-      const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      }
+      const ctx = audioCtxRef.current;
+      if (ctx.state === "suspended") ctx.resume();
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
@@ -262,7 +247,8 @@ export default function TimePageClient({
   // --- Keyboard Shortcuts ---
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger if user is typing in an input/textarea
+      if (workDialogOpen || taskDialogOpen || isIdleDialogOpen) return;
+
       const target = e.target as HTMLElement;
       if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) return;
 
@@ -296,32 +282,38 @@ export default function TimePageClient({
     }
   }, [activeDurationSec, hydratedActiveTimer, playBeep]);
 
-  // Idle Detection Logic
+  // Idle Detection Logic — paused when tab is hidden
   const [isIdleDialogOpen, setIsIdleDialogOpen] = React.useState(false);
-  const [_idleAt, setIdleAt] = React.useState<number | null>(null);
   const IDLE_THRESHOLD_SEC = 5 * 60; // 5 minutes
 
   React.useEffect(() => {
     if (!activeTimer) {
-      setIdleAt(null);
       return;
     }
 
     let lastActivity = Date.now();
+    let isTabVisible = !document.hidden;
     const handleActivity = () => {
       if (isIdleDialogOpen) return;
       lastActivity = Date.now();
-      setIdleAt(null);
+    };
+
+    const handleVisibilityChange = () => {
+      isTabVisible = !document.hidden;
+      if (isTabVisible) {
+        lastActivity = Date.now();
+      }
     };
 
     window.addEventListener("mousemove", handleActivity);
     window.addEventListener("keydown", handleActivity);
     window.addEventListener("click", handleActivity);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     const checkInterval = window.setInterval(() => {
+      if (!isTabVisible) return;
       const inactiveSec = Math.floor((Date.now() - lastActivity) / 1000);
       if (inactiveSec >= IDLE_THRESHOLD_SEC && !isIdleDialogOpen) {
-        setIdleAt(lastActivity);
         setIsIdleDialogOpen(true);
       }
     }, 5000);
@@ -330,9 +322,57 @@ export default function TimePageClient({
       window.removeEventListener("mousemove", handleActivity);
       window.removeEventListener("keydown", handleActivity);
       window.removeEventListener("click", handleActivity);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.clearInterval(checkInterval);
     };
   }, [hydratedActiveTimer, isIdleDialogOpen]);
+
+  const breakReminderShownRef = React.useRef<string | null>(null);
+
+  React.useEffect(() => {
+    if (!hydratedActiveTimer || hydratedActiveTimer.mode !== "work") {
+      breakReminderShownRef.current = null;
+      return;
+    }
+    const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
+    const elapsed = Date.now() - hydratedActiveTimer.startedAt.getTime();
+    if (elapsed >= FOUR_HOURS_MS && breakReminderShownRef.current !== hydratedActiveTimer.startedAt.toISOString()) {
+      breakReminderShownRef.current = hydratedActiveTimer.startedAt.toISOString();
+      toast.warning("Ви працюєте вже 4 години. Рекомендуємо зробити перерву!");
+    }
+  }, [hydratedActiveTimer, activeDurationSec]);
+
+  const [viewMode, setViewMode] = React.useState<"day" | "week">("day");
+  const [weekViewData, setWeekViewData] = React.useState<Array<{
+    dateISO: string;
+    dayName: string;
+    workSec: number;
+    breakSec: number;
+    projects: Record<string, number>;
+  }> | null>(null);
+
+  React.useEffect(() => {
+    if (viewMode === "week") {
+      getWeekViewData(dateISO).then(setWeekViewData);
+    }
+  }, [viewMode, dateISO]);
+
+  const handleExportCSV = () => {
+    startTransition(async () => {
+      try {
+        const csv = await exportTimeCSV(dateISO);
+        const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `time-export-${dateISO}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+      } catch {
+        toast.error("Не вдалося експортувати CSV");
+      }
+    });
+  };
 
   const displayEntries = React.useMemo(() => hydratedEntries.filter(e => e.type === "work"), [hydratedEntries]);
 
@@ -346,23 +386,46 @@ export default function TimePageClient({
   // ✅ ГОЛОВНА КНОПКА (одна):
   // - якщо немає таймера -> старт work
   // - якщо є таймер (work/break) -> stopActive() (у тебе це toggle: work->break, break->stop)
+  const bcRef = React.useRef<BroadcastChannel | null>(null);
+
+  React.useEffect(() => {
+    if (typeof window === "undefined" || !("BroadcastChannel" in window)) return;
+    const bc = new BroadcastChannel("frona-timer");
+    bcRef.current = bc;
+
+    bc.onmessage = (e) => {
+      if (e.data?.type === "timer-change") {
+        router.refresh();
+      }
+    };
+
+    return () => bc.close();
+  }, [router]);
+
+  const notifyTimerChange = React.useCallback(() => {
+    bcRef.current?.postMessage({ type: "timer-change" });
+  }, []);
+
   const onMainTimerAction = () => {
     startTransition(async () => {
       if (!hydratedActiveTimer) {
-        await startWork({});
+        const res = await startWork({});
         router.refresh();
+        notifyTimerChange();
+        if (res?.tooShort != null && res.tooShort !== undefined) {
+          toast.info(`Запис < 1 хв не збережено (${res.tooShort}с)`);
+        } else {
+          toast.success("Роботу розпочато");
+        }
         return;
       }
 
-      await stopActive();
+      const res = await stopActive();
       router.refresh();
-    });
-  };
-
-  const _onStopFromMenu = () => {
-    startTransition(async () => {
-      await stopActive();
-      router.refresh();
+      notifyTimerChange();
+      if (res?.state === "none") {
+        toast.success("Таймер зупинено");
+      }
     });
   };
 
@@ -394,6 +457,7 @@ export default function TimePageClient({
 
   const [taskDialogOpen, setTaskDialogOpen] = React.useState(false);
   const [taskDialogProjectId, setTaskDialogProjectId] = React.useState<string | null>(null);
+  const [lastCreatedTask, setLastCreatedTask] = React.useState<{ id: string; projectId: string | null } | null>(null);
 
   // Timeline: only WORK segments. Break = empty space.
   const timelineEntries = React.useMemo(() => hydratedEntries.filter((e) => e.type === "work"), [hydratedEntries]);
@@ -470,6 +534,25 @@ export default function TimePageClient({
           </div>
 
           {/* Primary Actions */}
+          <div className="flex items-center rounded-lg border bg-background p-1 shadow-none">
+            <Button
+              size="sm"
+              variant={viewMode === "day" ? "secondary" : "ghost"}
+              className="h-8 px-3 text-xs"
+              onClick={() => setViewMode("day")}
+            >
+              День
+            </Button>
+            <Button
+              size="sm"
+              variant={viewMode === "week" ? "secondary" : "ghost"}
+              className="h-8 px-3 text-xs"
+              onClick={() => setViewMode("week")}
+            >
+              Тиждень
+            </Button>
+          </div>
+
           <Button
             variant="outline"
             className="h-10 gap-2"
@@ -492,6 +575,16 @@ export default function TimePageClient({
           >
             <Plus className="h-4 w-4" />
             <span>Додати запис</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            className="h-10 gap-2"
+            onClick={handleExportCSV}
+            disabled={pending}
+          >
+            <Download className="h-4 w-4" />
+            <span>Експорт CSV</span>
           </Button>
         </div>
       </div>
@@ -583,6 +676,8 @@ export default function TimePageClient({
       )}
 
 
+      {viewMode === "day" ? (
+      <>
       {/* Timeline */}
       <Card className="p-4 gap-0">
         <div className="flex items-start justify-between gap-6">
@@ -618,7 +713,15 @@ export default function TimePageClient({
                 </div>
                 <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-primary transition-all duration-1000 ease-out"
+                    className={cn(
+                      "h-full transition-all duration-1000 ease-out rounded-full",
+                      (() => {
+                        const pct = (totals.work + activeDurationSec) / GOAL_SEC;
+                        if (pct >= 1) return "bg-red-500";
+                        if (pct >= 0.8) return "bg-amber-500";
+                        return "bg-green-500";
+                      })()
+                    )}
                     style={{ width: `${Math.min(100, Math.floor(((totals.work + activeDurationSec) / GOAL_SEC) * 100))}%` }}
                   />
                 </div>
@@ -661,6 +764,21 @@ export default function TimePageClient({
                   note: undefined,
                 });
                 router.refresh();
+              });
+            }}
+            onSelectBreakRangeAction={(range) => {
+              startTransition(async () => {
+                try {
+                  await createManualBreakEntry({
+                    dateISO,
+                    startISO: toLocalMinuteISO(range.startAt),
+                    endISO: toLocalMinuteISO(range.endAt),
+                  });
+                  router.refresh();
+                  toast.success("Перерву створено");
+                } catch {
+                  toast.error("Не вдалося створити перерву");
+                }
               });
             }}
           />
@@ -761,13 +879,23 @@ export default function TimePageClient({
           }}
           onBulkUpdateAction={async (payload: { ids: string[]; projectId?: string | null; taskId?: string | null }) => {
             startTransition(async () => {
-              await bulkUpdateTimeEntries(payload);
-              router.refresh();
+              try {
+                await bulkUpdateTimeEntries(payload);
+                router.refresh();
+                toast.success("Записи оновлено");
+              } catch {
+                toast.error("Не вдалося оновити записи");
+              }
             });
           }}
           onHighlightAction={setHighlightedId}
+          activeTimerTick={tick}
         />
       </div>
+      </>
+      ) : (
+      <WeekView data={weekViewData} />
+      )}
 
       {/* Work entry dialog (create/edit) */}
       <WorkEntryDialog
@@ -789,11 +917,14 @@ export default function TimePageClient({
         }}
         initialRange={workInitialRange}
         entryId={editingWorkEntryId}
+        taskCreated={lastCreatedTask}
+        onTaskCreatedConsumedAction={() => setLastCreatedTask(null)}
         defaultProjectId={editingWorkEntry?.project?.id ?? null}
         defaultTaskId={editingWorkEntry?.task?.id ?? null}
         defaultStartAt={editingWorkEntry?.startAt ?? undefined}
         defaultEndAt={editingWorkEntry?.endAt ?? undefined}
-        onSaveAction={(payload: { startAt: Date; endAt: Date; projectId?: string | null; taskId?: string | null; note?: string | null }) => {
+        defaultBillable={editingWorkEntry?.billable ?? undefined}
+        onSaveAction={(payload: { startAt: Date; endAt: Date; projectId?: string | null; taskId?: string | null; note?: string | null; billable?: boolean }) => {
           startTransition(async () => {
             if (editingWorkEntryId) {
               await updateWorkEntry({
@@ -803,6 +934,7 @@ export default function TimePageClient({
                 projectId: payload.projectId ?? null,
                 taskId: payload.taskId ?? null,
                 note: payload.note ?? null,
+                billable: payload.billable ?? true,
               });
             } else {
               await createManualWorkEntry({
@@ -812,6 +944,7 @@ export default function TimePageClient({
                 projectId: payload.projectId ?? null,
                 taskId: payload.taskId ?? null,
                 note: payload.note ?? null,
+                billable: payload.billable ?? true,
               });
             }
             router.refresh();
@@ -819,8 +952,13 @@ export default function TimePageClient({
         }}
         onDeleteAction={async (id) => {
           startTransition(async () => {
-            await deleteTimeEntry(id);
-            router.refresh();
+            try {
+              await deleteTimeEntry(id);
+              router.refresh();
+              toast.success("Запис видалено");
+            } catch {
+              toast.error("Не вдалося видалити запис");
+            }
           });
         }}
         onStartTimerAction={async (payload: { projectId?: string | null; taskId?: string | null }) => {
@@ -845,6 +983,7 @@ export default function TimePageClient({
         projects={projects}
         tags={tags}
         defaultProjectId={taskDialogProjectId}
+        onCreated={(t) => setLastCreatedTask(t)}
       />
 
       {/* Shortcuts Legend */}

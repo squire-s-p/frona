@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 
-import { startTimer } from "@/app/dashboard/time/actions";
+import { startWork } from "@/app/dashboard/time/actions";
 import { Button } from "@/components/ui/button";
 import { PlayIcon } from "@/components/icons/play-icon";
 
@@ -29,9 +29,11 @@ type TaskLite = { id: string; title: string };
 export function StartTimerDialog({
   projects = [],
   tasksByProject = {},
+  activeTimer,
 }: {
   projects?: ProjectLite[];
   tasksByProject?: Record<string, TaskLite[]>;
+  activeTimer?: { mode: string; projectId?: string | null; taskId?: string | null; startedAt: string } | null;
 }) {
   const router = useRouter();
 
@@ -42,12 +44,14 @@ export function StartTimerDialog({
 
   const tasks = projectId ? tasksByProject[projectId] ?? [] : [];
 
+  const isTimerRunning = !!activeTimer;
+
   async function onStart() {
     if (!projectId) return;
 
     try {
       setPending(true);
-      await startTimer(projectId, taskId || undefined);
+      await startWork({ projectId, taskId: taskId || undefined });
 
       setOpen(false);
       setProjectId("");
@@ -86,7 +90,17 @@ export function StartTimerDialog({
           <DialogTitle>Почати облік часу</DialogTitle>
         </DialogHeader>
 
-        {projects.length === 0 ? (
+        {isTimerRunning ? (
+          <div className="flex flex-col gap-3">
+            <div className="rounded-xl border bg-card p-3 text-sm text-muted-foreground">
+              Таймер вже запущено{activeTimer?.projectId ? ` для проєкту` : ""}.
+              Перейдіть на сторінку часу для управління.
+            </div>
+            <Button asChild className="w-full rounded-xl">
+              <a href="/dashboard/time">Перейти до часу</a>
+            </Button>
+          </div>
+        ) : projects.length === 0 ? (
           <div className="flex flex-col gap-3">
             <div className="rounded-xl border bg-card p-3 text-sm text-muted-foreground">
               Проєкти ще не підʼєднані до Topbar. Потрібно передати їх із

@@ -101,6 +101,7 @@ export async function upsertBankAccount(
         creditLimit: bigint;
         iban: string | null;
         maskedPan: string[];
+        bankConnectionId?: string | null;
     }
 ) {
     return prisma.bankAccount.upsert({
@@ -116,7 +117,7 @@ export async function upsertBankAccount(
             creditLimit: data.creditLimit,
             iban: data.iban,
             maskedPan: data.maskedPan,
-            // monoToken not updated — prevents accidental token replacement
+            ...(data.bankConnectionId !== undefined ? { bankConnectionId: data.bankConnectionId } : {}),
         },
     });
 }

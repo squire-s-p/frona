@@ -1,19 +1,23 @@
 "use server";
 
-import { getAuthSession } from "@/lib/auth-session";
+import { requireUser } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, startOfDay, endOfDay, subDays } from "date-fns";
+import {
+  getUtcTodayRange,
+  getUtcMonthRange,
+  getUtcMonthRangeFromISO,
+  getUtcWeekRange,
+  getLocalDayOfWeek,
+  getZonedParts,
+} from "@/lib/time/day-range";
 
 export async function updateDashboardActivityLayoutAction(layout: any) {
   try {
-    const session = await getAuthSession();
-    if (!session?.user?.id) {
-      return { error: "Ви не авторизовані" };
-    }
+    const user = await requireUser();
 
     await prisma.user.update({
-      where: { id: session.user.id },
+      where: { id: user.id },
       data: {
         dashboardLayout: layout,
       },
@@ -28,124 +32,111 @@ export async function updateDashboardActivityLayoutAction(layout: any) {
 }
 
 export async function getFullDashboardData() {
-  const session = await getAuthSession();
-  if (!session?.user?.id) throw new Error("Unauthorized");
+  const user = await requireUser();
+  const tz = user.timezone || "Europe/Kyiv";
 
-  const userId = session.user.id;
+  const today = getUtcTodayRange(tz);
+  const { start: monthStart, end: monthEnd } = getUtcMonthRange(tz);
+  const { start: weekStart, end: weekEnd } = getUtcWeekRange(tz);
+
   const now = new Date();
-  const monthStart = startOfMonth(now);
-  const monthEnd = endOfMonth(now);
-  const weekStart = startOfWeek(now, { weekStartsOn: 1 });
-  const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
+
+  // Previous month range
+  const p = getZonedParts(now, tz);
+  const prevM = p.month === 1 ? 12 : p.month - 1;
+  const prevY = p.month === 1 ? p.year - 1 : p.year;
+  const prevMonthFirstISO = `${prevY}-${String(prevM).padStart(2, "0")}-01`;
+  const { start: prevMonthStart, end: prevMonthEnd } = getUtcMonthRangeFromISO(prevMonthFirstISO, tz);
 
   const [
-    // Time
     monthlyWork,
     weeklyEntries,
     activeTimer,
     todayWork,
 
-    // Projects
     activeProjects,
     recentProjects,
 
-    // Tasks
     pendingTasks,
     overdueTasks,
 
-    // Finance
     financeAccounts,
     monthlyIncome,
     monthlyExpense,
     recentTransactions,
 
-    // Notes
     recentNotes,
     pinnedNotesCount,
 
-    // Clients
     activeClientsCount,
     allClientsRevenue,
 
-    // Statistics
     prevMonthWork,
     transactionsByClient,
     urgentTasks,
     completedTasksToday,
     totalTasksToday,
   ] = await Promise.all([
-    // Total time this month
     prisma.timeEntry.aggregate({
-      where: { userId, type: "work", startAt: { gte: monthStart, lte: monthEnd } },
+      where: { userId: user.id, type: "work", startAt: { gte: monthStart, lte: monthEnd } },
       _sum: { durationSec: true },
     }),
 
-    // Daily hours this week (for bar chart)
     prisma.timeEntry.findMany({
-      where: { userId, type: "work", startAt: { gte: weekStart, lte: weekEnd } },
+      where: { userId: user.id, type: "work", startAt: { gte: weekStart, lte: weekEnd } },
       select: { startAt: true, durationSec: true },
     }),
 
-    // Active timer from ActiveTimer model
     prisma.activeTimer.findUnique({
-      where: { userId },
+      where: { userId: user.id },
       include: {
         project: { select: { name: true } },
         task: { select: { title: true } },
       },
     }),
 
-    // Today's work
     prisma.timeEntry.aggregate({
-      where: { userId, type: "work", startAt: { gte: startOfDay(now) } },
+      where: { userId: user.id, type: "work", startAt: { gte: today.start } },
       _sum: { durationSec: true },
     }),
 
-    // Active projects count
     prisma.project.count({
-      where: { userId, status: "active" },
+      where: { userId: user.id, status: "active" },
     }),
 
-    // Recent projects
     prisma.project.findMany({
-      where: { userId, status: "active" },
+      where: { userId: user.id, status: "active" },
       orderBy: { updatedAt: "desc" },
       take: 4,
       select: { id: true, name: true, updatedAt: true, clientId: true, client: { select: { name: true } } },
     }),
 
-    // Pending tasks
     prisma.task.count({
-      where: { userId, status: { in: ["todo", "doing"] } },
+      where: { userId: user.id, status: { in: ["todo", "doing"] } },
     }),
 
-    // Overdue tasks (past due date, not done)
     prisma.task.count({
-      where: { userId, status: { in: ["todo", "doing"] }, dueAt: { lt: now } },
+      where: { userId: user.id, status: { in: ["todo", "doing"] }, dueAt: { lt: now } },
     }),
 
-    // Finance accounts
     prisma.financeAccount.findMany({
-      where: { userId },
+      where: { userId: user.id },
       select: { id: true, name: true, balance: true, currency: true, type: true },
       orderBy: { balance: "desc" },
     }),
 
-    // Monthly income
     prisma.transaction.aggregate({
-      where: { userId, type: "income", date: { gte: monthStart, lte: monthEnd } },
+      where: { userId: user.id, type: "income", date: { gte: monthStart, lte: monthEnd } },
       _sum: { amount: true },
     }),
 
-    // Monthly expense
     prisma.transaction.aggregate({
-      where: { userId, type: "expense", date: { gte: monthStart, lte: monthEnd } },
+      where: { userId: user.id, type: "expense", date: { gte: monthStart, lte: monthEnd } },
       _sum: { amount: true },
     }),
 
-    // Recent transactions
     prisma.transaction.findMany({
-      where: { userId },
+      where: { userId: user.id },
       orderBy: { date: "desc" },
       take: 5,
       select: {
@@ -154,57 +145,47 @@ export async function getFullDashboardData() {
       },
     }),
 
-    // Recent notes (not archived)
     prisma.note.findMany({
-      where: { userId, isArchived: false },
+      where: { userId: user.id, isArchived: false },
       orderBy: { updatedAt: "desc" },
       take: 4,
       select: { id: true, title: true, updatedAt: true, content: true },
     }),
 
-    // Pinned notes
     prisma.note.count({
-      where: { userId, isFavorite: true, isArchived: false }
+      where: { userId: user.id, isFavorite: true, isArchived: false }
     }),
 
-    // Clients
     prisma.client.count({
-      where: { userId }
+      where: { userId: user.id }
     }),
 
-    // Clients Revenue (Top)
     prisma.transaction.groupBy({
       by: ["clientId"],
-      where: { userId, type: "income", clientId: { not: null } },
+      where: { userId: user.id, type: "income", clientId: { not: null } },
       _sum: { amount: true },
       orderBy: { _sum: { amount: "desc" } },
       take: 5
     }),
 
-    // Previous month total work
     prisma.timeEntry.aggregate({
       where: {
-        userId,
+        userId: user.id,
         type: "work",
-        startAt: {
-          gte: startOfMonth(subDays(monthStart, 1)),
-          lte: endOfMonth(subDays(monthStart, 1))
-        }
+        startAt: { gte: prevMonthStart, lte: prevMonthEnd }
       },
       _sum: { durationSec: true }
     }),
 
-    // Revenue by client (only this month)
     prisma.transaction.groupBy({
       by: ["clientId"],
-      where: { userId, type: "income", date: { gte: monthStart, lte: monthEnd }, clientId: { not: null } },
+      where: { userId: user.id, type: "income", date: { gte: monthStart, lte: monthEnd }, clientId: { not: null } },
       _sum: { amount: true }
     }),
 
-    // Urgent tasks (due in next 3 days)
     prisma.task.findMany({
       where: {
-        userId,
+        userId: user.id,
         status: { in: ["todo", "doing"] },
         dueAt: { not: null, gt: now }
       },
@@ -213,24 +194,21 @@ export async function getFullDashboardData() {
       select: { id: true, title: true, dueAt: true, priority: true, status: true }
     }),
 
-    // Tasks completion today
     prisma.task.count({
-      where: { userId, status: "done", updatedAt: { gte: startOfDay(now) } }
+      where: { userId: user.id, status: "done", updatedAt: { gte: today.start } }
     }),
 
-    // Total tasks for today (either due today or updated to done today)
     prisma.task.count({
-      where: { 
-        userId, 
+      where: {
+        userId: user.id,
         OR: [
-          { dueAt: { gte: startOfDay(now), lte: endOfDay(now) } },
-          { status: "done", updatedAt: { gte: startOfDay(now) } }
+          { dueAt: { gte: today.start, lte: today.end } },
+          { status: "done", updatedAt: { gte: today.start } }
         ]
       }
     }),
   ]);
 
-  // Clients for all-time revenue mapping
   const topClientIds = allClientsRevenue.map((t) => t.clientId).filter(Boolean) as string[];
   const topClients = await prisma.client.findMany({
     where: { id: { in: topClientIds } },
@@ -243,7 +221,6 @@ export async function getFullDashboardData() {
     value: Number(t._sum.amount || 0)
   }));
 
-  // Map clients names for revenue
   const clientIds = transactionsByClient.map((t) => t.clientId as string);
   const clients = await prisma.client.findMany({
     where: { id: { in: clientIds } },
@@ -256,19 +233,16 @@ export async function getFullDashboardData() {
     value: Number(t._sum.amount || 0)
   }));
 
-  // Build weekly chart data: group by day Mon-Sun
   const dailyMap: Record<number, number> = {};
   weeklyEntries.forEach((e) => {
-    const day = e.startAt.getDay(); // 0=Sun, 1=Mon... 6=Sat
+    const day = getLocalDayOfWeek(e.startAt, tz);
     dailyMap[day] = (dailyMap[day] || 0) + (e.durationSec || 0);
   });
-  // ISO week: Mon(1) -> Sun(0), map to [Mon, Tue, Wed, Thu, Fri, Sat, Sun]
   const weeklyHours = [1, 2, 3, 4, 5, 6, 0].map((dow: number) =>
     Math.round(((dailyMap[dow] || 0) / 3600) * 10) / 10
   );
 
   return {
-    // Time
     totalDuration: monthlyWork._sum.durationSec ?? 0,
     todayDuration: todayWork._sum.durationSec ?? 0,
     hasActiveTimer: !!activeTimer,
@@ -276,7 +250,6 @@ export async function getFullDashboardData() {
     activeTaskName: activeTimer?.task?.title,
     weeklyHours,
 
-    // Projects
     projectCount: activeProjects,
     recentProjects: recentProjects.map((p) => ({
       id: p.id,
@@ -285,11 +258,9 @@ export async function getFullDashboardData() {
       updatedAt: p.updatedAt.toISOString(),
     })),
 
-    // Tasks
     pendingTasksCount: pendingTasks,
     overdueTasksCount: overdueTasks,
 
-    // Finance
     financeAccounts: financeAccounts.map((a) => ({
       name: a.name,
       balance: Number(a.balance),
@@ -306,7 +277,6 @@ export async function getFullDashboardData() {
       date: t.date.toISOString(),
     })),
 
-    // Statistics
     prevMonthDuration: prevMonthWork._sum.durationSec ?? 0,
     revenueByClient,
     urgentTasks: urgentTasks.map((t) => ({
@@ -316,7 +286,6 @@ export async function getFullDashboardData() {
       priority: t.priority
     })),
 
-    // Recent notes
     recentNotes: recentNotes.map((n) => ({
       id: n.id,
       title: n.title,
@@ -325,11 +294,9 @@ export async function getFullDashboardData() {
     })),
     pinnedNotesCount,
 
-    // Clients
     activeClientsCount,
     topClientsRevenue,
 
-    // Tasks Statistics
     completedTasksToday,
     totalTasksToday,
     taskCompletionRate: totalTasksToday > 0 ? Math.round((completedTasksToday / totalTasksToday) * 100) : 0,

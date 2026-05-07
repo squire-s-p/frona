@@ -2,17 +2,10 @@
 
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
-import { getAuthSession } from "@/lib/auth-session";
 import { getMonobankClient } from "@/lib/monobank";
 import { revalidatePath } from "next/cache";
 import { format } from "date-fns";
-import { redirect } from "next/navigation";
-
-async function requireUser() {
-    const session = await getAuthSession();
-    if (!session?.user) redirect("/login");
-    return session.user;
-}
+import { requireUser } from "@/lib/require-user";
 
 // ─── Legacy Monobank Sync Removed ──────────────────────────────────────────────
 // Now using /modules/bank for all synchronization logic.
@@ -57,7 +50,7 @@ export async function getRecentTransactions(limit = 10, offset = 0, filters?: {
 }) {
     const user = await requireUser();
 
-    const txWhere: Prisma.TransactionWhereInput = { userId: user.id };
+    const txWhere: Prisma.TransactionWhereInput = { userId: user.id, NOT: { amount: 0, note: "[SPLIT]" } };
     const transferWhere: Prisma.TransferWhereInput = { userId: user.id };
 
     if (filters) {
@@ -112,12 +105,10 @@ export async function getRecentTransactions(limit = 10, offset = 0, filters?: {
         }
     }
 
-    // 1. Отримуємо транзакції
-    // Використовуємо skip/take для кожної таблиці окремо, щоб не тягнути забагато даних.
-    // Оскільки ми не знаємо точного співвідношення між tx та transfers,
-    // беремо запас (offset + limit) з обох.
-    // Always start from beginning since sorting happens after merge
-    const take = offset + limit + 50;
+    // 1. Отримуємо транзакції та трансфери
+    // Для особистих фінансів обсяг даних невеликий — беремо розумний ліміт
+    // і робимо пагінацію in-memory після merge
+    const MAX_ROWS = 500;
 
     const txs = await prisma.transaction.findMany({
         where: txWhere,
@@ -127,7 +118,7 @@ export async function getRecentTransactions(limit = 10, offset = 0, filters?: {
             project: true,
         },
         orderBy: [{ date: "desc" }, { createdAt: "desc" }, { id: "desc" }],
-        take: take,
+        take: MAX_ROWS,
     });
 
     // 2. Отримуємо трансфери
@@ -138,7 +129,7 @@ export async function getRecentTransactions(limit = 10, offset = 0, filters?: {
             toAccount: true,
         },
         orderBy: [{ date: "desc" }, { createdAt: "desc" }, { id: "desc" }],
-        take: take,
+        take: MAX_ROWS,
     });
 
     // 3. Об'єднуємо та нормалізуємо
@@ -350,42 +341,37 @@ export async function getSpendingAnalytics() {
         .reverse();
 }
 
-// Внутрішній кеш для курсів валют (щоб не бити API Monobank частіше разу на годину)
-let ratesCache: { data: { USD: number; EUR: number }; timestamp: number } | null = null;
+// Внутрішній кеш для курсів валют — using unstable_cache for serverless safety
+import { unstable_cache } from "next/cache";
+
+const FALLBACK_RATES = { USD: 41.5, EUR: 45.0 };
+
+async function fetchExchangeRatesFromApi(): Promise<{ USD: number; EUR: number }> {
+    const mono = getMonobankClient();
+    const rates = await mono.getCurrencyRates();
+    const usd = rates.find(r => r.currencyCodeA === 840 && r.currencyCodeB === 980);
+    const eur = rates.find(r => r.currencyCodeA === 978 && r.currencyCodeB === 980);
+    return {
+        USD: usd?.rateBuy || usd?.rateCross || FALLBACK_RATES.USD,
+        EUR: eur?.rateBuy || eur?.rateCross || FALLBACK_RATES.EUR
+    };
+}
+
+const getCachedRates = unstable_cache(
+    fetchExchangeRatesFromApi,
+    ["exchange-rates"],
+    { revalidate: 3600 }
+);
 
 /**
  * Отримати курси валют (USD, EUR -> UAH)
  */
 export async function getExchangeRates() {
-    // Якщо є свіжий кеш (менше 1 години), повертаємо його
-    if (ratesCache && Date.now() - ratesCache.timestamp < 3600000) {
-        return ratesCache.data;
-    }
-
-    const mono = getMonobankClient();
     try {
-        const rates = await mono.getCurrencyRates();
-
-        // 980 = UAH, 840 = USD, 978 = EUR
-        const usd = rates.find(r => r.currencyCodeA === 840 && r.currencyCodeB === 980);
-        const eur = rates.find(r => r.currencyCodeA === 978 && r.currencyCodeB === 980);
-
-        const data = {
-            USD: usd?.rateBuy || usd?.rateCross || 41.5,
-            EUR: eur?.rateBuy || eur?.rateCross || 45.0
-        };
-
-        // Оновлюємо кеш
-        ratesCache = { data, timestamp: Date.now() };
-
-        return data;
+        return await getCachedRates();
     } catch (error) {
-        console.error("Failed to fetch rates from Monobank:", error);
-
-        // Якщо помилка (наприклад, Too Many Requests) - пробуємо повернути старий кеш, навіть якщо він прострочений
-        if (ratesCache) return ratesCache.data;
-
-        return { USD: 41.5, EUR: 45.0 }; // Fallback
+        console.error("Failed to fetch rates:", error);
+        return FALLBACK_RATES;
     }
 }
 
@@ -426,20 +412,27 @@ export async function getBudgets() {
         include: { category: true }
     });
 
-    const budgetsWithProgress = await Promise.all(budgets.map(async (b) => {
-        const spent = await prisma.transaction.aggregate({
-            where: {
-                userId: user.id,
-                categoryId: b.categoryId,
-                type: "expense",
-                date: { gte: startOfMonth }
-            },
-            _sum: { amount: true }
-        });
+    if (budgets.length === 0) return [];
 
+    const categoryIds = budgets.map(b => b.categoryId);
+
+    const spentByCategory = await prisma.transaction.groupBy({
+        by: ['categoryId'],
+        where: {
+            userId: user.id,
+            categoryId: { in: categoryIds },
+            type: "expense",
+            date: { gte: startOfMonth }
+        },
+        _sum: { amount: true }
+    });
+
+    const spentMap = new Map(spentByCategory.map(r => [r.categoryId, Number(r._sum.amount || 0)]));
+
+    const budgetsWithProgress = budgets.map(b => {
         const amount = Number(b.amount);
-        const used = Number(spent._sum.amount || 0);
-        const percentage = Math.round((used / amount) * 100);
+        const used = spentMap.get(b.categoryId) || 0;
+        const percentage = amount > 0 ? Math.round((used / amount) * 100) : 0;
 
         return {
             id: b.id,
@@ -448,7 +441,7 @@ export async function getBudgets() {
             spent: used,
             percentage
         };
-    }));
+    });
 
     return budgetsWithProgress.sort((a, b) => b.percentage - a.percentage);
 }
@@ -477,9 +470,6 @@ export async function getFinancialStats(period: "month" | "year" = "month") {
             userId: user.id,
             type: "expense",
             date: { gte: startDate },
-            category: {
-                name: { notIn: ["Внутрішній переказ"] }
-            }
         },
         _sum: { amount: true },
         orderBy: {
@@ -487,31 +477,37 @@ export async function getFinancialStats(period: "month" | "year" = "month") {
         }
     });
 
-    const categoryStats = await Promise.all(expensesByCategory.map(async (item) => {
-        const category = await prisma.category.findUnique({
-            where: { id: item.categoryId }
-        });
-        return {
-            name: category?.name || "Інше",
-            value: Number(item._sum.amount),
-            fill: "" // Буде заповнено на клієнті
-        };
+    const transferCategoryIdSet = new Set<string>();
+    const transferCategories = await prisma.category.findMany({
+        where: { userId: user.id, name: "Внутрішній переказ" },
+        select: { id: true },
+    });
+    transferCategories.forEach((c) => transferCategoryIdSet.add(c.id));
+
+    const filteredExpenses = expensesByCategory
+        .filter((item) => !transferCategoryIdSet.has(item.categoryId));
+
+    // Batch fetch all needed categories at once instead of N+1
+    const categoryIds = filteredExpenses.map(item => item.categoryId);
+    const categories = await prisma.category.findMany({
+        where: { id: { in: categoryIds } },
+        select: { id: true, name: true },
+    });
+    const categoryMap = new Map(categories.map(c => [c.id, c.name]));
+
+    const categoryStats = filteredExpenses.map((item) => ({
+        name: categoryMap.get(item.categoryId) || "Інше",
+        value: Number(item._sum.amount),
+        fill: ""
     }));
 
-    // 2. Cash Flow (Income vs Expense)
-    const exclusionFilter = {
-        category: {
-            name: { notIn: ["Внутрішній переказ"] }
-        }
-    };
-
     const income = await prisma.transaction.aggregate({
-        where: { userId: user.id, type: "income", date: { gte: startDate }, ...exclusionFilter },
+        where: { userId: user.id, type: "income", date: { gte: startDate }, categoryId: { notIn: [...transferCategoryIdSet] } },
         _sum: { amount: true }
     });
 
     const expense = await prisma.transaction.aggregate({
-        where: { userId: user.id, type: "expense", date: { gte: startDate }, ...exclusionFilter },
+        where: { userId: user.id, type: "expense", date: { gte: startDate }, categoryId: { notIn: [...transferCategoryIdSet] } },
         _sum: { amount: true }
     });
 
@@ -617,6 +613,7 @@ export async function createRecurringPayment(data: {
     amount: number;
     frequency: string;
     nextPaymentDate: Date;
+    type?: "income" | "expense";
     category?: string;
     accountId?: string;
     affectsForecast?: boolean;
@@ -628,8 +625,8 @@ export async function createRecurringPayment(data: {
             data: {
                 userId: user.id,
                 name: data.name,
-                amount: data.amount,
-                type: data.amount > 0 ? "income" : "expense",
+                amount: Math.abs(data.amount),
+                type: data.type || (data.amount >= 0 ? "income" : "expense"),
                 frequency: data.frequency,
                 nextPaymentDate: data.nextPaymentDate,
                 categoryId: data.category,
@@ -697,6 +694,16 @@ export async function createShoppingItem(data: { name: string; url?: string; pri
  */
 async function scrapePrice(url: string): Promise<{ price: number | null, siteName: string | null }> {
     try {
+        const parsedUrl = new URL(url);
+        const blockedHosts = ["localhost", "127.0.0.1", "0.0.0.0", "::1", "169.254.", "10.", "172.16.", "172.17.", "172.18.", "172.19.", "172.20.", "172.21.", "172.22.", "172.23.", "172.24.", "172.25.", "172.26.", "172.27.", "172.28.", "172.29.", "172.30.", "172.31.", "192.168.", "100.64.", "198.18.", "metadata.google.internal", "metadata.azure.com"];
+        const hostname = parsedUrl.hostname.toLowerCase();
+        if (blockedHosts.some((h) => hostname === h || hostname.endsWith("." + h) || hostname.startsWith(h))) {
+            return { price: null, siteName: null };
+        }
+        if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+            return { price: null, siteName: null };
+        }
+
         const response = await fetch(url, {
             headers: {
                 // Mimic a real browser to avoid 403 blocks
@@ -779,9 +786,13 @@ async function scrapePrice(url: string): Promise<{ price: number | null, siteNam
  * Додати посилання до товару
  */
 export async function addShoppingLink(itemId: string, url: string) {
-    await requireUser();
+    const user = await requireUser();
     try {
-        // Scrape price
+        const item = await prisma.shoppingItem.findFirst({
+            where: { id: itemId, userId: user.id },
+        });
+        if (!item) return { success: false, error: "Item not found" };
+
         const { price, siteName } = await scrapePrice(url);
 
         await prisma.shoppingLink.create({
@@ -971,7 +982,7 @@ export async function applySmartCategorization(data: {
         await prisma.transaction.updateMany({
             where: {
                 userId: user.id,
-                description: data.description
+                description: { equals: data.description, mode: 'insensitive' }
             },
             data: updateData as Prisma.TransactionUncheckedUpdateManyInput
         });
@@ -980,7 +991,7 @@ export async function applySmartCategorization(data: {
         const existingRule = await prisma.automationRule.findFirst({
             where: {
                 userId: user.id,
-                pattern: data.description,
+                pattern: { equals: data.description, mode: 'insensitive' },
                 type: 'category'
             }
         });

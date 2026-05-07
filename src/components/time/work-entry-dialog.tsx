@@ -2,17 +2,27 @@
 
 import * as React from "react";
 import { differenceInMinutes, format, parse } from "date-fns";
-import { Check, ChevronsUpDown, Plus } from "lucide-react";
-
 import { cn } from "@/lib/utils";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { TimePicker } from "@/components/ui/time-picker";
+import { toast } from "sonner";
+import { Textarea } from "@/components/ui/textarea";
+import { Combobox } from "@/components/time/combobox";
 
 type Project = { id: string; name: string };
 type Task = { id: string; title: string };
@@ -21,6 +31,7 @@ type SavePayload = {
   projectId?: string | null;
   taskId?: string | null;
   note?: string | null;
+  billable?: boolean;
   startAt: Date;
   endAt: Date;
 };
@@ -51,6 +62,7 @@ type Props = {
   defaultTagIds?: string[];
   defaultStartAt?: Date;
   defaultEndAt?: Date;
+  defaultBillable?: boolean;
 
   /** NEW: prefill from timeline selection (optional, non-breaking) */
   initialRange?: { startAt: Date; endAt: Date } | null;
@@ -83,93 +95,6 @@ function formatDurationMinutes(mins: number) {
   return `${h} год ${m} хв`;
 }
 
-function Combobox({
-  value,
-  onChange,
-  items,
-  placeholder,
-  emptyText,
-  disabled,
-  actionLabel,
-  actionDisabled,
-  onAction,
-}: {
-  value: string | null;
-  onChange: (next: string) => void;
-  items: Array<{ value: string; label: string }>;
-  placeholder: string;
-  emptyText: string;
-  disabled?: boolean;
-
-  actionLabel?: string;
-  actionDisabled?: boolean;
-  onAction?: () => void;
-}) {
-  const [open, setOpen] = React.useState(false);
-  const selected = items.find((i) => i.value === value) ?? null;
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="w-full justify-between"
-          disabled={disabled}
-        >
-          <span className={cn("truncate", !selected && "text-muted-foreground")}>
-            {selected ? selected.label : placeholder}
-          </span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-        <Command>
-          <CommandInput placeholder="Пошук..." />
-          <CommandEmpty>{emptyText}</CommandEmpty>
-
-          <CommandGroup>
-            {items.map((i) => (
-              <CommandItem
-                key={i.value}
-                value={i.label}
-                onSelect={() => {
-                  onChange(i.value);
-                  setOpen(false);
-                }}
-              >
-                <Check className={cn("mr-2 h-4 w-4", value === i.value ? "opacity-100" : "opacity-0")} />
-                <span className="truncate">{i.label}</span>
-              </CommandItem>
-            ))}
-
-            {actionLabel ? (
-              <>
-                <div className="my-1 h-px bg-border" />
-                <CommandItem
-                  value={actionLabel}
-                  disabled={actionDisabled}
-                  onSelect={() => {
-                    if (actionDisabled) return;
-                    onAction?.();
-                    setOpen(false);
-                  }}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  {actionLabel}
-                </CommandItem>
-              </>
-            ) : null}
-          </CommandGroup>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  );
-}
-
 export default function WorkEntryDialog({
   open,
   onOpenChangeAction,
@@ -183,6 +108,7 @@ export default function WorkEntryDialog({
   defaultTaskId,
   defaultStartAt,
   defaultEndAt,
+  defaultBillable,
   initialRange,
   entryId,
   onSaveAction,
@@ -194,6 +120,8 @@ export default function WorkEntryDialog({
   const [tasks, setTasks] = React.useState<Task[]>([]);
   const [tasksLoading, setTasksLoading] = React.useState(false);
   const [taskId, setTaskId] = React.useState<string | null>(null);
+  const [note, setNote] = React.useState("");
+  const [billable, setBillable] = React.useState(true);
 
   const [start, setStart] = React.useState("09:00");
   const [end, setEnd] = React.useState("10:00");
@@ -201,6 +129,7 @@ export default function WorkEntryDialog({
 
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (!open) return;
@@ -218,6 +147,8 @@ export default function WorkEntryDialog({
 
     setProjectId(defaultProjectId ?? null);
     setTaskId(defaultTaskId ?? null);
+    setNote("");
+    setBillable(defaultBillable ?? true);
 
     setError(null);
   }, [
@@ -226,6 +157,7 @@ export default function WorkEntryDialog({
     defaultTaskId,
     defaultStartAt,
     defaultEndAt,
+    defaultBillable,
     initialRange?.startAt,
     initialRange?.endAt,
   ]);
@@ -357,7 +289,8 @@ export default function WorkEntryDialog({
     const payload: SavePayload = {
       projectId: projectId ?? null,
       taskId: projectId ? (taskId ?? null) : null,
-      note: null,
+      note: note.trim() || null,
+      billable,
       startAt,
       endAt,
     };
@@ -366,8 +299,10 @@ export default function WorkEntryDialog({
       setSaving(true);
       await onSaveAction(payload);
       onOpenChangeAction(false);
+      toast.success(entryId ? "Запис оновлено" : "Запис створено");
     } catch {
       setError("Не вдалося зберегти запис. Спробуй ще раз.");
+      toast.error("Не вдалося зберегти запис");
     } finally {
       setSaving(false);
     }
@@ -406,6 +341,7 @@ export default function WorkEntryDialog({
                 items={projectItems}
                 placeholder="Вибрати проєкт"
                 emptyText="Немає проєктів"
+                clearable
               />
             </div>
 
@@ -453,6 +389,26 @@ export default function WorkEntryDialog({
             </div>
           </div>
 
+          <div className="grid gap-2">
+            <Label>Примітка</Label>
+            <Textarea
+              placeholder="Що робили..."
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              rows={2}
+              className="resize-none"
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="billable"
+              checked={billable}
+              onCheckedChange={(v) => setBillable(Boolean(v))}
+            />
+            <Label htmlFor="billable" className="text-sm cursor-pointer">Оплачуваний</Label>
+          </div>
+
           {error ? <div className="text-sm text-destructive">{error}</div> : null}
 
           <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-2 border-t pt-4">
@@ -466,25 +422,49 @@ export default function WorkEntryDialog({
             </div>
 
             {entryId && onDeleteAction && (
-              <Button
-                type="button"
-                variant="ghost"
-                className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                onClick={async () => {
-                  setSaving(true);
-                  try {
-                    await onDeleteAction(entryId);
-                    onOpenChangeAction(false);
-                  } catch {
-                    setError("Не вдалося видалити запис.");
-                  } finally {
-                    setSaving(false);
-                  }
-                }}
-                disabled={saving}
-              >
-                Видалити
-              </Button>
+              <>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={() => setDeleteConfirmOpen(true)}
+                  disabled={saving}
+                >
+                  Видалити
+                </Button>
+                <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Видалити запис?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Ви впевнені, що хочете видалити цей запис?
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Скасувати</AlertDialogCancel>
+                      <AlertDialogAction
+                        className="bg-destructive hover:bg-destructive/90"
+                        onClick={() => {
+                          setDeleteConfirmOpen(false);
+                          setSaving(true);
+                          onDeleteAction(entryId)
+                            .then(() => {
+                              onOpenChangeAction(false);
+                              toast.success("Запис видалено");
+                            })
+                            .catch(() => {
+                              setError("Не вдалося видалити запис.");
+                              toast.error("Не вдалося видалити запис");
+                            })
+                            .finally(() => setSaving(false));
+                        }}
+                      >
+                        Видалити
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </>
             )}
           </div>
         </div>

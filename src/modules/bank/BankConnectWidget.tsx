@@ -73,29 +73,26 @@ export function BankConnectWidget({ onConnected, useEnvToken = true }: BankConne
         }
 
         if (initResult.created === 0) {
-            // Already initialized — just trigger import
             const accounts = await getBankAccounts();
             if (accounts.length > 0) {
-                await runImport(accounts[0].id, 0);
+                await runImportAll(accounts);
             } else {
                 setState({ phase: "error", message: "Рахунки не знайдені" });
             }
             return;
         }
 
-        // New accounts — run full import
         const accounts = await getBankAccounts();
         if (accounts.length === 0) {
             setState({ phase: "error", message: "Рахунки не знайдені після ініціалізації" });
             return;
         }
-        await runImport(accounts[0].id, 0);
+        await runImportAll(accounts);
     };
 
     const handleConnect = async () => {
         if (!token.trim()) return;
 
-        // Step 1: Validate token
         setState({ phase: "validating" });
         const validation = await validateMonobankToken(token.trim());
         if (!validation.valid) {
@@ -103,7 +100,6 @@ export function BankConnectWidget({ onConnected, useEnvToken = true }: BankConne
             return;
         }
 
-        // Step 2: Connect (store accounts)
         setState({ phase: "connecting" });
         const connectResult = await connectMonobank(token.trim());
         if (!connectResult.success) {
@@ -111,51 +107,47 @@ export function BankConnectWidget({ onConnected, useEnvToken = true }: BankConne
             return;
         }
 
-        // Step 3: Get the first account to import
         const accounts = await getBankAccounts();
         if (accounts.length === 0) {
             setState({ phase: "error", message: "No accounts found" });
             return;
         }
 
-        await runImport(accounts[0].id, 0);
+        await runImportAll(accounts);
     };
 
-    const runImport = async (accountId: string, startMonth: number) => {
+    const runImportAll = async (accounts: BankAccountRecord[]) => {
         let totalInserted = 0;
+        for (let accIdx = 0; accIdx < accounts.length; accIdx++) {
+            for (let month = 0; month < TOTAL_MONTHS; month++) {
+                setState({
+                    phase: "importing",
+                    month: accIdx * TOTAL_MONTHS + month + 1,
+                    total: accounts.length * TOTAL_MONTHS,
+                    inserted: totalInserted,
+                });
 
-        for (let month = startMonth; month < TOTAL_MONTHS; month++) {
-            setState({
-                phase: "importing",
-                month: month + 1,
-                total: TOTAL_MONTHS,
-                inserted: totalInserted,
-            });
+                const result = await importBankChunk(accounts[accIdx].id, month);
 
-            const result = await importBankChunk(accountId, month);
-
-            if (!result.ok) {
-                if ("rateLimited" in result) {
-                    // Wait and retry this month
-                    await waitWithCountdown(RATE_LIMIT_WAIT_S, month);
-                    month--; // retry same month
-                    continue;
+                if (!result.ok) {
+                    if ("rateLimited" in result) {
+                        await waitWithCountdown(RATE_LIMIT_WAIT_S, accIdx * TOTAL_MONTHS + month);
+                        month--;
+                        continue;
+                    }
+                    setState({ phase: "error", message: result.error });
+                    return;
                 }
-                setState({ phase: "error", message: result.error });
-                return;
-            }
 
-            totalInserted += result.inserted;
+                totalInserted += result.inserted;
 
-            if (result.done) {
-                setState({ phase: "done", totalInserted });
-                onConnected?.();
-                return;
-            }
+                if (result.done && accIdx < accounts.length - 1) {
+                    break;
+                }
 
-            // Wait 62s before next month (Monobank rate limit)
-            if (month < TOTAL_MONTHS - 1) {
-                await waitWithCountdown(RATE_LIMIT_WAIT_S, month + 1);
+                if (month < TOTAL_MONTHS - 1) {
+                    await waitWithCountdown(RATE_LIMIT_WAIT_S, accIdx * TOTAL_MONTHS + month + 1);
+                }
             }
         }
 

@@ -437,6 +437,9 @@ export default function TimeTimeline({
             <div
               key={s.id}
               title={s.title}
+              role={isWork ? "button" : undefined}
+              tabIndex={isWork ? 0 : undefined}
+              aria-label={s.title}
               className={cn(
                 "absolute top-0 h-full rounded-sm transition-all shadow-none",
                 s.type === "break" ? "bg-muted" : "bg-primary",
@@ -445,7 +448,6 @@ export default function TimeTimeline({
               )}
               style={{ left: `${s.leftPct}%`, width: `${s.widthPct}%` }}
               onPointerDown={(e) => {
-                // clicking segment should NOT start selection drag
                 if (canEditWork && isWork) e.stopPropagation();
               }}
               onClick={(e) => {
@@ -453,6 +455,13 @@ export default function TimeTimeline({
                 if (!isWork) return;
                 e.stopPropagation();
                 onEditEntryAction?.(s.id);
+              }}
+              onKeyDown={(e) => {
+                if (!canEditWork || !isWork) return;
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onEditEntryAction?.(s.id);
+                }
               }}
             />
           );

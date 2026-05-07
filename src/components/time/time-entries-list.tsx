@@ -9,13 +9,13 @@ import {
   Briefcase,
   Coffee,
   Square,
-  Check,
   Plus,
   Folder,
-  ChevronsUpDown,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { calculateBreakAndWork } from "@/lib/time/break-calculator";
+import { formatDurationUa } from "@/lib/time/format-duration";
 
 import { Card } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -32,14 +32,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList
-} from "@/components/ui/command";
+
+import { Combobox } from "@/components/time/combobox";
 
 import {
   AlertDialog,
@@ -67,6 +61,7 @@ export type TimeEntriesListItem = {
   task?: { id: string; title: string } | null;
 
   note?: string | null;
+  billable?: boolean;
 };
 
 type Project = { id: string; name: string };
@@ -94,6 +89,7 @@ type Props = {
   onCreateTaskAction: (projectId: string | null) => void;
   onBulkUpdateAction: (payload: { ids: string[]; projectId?: string | null; taskId?: string | null }) => Promise<void>;
   onHighlightAction?: (id: string | null) => void;
+  activeTimerTick?: number;
 
   className?: string;
 };
@@ -101,16 +97,6 @@ type Props = {
 function safeDate(v: unknown): Date | null {
   const d = new Date(v as string | number | Date);
   return Number.isFinite(d.getTime()) ? d : null;
-}
-
-function formatDurationUa(sec: number) {
-  const safe = Math.max(0, Math.floor(sec));
-  const h = Math.floor(safe / 3600);
-  const m = Math.floor((safe % 3600) / 60);
-
-  if (h <= 0) return `${m} хв`;
-  if (m <= 0) return `${h} год`;
-  return `${h} год ${m} хв`;
 }
 
 function formatTimeRange(startAt: Date, endAt: Date | null) {
@@ -133,106 +119,6 @@ function getTitle(item: TimeEntriesListItem) {
   if (item.task?.title) return item.task.title;
   if (item.note?.trim()) return item.note.trim();
   return "(Без опису)";
-}
-
-// Internal reusable Combobox
-function Combobox({
-  value,
-  onChange,
-  items,
-  placeholder,
-  emptyText,
-  disabled,
-  actionLabel,
-  actionDisabled,
-  onAction,
-}: {
-  value: string | null;
-  onChange: (next: string | null) => void;
-  items: Array<{ value: string; label: string }>;
-  placeholder: string;
-  emptyText: string;
-  disabled?: boolean;
-
-  actionLabel?: string;
-  actionDisabled?: boolean;
-  onAction?: () => void;
-}) {
-  const [open, setOpen] = React.useState(false);
-  const selected = items.find((i) => i.value === value) ?? null;
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="w-full justify-between"
-          disabled={disabled}
-        >
-          <span className={cn("truncate", !selected && "text-muted-foreground")}>
-            {selected ? selected.label : placeholder}
-          </span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-        <Command>
-          <CommandInput placeholder="Пошук..." />
-          <CommandList>
-            <CommandEmpty>{emptyText}</CommandEmpty>
-            <CommandGroup>
-              <CommandItem
-                value="__clear__"
-                onSelect={() => {
-                  onChange(null);
-                  setOpen(false);
-                }}
-              >
-                <Check className={cn("mr-2 h-4 w-4", value === null ? "opacity-100" : "opacity-0")} />
-                <span className="truncate">(Не вибрано)</span>
-              </CommandItem>
-
-              {items.map((i) => (
-                <CommandItem
-                  key={i.value}
-                  value={i.label}
-                  onSelect={() => {
-                    onChange(i.value);
-                    setOpen(false);
-                  }}
-                >
-                  <Check className={cn("mr-2 h-4 w-4", value === i.value ? "opacity-100" : "opacity-0")} />
-                  <span className="truncate">{i.label}</span>
-                </CommandItem>
-              ))}
-
-              {actionLabel ? (
-                <>
-                  <div className="my-1 h-px bg-border" />
-                  <CommandItem
-                    value={actionLabel}
-                    disabled={actionDisabled}
-                    onSelect={() => {
-                      if (actionDisabled) return;
-                      onAction?.();
-                      setOpen(false);
-                    }}
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    {actionLabel}
-                  </CommandItem>
-                </>
-              ) : null}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  );
 }
 
 function BulkTaskSelector({
@@ -278,6 +164,7 @@ function BulkTaskSelector({
           items={projectItems}
           placeholder="Проєкт..."
           emptyText="Немає проєктів"
+          clearable
         />
       </div>
       <div className="flex flex-col gap-2">
@@ -303,6 +190,7 @@ function BulkTaskSelector({
 import { bulkDeleteTimeEntries } from "@/app/dashboard/time/actions";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function TimeEntriesList({
   entries,
@@ -316,6 +204,7 @@ export default function TimeEntriesList({
   onCreateTaskAction,
   onBulkUpdateAction,
   onHighlightAction,
+  activeTimerTick,
   className,
 }: Props) {
   const router = useRouter();
@@ -323,46 +212,11 @@ export default function TimeEntriesList({
   const [isMobile, setIsMobile] = React.useState(false);
   const [selectedIds, setSelectedIds] = React.useState<Record<string, boolean>>({});
   const [hideBreaks, setHideBreaks] = React.useState(false);
-  const [_expandedGroups, _setExpandedGroups] = React.useState<Record<string, boolean>>({});
-
   const ordered = React.useMemo(() => {
     return [...entries].sort((a, b) => b.startAt.getTime() - a.startAt.getTime());
   }, [entries]);
 
-  const _groupedEntries = React.useMemo(() => {
-    type Group = {
-      id: string; // key
-      entries: TimeEntriesListItem[];
-      totalDuration: number;
-      latestStart: Date;
-    };
-
-    const groups: Group[] = [];
-    const groupMap = new Map<string, Group>();
-
-    for (const entry of ordered) {
-      if (entry.type === "break") continue;
-      const key = `${entry.project?.id ?? "no-project"}-${entry.task?.id ?? "no-task"}-${entry.note?.trim() ?? "no-note"}`;
-      let group = groupMap.get(key);
-      if (!group) {
-        group = { id: key, entries: [], totalDuration: 0, latestStart: entry.startAt };
-        groupMap.set(key, group);
-        groups.push(group);
-      }
-      group.entries.push(entry);
-      group.totalDuration += computeDurationSec(entry);
-      if (entry.startAt > group.latestStart) group.latestStart = entry.startAt;
-    }
-
-    // Sort groups by latest start
-    groups.sort((a, b) => b.latestStart.getTime() - a.latestStart.getTime());
-
-    return groups;
-  }, [ordered]);
-
   const allSelected = ordered.length > 0 && ordered.every((e) => selectedIds[e.id]);
-  const _anySelected = React.useMemo(() => Object.values(selectedIds).some(Boolean), [selectedIds]);
-
   const toggleAll = (next: boolean) => {
     const map: Record<string, boolean> = {};
     for (const e of ordered) map[e.id] = next;
@@ -375,52 +229,25 @@ export default function TimeEntriesList({
 
   // Correct totals calculation (summing Work vs Gaps)
   const totals = React.useMemo(() => {
-    let work = 0;
-    let brk = 0;
+    const { workSec: work, breakSec: brk } = calculateBreakAndWork(ordered);
+
     let selected = 0;
-
-    // 1. Sum explicit work entries
     for (const e of ordered) {
-      const d = computeDurationSec(e);
-      if (e.type === "work") {
-        work += d;
-      } else {
-        brk += d;
-      }
       if (selectedIds[e.id]) {
+        const d = computeDurationSec(e);
         selected += d;
-      }
-    }
-
-    // 2. Sum virtual breaks (gaps)
-    const sorted = [...ordered].sort((a, b) => b.startAt.getTime() - a.startAt.getTime());
-    for (let i = 0; i < sorted.length - 1; i++) {
-      const item = sorted[i]; // Starts LATER
-      const nextEarlier = sorted[i + 1]; // Ends EARLIER
-
-      if (nextEarlier.endAt && item.startAt.getTime() > nextEarlier.endAt.getTime() + 60000) {
-        const gapSec = Math.floor((item.startAt.getTime() - nextEarlier.endAt.getTime()) / 1000);
-        brk += gapSec;
       }
     }
 
     return { work, brk, total: work + brk, selected };
   }, [ordered, selectedIds]);
 
-  // ✅ Active duration tick (safe + stable)
-  const [now, setNow] = React.useState(() => Date.now());
+  // ✅ Active duration — driven by parent tick
   const activeStartedMs = React.useMemo(() => {
     if (!activeTimer) return null;
     const d = safeDate(activeTimer.startedAt);
     return d ? d.getTime() : null;
   }, [activeTimer]);
-
-  React.useEffect(() => {
-    if (!activeStartedMs) return;
-    setNow(Date.now());
-    const t = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(t);
-  }, [activeStartedMs]);
 
   // Active Timer Editing State
   const [activeEditOpen, setActiveEditOpen] = React.useState(false);
@@ -468,14 +295,19 @@ export default function TimeEntriesList({
     const ids = Object.entries(selectedIds).filter(([_, sel]) => sel).map(([id]) => id);
     if (!ids.length) return;
     startTransition(async () => {
-      await bulkDeleteTimeEntries(ids);
-      setSelectedIds({});
-      setDeleteAlertOpen(false);
-      router.refresh();
+      try {
+        await bulkDeleteTimeEntries(ids);
+        setSelectedIds({});
+        setDeleteAlertOpen(false);
+        router.refresh();
+        toast.success(`Видалено ${ids.length} записів`);
+      } catch {
+        toast.error("Не вдалося видалити записи");
+      }
     });
   };
 
-  const activeDurationSec = activeTimer && activeStartedMs ? Math.max(0, Math.floor((now - activeStartedMs) / 1000)) : 0;
+  const activeDurationSec = activeTimer && activeStartedMs ? Math.max(0, Math.floor((Date.now() - activeStartedMs) / 1000)) : 0;
   const activeTitle = activeTimer?.task?.title || (activeTimer?.note?.trim() ? activeTimer.note.trim() : "(Без опису)");
   const activeProjectName = activeTimer?.project?.name;
 
@@ -520,8 +352,13 @@ export default function TimeEntriesList({
                   getTasksForProjectAction={getTasksForProjectAction}
                   onSave={(pid, tid) => {
                     startTransition(async () => {
-                      await onBulkUpdateAction({ ids: Object.keys(selectedIds).filter(k => selectedIds[k]), projectId: pid, taskId: tid });
-                      router.refresh();
+                      try {
+                        await onBulkUpdateAction({ ids: Object.keys(selectedIds).filter(k => selectedIds[k]), projectId: pid, taskId: tid });
+                        router.refresh();
+                        toast.success("Проєкт оновлено");
+                      } catch {
+                        toast.error("Не вдалося оновити записи");
+                      }
                     });
                   }}
                 />
@@ -614,7 +451,10 @@ export default function TimeEntriesList({
                         )}
 
                         <div className="min-w-0 flex-1">
-                          <p className={cn("text-sm font-medium truncate", !isWork && "italic")}>{getTitle(item)}</p>
+                          <p className={cn("text-sm font-medium truncate", !isWork && "italic")}>
+                            {getTitle(item)}
+                            {isWork && item.billable === false && <span className="ml-1 text-destructive/70 text-xs">✕</span>}
+                          </p>
                           <p className="text-xs text-muted-foreground mt-0.5">
                             {formatTimeRange(item.startAt, item.endAt)} • {formatDurationUa(computeDurationSec(item))}
                           </p>
@@ -734,6 +574,7 @@ export default function TimeEntriesList({
                     items={projectItems}
                     placeholder="Вибрати проєкт"
                     emptyText="Немає проєктів"
+                    clearable
                   />
                 </div>
                 <div className="grid gap-2">
@@ -835,6 +676,7 @@ export default function TimeEntriesList({
 
                     <div className={cn("flex-1 min-w-0 pr-4 text-sm font-medium truncate", isNoDescription && "text-muted-foreground italic font-normal")}>
                       {title}
+                      {isWork && item.billable === false && <span className="ml-1.5 text-destructive/70 text-xs">✕</span>}
                     </div>
 
                     <div className="w-[180px] xl:w-[220px] shrink-0 flex items-center gap-2 text-muted-foreground hidden md:flex">

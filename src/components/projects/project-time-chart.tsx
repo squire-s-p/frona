@@ -92,8 +92,6 @@ export default function ProjectTimeChart({ buckets }: { buckets: TimeBucket[] })
     [data]
   );
 
-  const _rangeLabel = range === "all" ? "Весь період" : `Останні ${range} днів`;
-
   return (
     <div className="space-y-4">
       {/* Compact summary + period selector row */}

@@ -15,6 +15,7 @@ model User {
   baseCurrency  String    @default("UAH")
   dashboardLayout Json?   // Для iOS-стайл віджетів
   targetHourlyRate Float @default(0)
+  dailyTargetHours Int  @default(8)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   emailVerified DateTime?
@@ -52,6 +53,7 @@ model User {
   folders           Folder[]
   notes             Note[]
   bankAccounts      BankAccount[] @relation("UserBankAccounts")
+  bankConnections   BankConnection[]
 }
 
 model ShoppingItem {
@@ -285,6 +287,7 @@ model TimeEntry {
   endAt       DateTime?
   durationSec Int?
 
+  billable Boolean @default(true)
   note String?
   calendarEventId String?
 
@@ -301,6 +304,7 @@ model TimeEntry {
   @@index([taskId])
   @@index([type])
   @@index([startAt])
+  @@index([userId, endAt])
 }
 
 enum ActiveTimerMode {
@@ -775,29 +779,66 @@ model NoteLink {
 // Isolated domain: raw Monobank data, separated from Finance domain.
 // Finance module reads only from FinanceAccount/Transaction tables.
 
-model BankAccount {
-  id              String    @id @default(cuid())
-  userId          String
-  monoAccountId   String    // Monobank's account ID (e.g. "HUsh7f...")
-  monoToken       String    // AES-256 encrypted token
-  name            String    // Display name (e.g. "Mono Чорна")
-  type            String    // white, black, platinum, fop, etc.
-  currencyCode    Int       // 980 = UAH, 840 = USD, 978 = EUR
-  balance         BigInt    @default(0) // in kopecks (raw from Monobank)
-  creditLimit     BigInt    @default(0)
-  iban            String?
-  maskedPan       String[]  @default([])
-  lastSyncAt      DateTime? // null = initial import not done yet
-  importDoneAt    DateTime? // set when full 12-month import completes
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+enum BankConnectionStatus {
+  PENDING
+  WAITING_CONFIRMATION
+  CONNECTED
+  FAILED
+  EXPIRED
+}
 
-  user            User              @relation("UserBankAccounts", fields: [userId], references: [id], onDelete: Cascade)
-  transactions    BankTransaction[]
+model BankConnection {
+  id              String               @id @default(cuid())
+  userId          String
+  provider        String               @default("monobank")
+  status          BankConnectionStatus @default(PENDING)
+  accessToken     String?             // AES-256 encrypted — only server-side
+  tokenRequestId  String?             // Provider API auth request ID
+  qrLink          String?             // Deeplink URL for QR
+  expiresAt       DateTime?           // Auth session expiry
+  connectedAt     DateTime?
+  failedAt        DateTime?
+  failureReason   String?
+  lastSyncAt      DateTime?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  user            User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bankAccounts    BankAccount[]
+  syncJobs        BankSyncJob[]
+  webhookEvents   BankWebhookEvent[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([provider])
+}
+
+model BankAccount {
+  id                String          @id @default(cuid())
+  userId            String
+  monoAccountId     String          // Monobank's account ID (e.g. "HUsh7f...")
+  monoToken         String          // AES-256 encrypted token (legacy — new connections use BankConnection.accessToken)
+  name              String          // Display name (e.g. "Mono Чорна")
+  type              String          // white, black, platinum, fop, etc.
+  currencyCode      Int             // 980 = UAH, 840 = USD, 978 = EUR
+  balance           BigInt          @default(0) // in kopecks (raw from Monobank)
+  creditLimit       BigInt          @default(0)
+  iban              String?
+  maskedPan         String[]        @default([])
+  lastSyncAt        DateTime?       // null = initial import not done yet
+  importDoneAt      DateTime?       // set when full 12-month import completes
+  bankConnectionId  String?         // FK to BankConnection (new QR flow)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  user              User            @relation("UserBankAccounts", fields: [userId], references: [id], onDelete: Cascade)
+  bankConnection    BankConnection? @relation(fields: [bankConnectionId], references: [id], onDelete: SetNull)
+  transactions      BankTransaction[]
 
   @@unique([userId, monoAccountId])
   @@index([userId])
   @@index([lastSyncAt])
+  @@index([bankConnectionId])
 }
 
 model BankTransaction {
@@ -824,4 +865,49 @@ model BankTransaction {
   @@index([bankAccountId, time])
   @@index([time])
   @@index([mcc])
+}
+
+enum BankSyncJobType {
+  INITIAL_SYNC
+  INCREMENTAL_SYNC
+  FULL_SYNC
+}
+
+enum BankSyncJobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+model BankSyncJob {
+  id               String             @id @default(cuid())
+  bankConnectionId String
+  type             BankSyncJobType
+  status           BankSyncJobStatus  @default(PENDING)
+  startedAt        DateTime?
+  completedAt      DateTime?
+  error            String?
+  recordsProcessed Int                @default(0)
+  createdAt        DateTime           @default(now())
+
+  bankConnection   BankConnection     @relation(fields: [bankConnectionId], references: [id], onDelete: Cascade)
+
+  @@index([bankConnectionId])
+  @@index([status])
+}
+
+model BankWebhookEvent {
+  id               String         @id @default(cuid())
+  bankConnectionId String
+  eventType        String         // TRANSACTION, STATEMENT
+  payload          Json
+  processed        Boolean        @default(false)
+  processedAt      DateTime?
+  createdAt        DateTime       @default(now())
+
+  bankConnection   BankConnection @relation(fields: [bankConnectionId], references: [id], onDelete: Cascade)
+
+  @@index([bankConnectionId, processed])
+  @@index([createdAt])
 }
