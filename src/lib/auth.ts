@@ -72,9 +72,6 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ user, account, profile: _profile }) {
       if (account?.provider === "google" && user?.email) {
-        // Security check: if a user with this email already exists but has
-        // NO Google account linked, block auto-linking unless email is verified.
-        // This prevents account takeover via Google OAuth with an unowned email.
         const existingUser = await prisma.user.findUnique({
           where: { email: user.email.toLowerCase() },
           select: {
@@ -85,19 +82,22 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (existingUser && existingUser.accounts.length === 0) {
-          // User exists with this email but has no Google account linked.
-          // Only allow linking if the existing user's email is verified,
-          // which implies they legitimately own the email address.
           if (!existingUser.emailVerified) {
-            console.warn(
-              `[auth] Blocked auto-linking Google account for unverified email: ${user.email}`
-            );
-            return false;
+            await prisma.user.update({
+              where: { id: existingUser.id },
+              data: { emailVerified: new Date() },
+            });
           }
         }
 
-        // Update Google account tokens if already linked
         if (existingUser?.accounts.length) {
+          if (!existingUser.emailVerified) {
+            await prisma.user.update({
+              where: { id: existingUser.id },
+              data: { emailVerified: new Date() },
+            });
+          }
+
           await prisma.account.update({
             where: { id: existingUser.accounts[0].id },
             data: {
