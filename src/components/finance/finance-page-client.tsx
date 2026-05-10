@@ -84,14 +84,14 @@ import { TransactionDetailDialog } from "./transaction-detail-dialog";
 
 export function FinancePageClient() {
     const [isMounted, setIsMounted] = React.useState(false);
-    const [accounts, setAccounts] = React.useState<any[]>([]);
+    const [accounts, setAccounts] = React.useState<Awaited<ReturnType<typeof getFinanceAccounts>>>([]);
     const [_bankAccounts, setBankAccounts] = React.useState<BankAccountRecord[]>([]);
-    const [transactions, setTransactions] = React.useState<any[]>([]);
-    const [projects, setProjects] = React.useState<any[]>([]);
-    const [analytics, setAnalytics] = React.useState<any[]>([]);
-    const [financialStats, setFinancialStats] = React.useState<{ pieChart: any[], barChart: any[] }>({ pieChart: [], barChart: [] });
-    const [_budgets, setBudgets] = React.useState<any[]>([]);
-    const [planningData, setPlanningData] = React.useState<{ goals: any[], payments: any[], shoppingItems: any[] }>({ goals: [], payments: [], shoppingItems: [] });
+    const [transactions, setTransactions] = React.useState<Awaited<ReturnType<typeof getRecentTransactions>>["transactions"]>([]);
+    const [projects, setProjects] = React.useState<Awaited<ReturnType<typeof getProjects>>>([]);
+    const [analytics, setAnalytics] = React.useState<Awaited<ReturnType<typeof getSpendingAnalytics>>>([]);
+    const [financialStats, setFinancialStats] = React.useState<Awaited<ReturnType<typeof getFinancialStats>>>({ pieChart: [], barChart: [] });
+    const [_budgets, setBudgets] = React.useState<Awaited<ReturnType<typeof getBudgets>>>([]);
+    const [planningData, setPlanningData] = React.useState<Awaited<ReturnType<typeof getPlanningData>>>({ goals: [], payments: [], shoppingItems: [] });
     const [rates, setRates] = React.useState({ USD: 41.5, EUR: 45.0 });
     const [_isLoading, setIsLoading] = React.useState(true);
     const [isSyncing, setIsSyncing] = React.useState(false);
@@ -118,16 +118,16 @@ export function FinancePageClient() {
     const [selectedCategory, setSelectedCategory] = React.useState("all");
     const [selectedAccount, setSelectedAccount] = React.useState("all");
     const [isFiltering, setIsFiltering] = React.useState(false);
-    const [forecastData, setForecastData] = React.useState<any>(null);
-    const [projectsProfitability, setProjectsProfitability] = React.useState<any[]>([]);
-    const [clientsProfitability, setClientsProfitability] = React.useState<any[]>([]);
-    const [taxStats, setTaxStats] = React.useState<any>(null);
-    const [automationRules, setAutomationRules] = React.useState<any[]>([]);
+    const [forecastData, setForecastData] = React.useState<Awaited<ReturnType<typeof generateForecast>> | null>(null);
+    const [projectsProfitability, setProjectsProfitability] = React.useState<Awaited<ReturnType<typeof getProjectsProfitability>>>([]);
+    const [clientsProfitability, setClientsProfitability] = React.useState<Awaited<ReturnType<typeof getClientsProfitability>>>([]);
+    const [taxStats, setTaxStats] = React.useState<Awaited<ReturnType<typeof getTaxStats>> | null>(null);
+    const [automationRules, setAutomationRules] = React.useState<Awaited<ReturnType<typeof getAutomationRules>>>([]);
     const [transactionDialogOpen, setTransactionDialogOpen] = React.useState(false);
     const [detailDialogOpen, setDetailDialogOpen] = React.useState(false);
-    const [selectedTransactionForDetail, setSelectedTransactionForDetail] = React.useState<any>(null);
-    const [categories, setCategories] = React.useState<any[]>([]);
-    const [whatIfScenarios, setWhatIfScenarios] = React.useState<any[]>([]);
+    const [selectedTransactionForDetail, setSelectedTransactionForDetail] = React.useState<Awaited<ReturnType<typeof getRecentTransactions>>["transactions"][number] | null>(null);
+    const [categories, setCategories] = React.useState<Awaited<ReturnType<typeof getCategories>>>([]);
+    const [whatIfScenarios, setWhatIfScenarios] = React.useState<{ id: string; name: string; amount: number; date: Date; type: "income" | "expense" }[]>([]);
     const [dateRange, setDateRange] = React.useState<DateRange | undefined>({
         from: undefined,
         to: undefined,
@@ -170,7 +170,7 @@ export function FinancePageClient() {
             setHasMore(res.hasMore);
             setOffset(20); // Prepare offset for next load
         } catch (error) {
-            console.error("Failed to fetch filtered transactions:", error);
+            toast.error("Не вдалося завантажити транзакції");
         } finally {
             setIsFiltering(false);
         }
@@ -204,7 +204,7 @@ export function FinancePageClient() {
             setOffset(prev => prev + 20); // Always increment offset to move window forward
             setHistoryTotals(res.totals);
         } catch (error) {
-            console.error("Failed to load more transactions:", error);
+            toast.error("Не вдалося завантажити ще транзакцій");
         } finally {
             setIsLoadingMore(false);
         }
@@ -294,7 +294,7 @@ export function FinancePageClient() {
                 }
             }
         } catch (error) {
-            console.error(error);
+            toast.error("Помилка завантаження даних");
         } finally {
             setIsLoading(false);
         }
@@ -315,7 +315,7 @@ export function FinancePageClient() {
             setFinancialHealth(health);
             setForecastData(forecast);
         } catch (error) {
-            console.error(error);
+            toast.error("Помилка прогнозу");
         }
     }, [whatIfScenarios]);
 
@@ -368,7 +368,7 @@ export function FinancePageClient() {
                 }
             }
         } catch (error) {
-            console.error(error);
+            toast.error("Помилка завантаження вкладки");
         }
     }, [whatIfScenarios]);
 
@@ -399,7 +399,6 @@ export function FinancePageClient() {
                 toast.success(msg);
             }
         } catch (error: unknown) {
-            console.error(error);
             if (showToast) toast.error("Не вдалося оновити дані");
         } finally {
             setIsSyncing(false);
@@ -428,7 +427,7 @@ export function FinancePageClient() {
             const forecast = await generateForecast({ months: 6, whatIf: whatIfScenarios });
             setForecastData(forecast);
         } catch (error) {
-            console.error("Failed to refresh forecast:", error);
+            toast.error("Не вдалося оновити прогноз");
         }
     }, [whatIfScenarios]);
 
@@ -608,7 +607,7 @@ export function FinancePageClient() {
                                     </CardHeader>
                                     <CardContent>
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                            {_budgets.map((b: any) => (
+                                            {_budgets.map((b) => (
                                                 <div key={b.id} className="space-y-2">
                                                     <div className="flex items-center justify-between text-sm">
                                                         <span className="font-medium truncate">{b.categoryName}</span>
@@ -681,7 +680,7 @@ export function FinancePageClient() {
                                                     <RechartsTooltip
                                                         contentStyle={{ backgroundColor: '#18181b', border: 'none', borderRadius: '8px', color: '#f4f4f5' }}
                                                         itemStyle={{ color: '#f4f4f5' }}
-                                                        formatter={(value: any) => value !== undefined ? [`${value} ₴`, 'Сума'] : ['', '']}
+                                                        formatter={(value) => value !== undefined ? [`${value} ₴`, 'Сума'] : ['', '']}
                                                         labelFormatter={(label) => {
                                                             try {
                                                                 const date = new Date(label);
@@ -724,7 +723,7 @@ export function FinancePageClient() {
                                                     contentStyle={{ backgroundColor: '#18181b', border: 'none', borderRadius: '8px', color: '#f4f4f5' }}
                                                 />
                                                 <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                                                    {financialStats.barChart.map((entry: any, index: number) => (
+                                                    {financialStats.barChart.map((entry, index) => (
                                                         <Cell key={`cell-${index}`} fill={index === 0 ? '#18181b' : '#a1a1aa'} />
                                                     ))}
                                                 </Bar>
@@ -735,7 +734,7 @@ export function FinancePageClient() {
                             </div>
 
                             {/* Account Management */}
-                            <AccountManagement accounts={accounts} bankAccounts={_bankAccounts} onRefresh={fetchData} />
+                            <AccountManagement accounts={accounts as any} bankAccounts={_bankAccounts} onRefresh={fetchData} />
                             </div>
                           </DashboardSurface>
                         </TabsContent>
@@ -757,8 +756,8 @@ export function FinancePageClient() {
                           <DashboardSurface className="p-0">
                             <div className="p-4 md:p-6">
                               <GoalsTab
-                                  goals={planningData.goals}
-                                  accounts={accounts}
+                                  goals={planningData.goals as any}
+                                  accounts={accounts as any}
                                   onRefresh={fetchData}
                               />
                             </div>
@@ -874,7 +873,7 @@ export function FinancePageClient() {
                                                 <SelectContent>
                                                     <SelectItem value="all">Усі категорії</SelectItem>
                                                     <SelectItem value="transfer-special-id">Перекази</SelectItem>
-                                                    {categories.map((c: any) => (
+                                                    {categories.map((c) => (
                                                         <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                                                     ))}
                                                 </SelectContent>
@@ -885,7 +884,7 @@ export function FinancePageClient() {
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="all">Усі проекти</SelectItem>
-                                                    {projects.map((p: any) => (
+                                                    {projects.map((p) => (
                                                         <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                                                     ))}
                                                 </SelectContent>
@@ -900,7 +899,7 @@ export function FinancePageClient() {
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="all">Усі рахунки</SelectItem>
-                                                    {accounts.map((acc: any) => (
+                                                    {accounts.map((acc) => (
                                                         <SelectItem key={acc.id} value={acc.id}>
                                                             <div className="flex items-center gap-2 text-xs">
                                                                 <div className={cn(
@@ -930,7 +929,7 @@ export function FinancePageClient() {
                                         ) : (
                                             <div className="flex flex-col">
                                                 {(() => {
-                                                    const groups: { [key: string]: any[] } = {};
+                                                    const groups: Record<string, typeof transactions> = {};
                                                     transactions.forEach(tx => {
                                                         const date = new Date(tx.date);
                                                         const dateStr = startOfDay(date).toISOString();
@@ -982,9 +981,9 @@ export function FinancePageClient() {
                                                                                     <div>
                                                                                         <div className="font-semibold text-sm text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
                                                                                             {tx.description}
-                                                                                            {tx.projectId && (
+                                                                                            {"projectId" in tx && tx.projectId && (
                                                                                                 <span className="text-[9px] font-black bg-zinc-900 text-zinc-50 dark:bg-zinc-100 dark:text-zinc-950 px-1 py-0 rounded-sm uppercase tracking-wider border border-zinc-800 dark:border-white/10 shadow-none">
-                                                                                                    {tx.project?.name || projects.find(p => p.id === tx.projectId)?.name || 'Проєкт'}
+                                                                                                    {"project" in tx && tx.project?.name || projects.find(p => p.id === tx.projectId)?.name || 'Проєкт'}
                                                                                                 </span>
                                                                                             )}
                                                                                         </div>
@@ -1043,7 +1042,7 @@ export function FinancePageClient() {
                         </TabsContent>
 
                         <TabsContent value="tax">
-                            <TaxTab data={taxStats} accounts={accounts} onSuccess={fetchData} />
+                            <TaxTab data={taxStats as any} accounts={accounts as any} onSuccess={fetchData} />
                         </TabsContent>
 
                         <TabsContent value="automation">

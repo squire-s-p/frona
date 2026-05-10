@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { Resend } from "resend";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+const APP_URL = process.env.NEXTAUTH_URL || "https://frona.online";
 
 interface ActionState {
   error?: string;
@@ -42,14 +43,21 @@ export async function forgotPasswordAction(prevState: ActionState, formData: For
       }
     });
 
-    const resetLink = `${process.env.NEXTAUTH_URL}/auth/reset-password?token=${token}&email=${encodeURIComponent(email.toLowerCase())}`;
+    const resetLink = `${APP_URL}/auth/reset-password?token=${token}&email=${encodeURIComponent(email.toLowerCase())}`;
 
     if (resend) {
       await resend.emails.send({
         from: 'Frona <auth@frona.online>',
         to: email.toLowerCase(),
-        subject: 'Відновлення пароля',
-        html: `<p>Ви запросили скидання пароля. Перейдіть за посиланням: <a href="${resetLink}">${resetLink}</a></p>`
+        subject: 'Відновлення пароля — Frona',
+        html: `
+          <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
+            <h2 style="color: #111;">Відновлення пароля</h2>
+            <p>Натисніть кнопку нижче, щоб встановити новий пароль:</p>
+            <a href="${resetLink}" style="display:inline-block;padding:12px 24px;background:#7c3aed;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;">Скинути пароль</a>
+            <p style="color:#888;font-size:13px;margin-top:16px;">Посилання дійсне 1 годину. Якщо ви не запитували скидання — проігноруйте лист.</p>
+          </div>
+        `
       });
     } else {
       console.log("--- RESET LINK (DEV MODE) ---");

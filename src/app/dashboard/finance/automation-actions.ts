@@ -4,6 +4,19 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/require-user";
+import { z } from "zod";
+
+const idSchema = z.string().cuid();
+
+const createAutomationRuleSchema = z.object({
+    name: z.string().min(1).max(100),
+    pattern: z.string().min(1).max(200),
+    type: z.enum(["category", "project"]),
+    targetId: z.string().cuid(),
+    minAmount: z.number().min(0).optional().nullable(),
+    maxAmount: z.number().min(0).optional().nullable(),
+    currency: z.string().max(3).optional().nullable(),
+});
 
 export async function getAutomationRules() {
     const user = await requireUser();
@@ -29,16 +42,26 @@ export async function createAutomationRule(data: {
     currency?: string;
 }) {
     const user = await requireUser();
+    const validated = createAutomationRuleSchema.parse(data);
+
+    if (validated.type === "category") {
+        const cat = await prisma.category.findFirst({ where: { id: data.targetId, userId: user.id } });
+        if (!cat) throw new Error("Категорію не знайдено");
+    } else {
+        const proj = await prisma.project.findFirst({ where: { id: data.targetId, userId: user.id } });
+        if (!proj) throw new Error("Проєкт не знайдено");
+    }
+
     const rule = await prisma.automationRule.create({
         data: {
             userId: user.id,
-            name: data.name,
-            pattern: data.pattern,
-            type: data.type,
-            targetId: data.targetId,
-            minAmount: data.minAmount,
-            maxAmount: data.maxAmount,
-            currency: data.currency
+            name: validated.name,
+            pattern: validated.pattern,
+            type: validated.type,
+            targetId: validated.targetId,
+            minAmount: validated.minAmount,
+            maxAmount: validated.maxAmount,
+            currency: validated.currency
         }
     });
     revalidatePath("/dashboard/finance");
@@ -47,6 +70,7 @@ export async function createAutomationRule(data: {
 
 export async function deleteAutomationRule(id: string) {
     const user = await requireUser();
+    idSchema.parse(id);
     await prisma.automationRule.delete({
         where: { id, userId: user.id }
     });
@@ -55,6 +79,8 @@ export async function deleteAutomationRule(id: string) {
 
 export async function toggleAutomationRule(id: string, isActive: boolean) {
     const user = await requireUser();
+    idSchema.parse(id);
+    z.boolean().parse(isActive);
     await prisma.automationRule.update({
         where: { id, userId: user.id },
         data: { isActive }
@@ -67,12 +93,14 @@ export async function toggleAutomationRule(id: string, isActive: boolean) {
  */
 export async function applyRulesToTransaction(transactionId: string) {
     const user = await requireUser();
+    idSchema.parse(transactionId);
     const transaction = await prisma.transaction.findUnique({
         where: { id: transactionId, userId: user.id },
         include: { account: { select: { currency: true } } }
     });
 
     if (!transaction || !transaction.description) return;
+    if (transaction.type === "transfer") return;
 
     const rules = await prisma.automationRule.findMany({
         where: { userId: user.id, isActive: true }
@@ -103,5 +131,6 @@ export async function applyRulesToTransaction(transactionId: string) {
             where: { id: transactionId },
             data: updates
         });
+        revalidatePath("/dashboard/finance");
     }
 }

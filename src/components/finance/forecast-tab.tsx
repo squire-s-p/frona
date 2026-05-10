@@ -39,14 +39,14 @@ import { cn } from "@/lib/utils";
 
 interface ForecastTabProps {
     data: {
-        daily: any[];
-        monthly: any[];
+        daily: { date: Date; liquidBalance: number; totalBalance: number; income: number; expense: number }[];
+        monthly: { month: string; income: number; expense: number; endBalance: number; endLiquidBalance: number }[];
         cashGaps: { date: Date; balance: number }[];
         currentBalance: number;
         currentLiquidBalance: number;
     } | null;
-    whatIfs: any[];
-    onWhatIfChange: (whatIfs: any[]) => void;
+    whatIfs: { id: string; name: string; amount: number; date: Date; type: "income" | "expense" }[];
+    onWhatIfChange: (whatIfs: { id: string; name: string; amount: number; date: Date; type: "income" | "expense" }[]) => void;
 }
 
 export function ForecastTab({ data, whatIfs, onWhatIfChange }: ForecastTabProps) {
@@ -134,9 +134,9 @@ export function ForecastTab({ data, whatIfs, onWhatIfChange }: ForecastTabProps)
                                 <RechartsTooltip
                                     contentStyle={{ backgroundColor: '#18181b', border: 'none', borderRadius: '8px', color: '#f4f4f5' }}
                                     itemStyle={{ color: '#f4f4f5' }}
-                                    formatter={(value: any, name: any) => [
-                                        value !== undefined ? `${new Intl.NumberFormat('uk-UA').format(Math.round(value))} ₴` : '0 ₴',
-                                        name === "liquidBalance" ? "Ліквідний" : "Загальний"
+                                    formatter={(value, name) => [
+                                        value !== undefined && value !== null ? `${new Intl.NumberFormat('uk-UA').format(Math.round(Number(value)))} ₴` : '0 ₴',
+                                        String(name) === "liquidBalance" ? "Ліквідний" : "Загальний"
                                     ]}
                                     labelFormatter={(label) => format(new Date(label), "d MMMM yyyy", { locale: uk })}
                                 />
@@ -219,7 +219,7 @@ export function ForecastTab({ data, whatIfs, onWhatIfChange }: ForecastTabProps)
                                     />
                                     <Select
                                         value={newWhatIf.type}
-                                        onValueChange={(v: any) => setNewWhatIf(prev => ({ ...prev, type: v }))}
+                                        onValueChange={(v: string) => setNewWhatIf(prev => ({ ...prev, type: v as "income" | "expense" }))}
                                     >
                                         <SelectTrigger className="h-8 text-xs w-[100px]">
                                             <SelectValue />
@@ -297,13 +297,13 @@ export function ForecastTab({ data, whatIfs, onWhatIfChange }: ForecastTabProps)
                             <div className="flex items-center justify-between">
                                 <div className="text-xs text-zinc-500">Очікуваний дохід</div>
                                 <div className="text-sm font-bold text-green-600">
-                                    +{new Intl.NumberFormat('uk-UA').format(Math.round(monthly.reduce((ac: number, m: any) => ac + m.income, 0) / monthly.length))} ₴
+                                    +{new Intl.NumberFormat('uk-UA').format(Math.round(monthly.length > 0 ? monthly.reduce((ac, m) => ac + m.income, 0) / monthly.length : 0))} ₴
                                 </div>
                             </div>
                             <div className="flex items-center justify-between">
                                 <div className="text-xs text-zinc-500">Постійні витрати</div>
                                 <div className="text-sm font-bold text-red-600">
-                                    -{new Intl.NumberFormat('uk-UA').format(Math.round(monthly.reduce((ac: number, m: any) => ac + m.expense, 0) / monthly.length))} ₴
+                                    -{new Intl.NumberFormat('uk-UA').format(Math.round(monthly.length > 0 ? monthly.reduce((ac, m) => ac + m.expense, 0) / monthly.length : 0))} ₴
                                 </div>
                             </div>
                         </CardContent>

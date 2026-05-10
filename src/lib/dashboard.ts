@@ -64,6 +64,7 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
       where: {
         userId,
         date: { gte: monthStart, lte: new Date() },
+        type: { in: ["income", "expense"] },
       },
       select: { type: true, amount: true },
     }),

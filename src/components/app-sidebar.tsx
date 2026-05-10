@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/sidebar";
 
 import { NavUser } from "@/components/nav-user";
+import { EmailVerificationBanner } from "@/components/auth/email-verification-banner";
 
 type User = {
   name?: string | null;
@@ -132,6 +133,8 @@ export function AppSidebar({
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
+
+      <EmailVerificationBanner />
 
       {/* ================= FOOTER ================= */}
       <SidebarFooter>

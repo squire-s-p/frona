@@ -5,6 +5,7 @@ import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/lib/require-user";
+import { applyRulesToTransaction } from "./automation-actions";
 
 const createAccountSchema = z.object({
     name: z.string().min(1).max(100),
@@ -24,6 +25,87 @@ const createTransferSchema = z.object({
     exchangeRate: z.number().positive().optional(),
     note: z.string().max(500).optional(),
     date: z.date(),
+});
+
+const accountIdSchema = z.string().cuid();
+const categoryIdSchema = z.string().cuid();
+const tagIdSchema = z.string().cuid();
+const idSchema = z.string().cuid();
+
+const createCategorySchema = z.object({
+    name: z.string().min(1).max(100),
+    type: z.enum(["income", "expense"]),
+    isTaxable: z.boolean().optional(),
+});
+
+const updateCategorySchema = z.object({
+    name: z.string().min(1).max(100).optional(),
+    isTaxable: z.boolean().optional(),
+});
+
+const createTagSchema = z.object({
+    name: z.string().min(1).max(50),
+    color: z.string().max(7).optional(),
+});
+
+const getAccountHistorySchema = z.object({
+    accountId: z.string().cuid(),
+    from: z.coerce.date(),
+    to: z.coerce.date(),
+});
+
+const updateAccountSchema = z.object({
+    name: z.string().min(1).max(100).optional(),
+    type: z.enum(["checking", "savings", "cash", "credit", "investment", "tax_reserve"]).optional(),
+    color: z.string().max(7).optional(),
+    includeInTotal: z.boolean().optional(),
+    isArchived: z.boolean().optional(),
+    role: z.enum(["liquid", "savings", "tax_reserve", "investment"]).optional(),
+});
+
+const createTransactionWithTagsSchema = z.object({
+    accountId: z.string().cuid(),
+    categoryId: z.string().cuid(),
+    type: z.enum(["income", "expense"]),
+    amount: z.number().positive(),
+    date: z.coerce.date(),
+    description: z.string().max(500).optional(),
+    projectId: z.string().optional(),
+    clientId: z.string().optional(),
+    tagIds: z.array(z.string()).optional(),
+    note: z.string().max(500).optional(),
+    isRecurring: z.boolean().optional(),
+    recurringFrequency: z.enum(["weekly", "monthly", "yearly"]).optional(),
+});
+
+const createFullSplitTransactionSchema = z.object({
+    accountId: z.string().cuid(),
+    type: z.enum(["income", "expense"]),
+    amount: z.number().positive(),
+    date: z.coerce.date(),
+    description: z.string().min(1).max(500),
+    splits: z.array(z.object({
+        categoryId: z.string().cuid(),
+        amount: z.number().positive(),
+        note: z.string().max(500).optional(),
+    })).min(1),
+    tagIds: z.array(z.string()).optional(),
+    clientId: z.string().optional(),
+    projectId: z.string().optional(),
+});
+
+const updateTransactionSchema = z.object({
+    id: z.string().cuid(),
+    accountId: z.string().cuid(),
+    categoryId: z.string().cuid(),
+    type: z.enum(["income", "expense"]),
+    amount: z.number().positive(),
+    date: z.coerce.date(),
+    description: z.string().max(500).optional(),
+    projectId: z.string().optional(),
+    clientId: z.string().optional(),
+    tagIds: z.array(z.string()).optional(),
+    note: z.string().max(500).optional(),
 });
 
 // ========================
@@ -51,6 +133,7 @@ export async function createAccount(data: z.infer<typeof createAccountSchema>) {
     });
 
     revalidatePath("/dashboard/finance");
+
     return {
         ...account,
         balance: Number(account.balance),
@@ -73,9 +156,12 @@ export async function updateAccount(
 ) {
     const user = await requireUser();
 
+    const validated = updateAccountSchema.parse(data);
+    accountIdSchema.parse(id);
+
     const account = await prisma.financeAccount.update({
         where: { id, userId: user.id },
-        data,
+        data: validated,
     });
 
     revalidatePath("/dashboard/finance");
@@ -85,11 +171,9 @@ export async function updateAccount(
     };
 }
 
-/**
- * Видалити рахунок (архівувати)
- */
 export async function deleteAccount(id: string) {
     const user = await requireUser();
+    idSchema.parse(id);
 
     await prisma.financeAccount.update({
         where: { id, userId: user.id },
@@ -100,49 +184,110 @@ export async function deleteAccount(id: string) {
     return { success: true };
 }
 
-/**
- * Отримати історію балансу рахунку
- */
-export async function getAccountHistory(
-    accountId: string,
-    from: Date,
-    to: Date
-) {
+export async function getCategories() {
     const user = await requireUser();
+    return prisma.category.findMany({
+        where: { userId: user.id },
+        orderBy: { name: "asc" },
+    });
+}
 
-    const transactions = await prisma.transaction.findMany({
-        where: {
+export async function createCategory(data: {
+    name: string;
+    type: "income" | "expense";
+    isTaxable?: boolean;
+}) {
+    const user = await requireUser();
+    const validated = createCategorySchema.parse(data);
+
+    const existing = await prisma.category.findFirst({
+        where: { userId: user.id, name: validated.name, type: validated.type },
+    });
+    if (existing) {
+        return { ...existing, alreadyExists: true };
+    }
+
+    const category = await prisma.category.create({
+        data: {
             userId: user.id,
-            accountId,
-            date: {
-                gte: from,
-                lte: to,
-            },
-        },
-        orderBy: { date: "asc" },
-        include: {
-            category: true,
+            name: validated.name,
+            type: validated.type,
+            isTaxable: validated.isTaxable ?? false,
         },
     });
 
-    return transactions.map((t) => ({
-        ...t,
-        amount: Number(t.amount),
-    }));
+    revalidatePath("/dashboard/finance");
+    return category;
 }
 
-// ========================
-// TRANSFER MANAGEMENT
-// ========================
+export async function updateCategory(
+    id: string,
+    data: {
+        name?: string;
+        isTaxable?: boolean;
+    }
+) {
+    const user = await requireUser();
+    idSchema.parse(id);
+    const validated = updateCategorySchema.parse(data);
 
-/**
- * Створити трансфер між рахунками
- */
+    const category = await prisma.category.update({
+        where: { id, userId: user.id },
+        data: validated,
+    });
+
+    revalidatePath("/dashboard/finance");
+    return category;
+}
+
+export async function getClients() {
+    const user = await requireUser();
+    return prisma.client.findMany({
+        where: { userId: user.id },
+        orderBy: { name: "asc" },
+    });
+}
+
+export async function getTags() {
+    const user = await requireUser();
+    return prisma.financeTag.findMany({
+        where: { userId: user.id },
+        orderBy: { name: "asc" },
+    });
+}
+
+export async function createTag(name: string, color?: string) {
+    const user = await requireUser();
+    const validated = createTagSchema.parse({ name, color });
+
+    const tag = await prisma.financeTag.create({
+        data: {
+            userId: user.id,
+            name: validated.name,
+            color: validated.color,
+        },
+    });
+
+    revalidatePath("/dashboard/finance");
+    return tag;
+}
+
+export async function deleteTag(id: string) {
+    const user = await requireUser();
+    idSchema.parse(id);
+
+    await prisma.financeTag.delete({
+        where: { id, userId: user.id },
+    });
+
+    revalidatePath("/dashboard/finance");
+    return { success: true };
+}
+
 export async function createTransfer(data: z.infer<typeof createTransferSchema>) {
     const user = await requireUser();
     const validated = createTransferSchema.parse(data);
 
-    // Перевіряємо рахунки
     const [fromAccount, toAccount] = await Promise.all([
         prisma.financeAccount.findFirst({
             where: { id: validated.fromAccountId, userId: user.id },
@@ -165,9 +310,7 @@ export async function createTransfer(data: z.infer<typeof createTransferSchema>)
         throw new Error("Недостатньо коштів на рахунку");
     }
 
-    // Створюємо переказ
     const transfer = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-        // Створюємо запис трансферу
         const newTransfer = await tx.transfer.create({
             data: {
                 userId: user.id,
@@ -181,7 +324,6 @@ export async function createTransfer(data: z.infer<typeof createTransferSchema>)
             },
         });
 
-        // Оновлюємо баланси
         const creditAmount = validated.exchangeRate
             ? new Prisma.Decimal(validated.amount).times(new Prisma.Decimal(validated.exchangeRate)).toDecimalPlaces(2)
             : new Prisma.Decimal(validated.amount);
@@ -218,9 +360,6 @@ export async function createTransfer(data: z.infer<typeof createTransferSchema>)
     };
 }
 
-/**
- * Отримати всі трансфери
- */
 export async function getTransfers(filters?: {
     from?: Date;
     to?: Date;
@@ -251,136 +390,6 @@ export async function getTransfers(filters?: {
     }));
 }
 
-/**
- * Отримати всі категорії
- */
-export async function getCategories() {
-    const user = await requireUser();
-    return prisma.category.findMany({
-        where: { userId: user.id },
-        orderBy: { name: "asc" },
-    });
-}
-
-/**
- * Створити категорію
- */
-export async function createCategory(data: {
-    name: string;
-    type: "income" | "expense";
-    isTaxable?: boolean;
-}) {
-    const user = await requireUser();
-
-    const existing = await prisma.category.findFirst({
-        where: { userId: user.id, name: data.name, type: data.type },
-    });
-    if (existing) {
-        return { ...existing, alreadyExists: true };
-    }
-
-    const category = await prisma.category.create({
-        data: {
-            userId: user.id,
-            name: data.name,
-            type: data.type,
-            isTaxable: data.isTaxable ?? false,
-        },
-    });
-
-    revalidatePath("/dashboard/finance");
-    return category;
-}
-
-/**
- * Оновити категорію
- */
-export async function updateCategory(
-    id: string,
-    data: {
-        name?: string;
-        isTaxable?: boolean;
-    }
-) {
-    const user = await requireUser();
-
-    const category = await prisma.category.update({
-        where: { id, userId: user.id },
-        data,
-    });
-
-    revalidatePath("/dashboard/finance");
-    return category;
-}
-
-/**
- * Отримати всі клієнти
- */
-export async function getClients() {
-    const user = await requireUser();
-    return prisma.client.findMany({
-        where: { userId: user.id },
-        orderBy: { name: "asc" },
-    });
-}
-
-// ========================
-// TAG MANAGEMENT
-// ========================
-
-/**
- * Отримати всі теги
- */
-export async function getTags() {
-    const user = await requireUser();
-
-    const tags = await prisma.financeTag.findMany({
-        where: { userId: user.id },
-        orderBy: { name: "asc" },
-    });
-
-    return tags;
-}
-
-/**
- * Створити тег
- */
-export async function createTag(name: string, color?: string) {
-    const user = await requireUser();
-
-    const tag = await prisma.financeTag.create({
-        data: {
-            userId: user.id,
-            name,
-            color,
-        },
-    });
-
-    revalidatePath("/dashboard/finance");
-    return tag;
-}
-
-/**
- * Видалити тег
- */
-export async function deleteTag(id: string) {
-    const user = await requireUser();
-
-    await prisma.financeTag.delete({
-        where: { id, userId: user.id },
-    });
-
-    revalidatePath("/dashboard/finance");
-    return { success: true };
-}
-
-// ========================
-// ENHANCED TRANSACTIONS
-// ========================
-
-/**
- * Створити транзакцію з тегами
- */
 export async function createTransactionWithTags(data: {
     accountId: string;
     categoryId: string;
@@ -396,73 +405,76 @@ export async function createTransactionWithTags(data: {
     recurringFrequency?: "weekly" | "monthly" | "yearly";
 }) {
     const user = await requireUser();
+    const validated = createTransactionWithTagsSchema.parse(data);
 
     const account = await prisma.financeAccount.findFirst({
-        where: { id: data.accountId, userId: user.id },
+        where: { id: validated.accountId, userId: user.id },
     });
     if (!account) throw new Error("Account not found or access denied");
 
-    // Validate categoryId belongs to user
     const category = await prisma.category.findFirst({
-        where: { id: data.categoryId, userId: user.id },
+        where: { id: validated.categoryId, userId: user.id },
     });
     if (!category) throw new Error("Category not found or access denied");
 
-    // Validate projectId belongs to user
-    if (data.projectId && data.projectId !== "none") {
+    if (validated.projectId && validated.projectId !== "none") {
         const proj = await prisma.project.findFirst({
-            where: { id: data.projectId, userId: user.id },
+            where: { id: validated.projectId, userId: user.id },
         });
         if (!proj) throw new Error("Project not found or access denied");
     }
 
+    if (validated.clientId && validated.clientId !== "none" && validated.clientId !== "") {
+        const cl = await prisma.client.findFirst({
+            where: { id: validated.clientId, userId: user.id },
+        });
+        if (!cl) throw new Error("Client not found or access denied");
+    }
+
     const transaction = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-        // Створюємо транзакцію
         const newTx = await tx.transaction.create({
             data: {
                 userId: user.id,
-                accountId: data.accountId,
-                categoryId: data.categoryId,
-                type: data.type,
-                amount: data.amount,
-                date: data.date,
-                description: data.description,
-                projectId: data.projectId !== "none" ? data.projectId : null,
-                clientId: data.clientId !== "none" && data.clientId !== "" ? data.clientId : null,
-                tagIds: data.tagIds || [],
-                note: data.note,
-                isRecurring: data.isRecurring || false,
+                accountId: validated.accountId,
+                categoryId: validated.categoryId,
+                type: validated.type,
+                amount: validated.amount,
+                date: validated.date,
+                description: validated.description,
+                projectId: validated.projectId !== "none" ? validated.projectId : null,
+                clientId: validated.clientId !== "none" && validated.clientId !== "" ? validated.clientId : null,
+                tagIds: validated.tagIds || [],
+                note: validated.note,
+                isRecurring: validated.isRecurring || false,
             },
         });
 
-        // Якщо це рекурентний платіж, створюємо і його
-        if (data.isRecurring && data.recurringFrequency) {
-            const nextDate = new Date(data.date);
-            if (data.recurringFrequency === "weekly") nextDate.setDate(nextDate.getDate() + 7);
-            else if (data.recurringFrequency === "monthly") nextDate.setMonth(nextDate.getMonth() + 1);
-            else if (data.recurringFrequency === "yearly") nextDate.setFullYear(nextDate.getFullYear() + 1);
+        if (validated.isRecurring && validated.recurringFrequency) {
+            const nextDate = new Date(validated.date);
+            if (validated.recurringFrequency === "weekly") nextDate.setDate(nextDate.getDate() + 7);
+            else if (validated.recurringFrequency === "monthly") nextDate.setMonth(nextDate.getMonth() + 1);
+            else if (validated.recurringFrequency === "yearly") nextDate.setFullYear(nextDate.getFullYear() + 1);
 
             await tx.recurringPayment.create({
                 data: {
                     userId: user.id,
-                    name: data.description || "Рекурентний платіж",
-                    amount: data.amount,
-                    type: data.type,
-                    frequency: data.recurringFrequency,
+                    name: validated.description || "Рекурентний платіж",
+                    amount: validated.amount,
+                    type: validated.type,
+                    frequency: validated.recurringFrequency,
                     nextPaymentDate: nextDate,
-                    categoryId: data.categoryId,
-                    accountId: data.accountId,
+                    categoryId: validated.categoryId,
+                    accountId: validated.accountId,
                     autoCreate: true,
                 },
             });
         }
 
-        // Оновлюємо баланс рахунку
         const balanceChange =
-            data.type === "income" ? data.amount : -data.amount;
+            validated.type === "income" ? validated.amount : -validated.amount;
 
         await tx.financeAccount.update({
-            where: { id: data.accountId },
+            where: { id: validated.accountId },
             data: {
                 balance: {
                     increment: balanceChange,
@@ -474,6 +486,11 @@ export async function createTransactionWithTags(data: {
     });
 
     revalidatePath("/dashboard/finance");
+
+    if (transaction.id) {
+        try { await applyRulesToTransaction(transaction.id); } catch {}
+    }
+
     return {
         ...transaction,
         amount: Number(transaction.amount),
@@ -495,14 +512,14 @@ export async function createFullSplitTransaction(data: {
     projectId?: string;
 }) {
     const user = await requireUser();
+    const validated = createFullSplitTransactionSchema.parse(data);
 
     const account = await prisma.financeAccount.findFirst({
-        where: { id: data.accountId, userId: user.id },
+        where: { id: validated.accountId, userId: user.id },
     });
     if (!account) throw new Error("Account not found or access denied");
 
-    // Validate all split categoryIds belong to user
-    const splitCategoryIds = [...new Set(data.splits.map(s => s.categoryId))];
+    const splitCategoryIds = [...new Set(validated.splits.map(s => s.categoryId))];
     const validCategories = await prisma.category.findMany({
         where: { id: { in: splitCategoryIds }, userId: user.id },
         select: { id: true },
@@ -512,50 +529,61 @@ export async function createFullSplitTransaction(data: {
         if (!validCatIds.has(cid)) throw new Error("Category not found or access denied");
     }
 
-    const splitsTotal = data.splits.reduce((sum, s) => sum + s.amount, 0);
+    if (data.projectId && data.projectId !== "none") {
+        const proj = await prisma.project.findFirst({ where: { id: validated.projectId, userId: user.id } });
+        if (!proj) throw new Error("Project not found or access denied");
+    }
+
+    if (validated.clientId && validated.clientId !== "none" && validated.clientId !== "") {
+        const cl = await prisma.client.findFirst({ where: { id: validated.clientId, userId: user.id } });
+        if (!cl) throw new Error("Client not found or access denied");
+    }
+
+    const splitsTotal = validated.splits.reduce((sum, s) => sum + s.amount, 0);
+
+    if (Math.abs(splitsTotal - validated.amount) > 0.01) {
+        throw new Error(`Сума частин (${splitsTotal.toFixed(2)}) не дорівнює загальній сумі (${validated.amount.toFixed(2)})`);
+    }
 
     const transaction = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-        // 1. Створюємо головну транзакцію (батьківську) з сумою 0 — вона лише групує split
         const parentTx = await tx.transaction.create({
             data: {
                 userId: user.id,
-                accountId: data.accountId,
-                categoryId: data.splits[0].categoryId,
-                type: data.type,
+                accountId: validated.accountId,
+                categoryId: validated.splits[0].categoryId,
+                type: validated.type,
                 amount: 0,
-                date: data.date,
-                description: data.description,
-                tagIds: data.tagIds || [],
+                date: validated.date,
+                description: validated.description,
+                tagIds: validated.tagIds || [],
                 note: "[SPLIT]",
-                clientId: data.clientId !== "none" && data.clientId !== "" ? data.clientId : null,
-                projectId: data.projectId || null,
+                clientId: validated.clientId !== "none" && validated.clientId !== "" ? validated.clientId : null,
+                projectId: validated.projectId || null,
             },
         });
 
-        // 2. Створюємо дочірні транзакції (кожна з реальною сумою)
-        for (const split of data.splits) {
+        for (const split of validated.splits) {
             await tx.transaction.create({
                 data: {
                     userId: user.id,
-                    accountId: data.accountId,
+                    accountId: validated.accountId,
                     categoryId: split.categoryId,
-                    type: data.type,
+                    type: validated.type,
                     amount: split.amount,
-                    date: data.date,
-                    description: data.description,
+                    date: validated.date,
+                    description: validated.description,
                     note: split.note,
-                    tagIds: data.tagIds || [],
+                    tagIds: validated.tagIds || [],
                     splitParentId: parentTx.id,
-                    clientId: data.clientId !== "none" && data.clientId !== "" ? data.clientId : null,
-                    projectId: data.projectId || null,
+                    clientId: validated.clientId !== "none" && validated.clientId !== "" ? validated.clientId : null,
+                    projectId: validated.projectId || null,
                 },
             });
         }
 
-        // 3. Оновлюємо баланс на суму всіх split-ів
-        const balanceChange = data.type === "income" ? splitsTotal : -splitsTotal;
+        const balanceChange = validated.type === "income" ? splitsTotal : -splitsTotal;
         await tx.financeAccount.update({
-            where: { id: data.accountId },
+            where: { id: validated.accountId },
             data: {
                 balance: {
                     increment: balanceChange,
@@ -590,65 +618,64 @@ export async function updateTransaction(data: {
     note?: string;
 }) {
     const user = await requireUser();
+    const validated = updateTransactionSchema.parse(data);
 
     const transaction = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         const oldTx = await tx.transaction.findUnique({
-            where: { id: data.id, userId: user.id },
+            where: { id: validated.id, userId: user.id },
         });
         if (!oldTx) throw new Error("Transaction not found");
 
-        // Validate new accountId belongs to user
-        if (data.accountId !== oldTx.accountId) {
+        if (oldTx.type === "transfer") {
+            throw new Error("Трансферні транзакції не можна редагувати окремо.");
+        }
+
+        if (validated.accountId !== oldTx.accountId) {
             const newAcc = await tx.financeAccount.findFirst({
-                where: { id: data.accountId, userId: user.id },
+                where: { id: validated.accountId, userId: user.id },
             });
             if (!newAcc) throw new Error("Target account not found or access denied");
         }
 
-        // Validate categoryId belongs to user
-        if (data.categoryId) {
+        if (validated.categoryId) {
             const cat = await tx.category.findFirst({
-                where: { id: data.categoryId, userId: user.id },
+                where: { id: validated.categoryId, userId: user.id },
             });
             if (!cat) throw new Error("Category not found or access denied");
         }
 
-        // Validate projectId belongs to user
-        if (data.projectId && data.projectId !== "none") {
+        if (validated.projectId && validated.projectId !== "none") {
             const proj = await tx.project.findFirst({
-                where: { id: data.projectId, userId: user.id },
+                where: { id: validated.projectId, userId: user.id },
             });
             if (!proj) throw new Error("Project not found or access denied");
         }
 
-        // 1. Повертаємо баланс назад
         const oldBalanceChange = oldTx.type === "income" ? -Number(oldTx.amount) : Number(oldTx.amount);
         await tx.financeAccount.update({
             where: { id: oldTx.accountId },
             data: { balance: { increment: oldBalanceChange } },
         });
 
-        // 2. Оновлюємо транзакцію
         const updated = await tx.transaction.update({
-            where: { id: data.id },
+            where: { id: validated.id },
             data: {
-                accountId: data.accountId,
-                categoryId: data.categoryId,
-                type: data.type,
-                amount: data.amount,
-                date: data.date,
-                description: data.description,
-                projectId: data.projectId !== "none" ? data.projectId : null,
-                clientId: data.clientId !== "none" && data.clientId !== "" ? data.clientId : null,
-                tagIds: data.tagIds || [],
-                note: data.note,
+                accountId: validated.accountId,
+                categoryId: validated.categoryId,
+                type: validated.type,
+                amount: validated.amount,
+                date: validated.date,
+                description: validated.description,
+                projectId: validated.projectId !== "none" ? validated.projectId : null,
+                clientId: validated.clientId !== "none" && validated.clientId !== "" ? validated.clientId : null,
+                tagIds: validated.tagIds || [],
+                note: validated.note,
             },
         });
 
-        // 3. Застосовуємо новий баланс
-        const newBalanceChange = data.type === "income" ? data.amount : -data.amount;
+        const newBalanceChange = validated.type === "income" ? validated.amount : -validated.amount;
         await tx.financeAccount.update({
-            where: { id: data.accountId },
+            where: { id: validated.accountId },
             data: { balance: { increment: newBalanceChange } },
         });
 
@@ -674,6 +701,10 @@ export async function deleteTransaction(id: string) {
         });
 
         if (!transaction) throw new Error("Transaction not found");
+
+        if (transaction.type === "transfer") {
+            throw new Error("Трансферні транзакції не можна видаляти окремо. Використовуйте управління переказами.");
+        }
 
         // Коригуємо баланс
         const balanceChange = transaction.type === "income" ? -Number(transaction.amount) : Number(transaction.amount);
@@ -723,11 +754,21 @@ export async function processRecurringPayments() {
                 select: { nextPaymentDate: true, lastGenerated: true },
             });
             if (!fresh) return;
-            // Optimistic lock: if nextPaymentDate changed or already generated this cycle, skip
             if (fresh.nextPaymentDate.getTime() !== payment.nextPaymentDate.getTime()) return;
             if (fresh.lastGenerated && fresh.lastGenerated.getTime() >= now.getTime() - 60000) return;
 
-            // Check for duplicate: if a transaction already exists for this recurring payment at this date
+            const account = await tx.financeAccount.findFirst({
+                where: { id: pAccountId, userId: user.id },
+                select: { id: true },
+            });
+            if (!account) return;
+
+            const category = await tx.category.findFirst({
+                where: { id: pCategoryId, userId: user.id },
+                select: { id: true },
+            });
+            if (!category) return;
+
             const existing = await tx.transaction.findFirst({
                 where: {
                     userId: user.id,

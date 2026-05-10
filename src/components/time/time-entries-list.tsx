@@ -451,7 +451,7 @@ export default function TimeEntriesList({
                         )}
 
                         <div className="min-w-0 flex-1">
-                          <p className={cn("text-sm font-medium truncate", !isWork && "italic")}>
+                          <p className={cn("text-sm font-medium truncate", !isWork && "font-normal")}>
                             {getTitle(item)}
                             {isWork && item.billable === false && <span className="ml-1 text-destructive/70 text-xs">✕</span>}
                           </p>
@@ -487,7 +487,7 @@ export default function TimeEntriesList({
         <div className="overflow-x-auto">
         <div className="min-w-[720px]">
         {/* Toolbar */}
-        <div className="flex items-center gap-3 border-b px-4 py-2.5 bg-muted/40">
+        <div className="flex items-center gap-3 border-b pl-1 pr-4 py-2.5 bg-muted/40">
           <div className="w-10 flex justify-center shrink-0">
             <Checkbox
               checked={allSelected}
@@ -538,12 +538,12 @@ export default function TimeEntriesList({
                       <span className="truncate text-sm">{activeProjectName}</span>
                     </>
                   ) : (
-                    <span className="text-xs opacity-50 italic">Вибрати проєкт...</span>
+                    <span className="text-xs opacity-50 font-normal">Вибрати проєкт...</span>
                   )}
                 </div>
 
                 {/* 4. Time Range (Running) */}
-                <div className="w-[130px] shrink-0 text-right text-muted-foreground hidden sm:block text-[11px] tabular-nums">
+                <div className="w-[130px] shrink-0 text-right text-muted-foreground hidden sm:block text-xs font-medium">
                   {activeStartedMs ? format(new Date(activeStartedMs), "HH:mm") : ""} - Зараз
                 </div>
 
@@ -623,9 +623,9 @@ export default function TimeEntriesList({
                       return (
                         <div key="brk-active" className="flex items-center h-9 bg-muted/10 text-muted-foreground hover:bg-muted/20 transition-colors border-l-4 border-l-transparent">
                           <div className="w-10 shrink-0" />
-                          <div className="flex-1 min-w-0 text-sm italic opacity-70">Перерва</div>
+                          <div className="flex-1 min-w-0 text-sm font-normal opacity-70">Перерва</div>
                           <div className="w-[180px] xl:w-[220px] shrink-0 hidden md:flex" />
-                          <div className="w-[130px] shrink-0 text-right text-[11px] tabular-nums opacity-70 hidden sm:block">
+                          <div className="w-[130px] shrink-0 text-right text-xs font-medium opacity-70 hidden sm:block">
                             {format(firstEntry.endAt, "HH:mm")} - {format(new Date(activeStartedMs), "HH:mm")}
                           </div>
                           <div className="w-[120px] shrink-0 text-right text-sm px-4 tabular-nums opacity-70">
@@ -655,7 +655,7 @@ export default function TimeEntriesList({
                     key={item.id}
                     className={cn("group flex items-center cursor-pointer h-14 transition-all hover:bg-muted/40 border-l-4 border-l-transparent",
                       selectedIds[item.id] && "bg-muted/40 border-l-foreground",
-                      !isWork && "bg-muted/5 italic text-muted-foreground h-10"
+                      !isWork && "bg-muted/5 font-normal text-muted-foreground h-10"
                     )}
                     onClick={() => isWork && onEditWorkEntryAction?.(item.id)}
                     onMouseEnter={() => isWork && onHighlightAction?.(item.id)}
@@ -674,7 +674,7 @@ export default function TimeEntriesList({
                       )}
                     </div>
 
-                    <div className={cn("flex-1 min-w-0 pr-4 text-sm font-medium truncate", isNoDescription && "text-muted-foreground italic font-normal")}>
+                    <div className={cn("flex-1 min-w-0 pr-4 text-sm font-medium truncate", isNoDescription && "text-muted-foreground font-normal")}>
                       {title}
                       {isWork && item.billable === false && <span className="ml-1.5 text-destructive/70 text-xs">✕</span>}
                     </div>
@@ -688,7 +688,7 @@ export default function TimeEntriesList({
                       )}
                     </div>
 
-                    <div className="w-[130px] shrink-0 text-right text-muted-foreground hidden sm:block text-[11px] tabular-nums">
+                    <div className="w-[130px] shrink-0 text-right text-muted-foreground hidden sm:block text-xs font-medium">
                       {formatTimeRange(item.startAt, item.endAt)}
                     </div>
 
@@ -714,9 +714,9 @@ export default function TimeEntriesList({
                     rows.push(
                       <div key={`gap-${item.id}`} className="flex items-center h-9 bg-muted/10 text-muted-foreground hover:bg-muted/20 transition-colors border-l-4 border-l-transparent">
                         <div className="w-10 shrink-0" />
-                        <div className="flex-1 min-w-0 text-sm italic opacity-70">Перерва</div>
+                        <div className="flex-1 min-w-0 text-sm font-normal opacity-70">Перерва</div>
                         <div className="w-[180px] xl:w-[220px] shrink-0 hidden md:flex" />
-                        <div className="w-[130px] shrink-0 text-right text-[11px] tabular-nums opacity-70 hidden sm:block">
+                        <div className="w-[130px] shrink-0 text-right text-xs font-medium opacity-70 hidden sm:block">
                           {format(nextEarlier.endAt, "HH:mm")} - {format(item.startAt, "HH:mm")}
                         </div>
                         <div className="w-[120px] shrink-0 text-right text-sm px-4 tabular-nums opacity-70">

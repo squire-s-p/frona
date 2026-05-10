@@ -136,7 +136,7 @@ export async function getFullDashboardData() {
     }),
 
     prisma.transaction.findMany({
-      where: { userId: user.id },
+      where: { userId: user.id, type: { in: ["income", "expense"] } },
       orderBy: { date: "desc" },
       take: 5,
       select: {

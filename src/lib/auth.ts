@@ -7,6 +7,7 @@ import { headers } from "next/headers";
 import { UAParser } from "ua-parser-js";
 
 import { prisma } from "@/lib/prisma";
+import { sendVerificationEmail } from "@/lib/email";
 
 
 export const authOptions: NextAuthOptions = {
@@ -14,21 +15,18 @@ export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
 
   providers: [
-    // ---------- Google ----------
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       allowDangerousEmailAccountLinking: true,
       authorization: {
         params: {
-          // ✅ basic scopes only for login
           scope: "openid email profile",
           prompt: "select_account",
         },
       },
     }),
 
-    // ---------- Email + Password ----------
     CredentialsProvider({
       name: "Email & Password",
       credentials: {
@@ -58,7 +56,6 @@ export const authOptions: NextAuthOptions = {
           select: { passwordHash: true },
         });
 
-        // ❗ користувач створений через Google → без пароля
         if (!pass) return null;
 
         const isValid = await bcrypt.compare(password, pass.passwordHash);
@@ -68,6 +65,10 @@ export const authOptions: NextAuthOptions = {
       },
     }),
   ],
+
+  pages: {
+    verifyRequest: "/auth/verify-email",
+  },
 
   callbacks: {
     async signIn({ user, account, profile: _profile }) {
@@ -81,23 +82,14 @@ export const authOptions: NextAuthOptions = {
           },
         });
 
-        if (existingUser && existingUser.accounts.length === 0) {
-          if (!existingUser.emailVerified) {
-            await prisma.user.update({
-              where: { id: existingUser.id },
-              data: { emailVerified: new Date() },
-            });
-          }
+        if (existingUser && !existingUser.emailVerified) {
+          await prisma.user.update({
+            where: { id: existingUser.id },
+            data: { emailVerified: new Date() },
+          });
         }
 
         if (existingUser?.accounts.length) {
-          if (!existingUser.emailVerified) {
-            await prisma.user.update({
-              where: { id: existingUser.id },
-              data: { emailVerified: new Date() },
-            });
-          }
-
           await prisma.account.update({
             where: { id: existingUser.accounts[0].id },
             data: {
@@ -115,7 +107,14 @@ export const authOptions: NextAuthOptions = {
       if (user?.id) {
         (token as any).id = user.id;
 
-        // Create DeviceSession strictly on login
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: user.id },
+            select: { emailVerified: true },
+          });
+          (token as any).emailVerified = !!dbUser?.emailVerified;
+        } catch {}
+
         if (!token.deviceSessionId) {
           try {
             const reqHeaders = await headers();
@@ -149,28 +148,26 @@ export const authOptions: NextAuthOptions = {
         try {
           const dbUser = await prisma.user.findUnique({
             where: { id: token.id as string },
-            select: { name: true, image: true }
+            select: { name: true, image: true, emailVerified: true }
           });
           if (dbUser) {
             token.name = dbUser.name;
             token.picture = dbUser.image;
+            (token as any).emailVerified = !!dbUser.emailVerified;
           }
         } catch {
-          // Ignore
         }
       }
 
-      // Check if session continues to exist
       if (token.deviceSessionId) {
         try {
           const dbSession = await prisma.deviceSession.findUnique({
             where: { id: token.deviceSessionId as string }
           });
-          
+
           if (!dbSession) {
             (token as any).error = "SessionRevoked";
           } else {
-            // Update lastActive if older than 1 hour
             if (Date.now() - dbSession.lastActive.getTime() > 1000 * 60 * 60) {
               await prisma.deviceSession.update({
                 where: { id: dbSession.id },
@@ -179,7 +176,6 @@ export const authOptions: NextAuthOptions = {
             }
           }
         } catch {
-          // ignore DB errors silently so we don't break login if DB is slow
         }
       }
 
@@ -187,14 +183,13 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if ((token as any).error === "SessionRevoked") {
-        // Return empty session to force client-side logout
         return {} as any;
       }
       if (session.user) {
         (session.user as any).id = (token as any).id as string;
         (session as any).deviceSessionId = token.deviceSessionId;
-        
-        // Pass updated token values down to the client session
+        (session.user as any).emailVerified = !!(token as any).emailVerified;
+
         if (token.name) session.user.name = token.name;
         if (token.picture) session.user.image = token.picture;
       }

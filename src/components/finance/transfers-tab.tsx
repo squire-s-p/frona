@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { toast } from "sonner";
 import {
     Search,
     Plus,
@@ -46,7 +47,7 @@ export function TransfersTab({ accounts, onRefresh }: TransfersTabProps) {
             const data = await getTransfers();
             setTransfers(data);
         } catch (error) {
-            console.error("Failed to fetch transfers:", error);
+            toast.error("Не вдалося завантажити перекази");
         } finally {
             setIsLoading(false);
         }

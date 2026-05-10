@@ -158,7 +158,6 @@ export function AccountDialog({
             form.reset();
             onSuccess?.();
         } catch (error) {
-            console.error("Failed to save account:", error);
             toast.error("Не вдалося створити рахунок");
         } finally {
             setIsLoading(false);

@@ -302,7 +302,7 @@ export function GoalsTab({ goals, accounts, onRefresh }: GoalsTabProps) {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {goals.map((goal) => {
-                    const progress = Math.min((goal.currentAmount / goal.targetAmount) * 100, 100);
+                    const progress = goal.targetAmount > 0 ? Math.min((goal.currentAmount / goal.targetAmount) * 100, 100) : 0;
                     const isCompleted = progress >= 100;
                     const timeToTarget = calculateTimeToGoal(goal);
                     const typeInfo = GOAL_TYPES.find(t => t.value === goal.goalType) || GOAL_TYPES[GOAL_TYPES.length - 1];

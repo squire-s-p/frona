@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Plus, MoreVertical, Pencil, Archive, ArrowRightLeft } from "lucide-react";
 import { Wallet, CreditCard, Banknote, Bitcoin, PiggyBank } from "lucide-react";
+import { toast } from "sonner";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -80,7 +81,7 @@ export function AccountManagement({ accounts, bankAccounts = [], onRefresh }: Ac
             await deleteAccount(archiveId);
             onRefresh();
         } catch (error) {
-            console.error("Failed to archive account:", error);
+            toast.error("Не вдалося архівувати рахунок");
         } finally {
             setArchiveId(null);
         }

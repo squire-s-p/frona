@@ -160,9 +160,10 @@ export default function TimePageClient({
   const isRunning = !!hydratedActiveTimer;
 
   const totals = React.useMemo(() => {
-    const { workSec: work, breakSec: brk } = calculateBreakAndWork(hydratedEntries);
+    const sorted = [...hydratedEntries].sort((a, b) => b.startAt.getTime() - a.startAt.getTime());
+    const { workSec: work, breakSec: brk } = calculateBreakAndWork(sorted);
     return { work, brk, total: work + brk };
-  }, [entries]);
+  }, [hydratedEntries]);
 
   // ✅ Active duration tick
   const [tick, setTick] = React.useState(0);
@@ -449,38 +450,34 @@ export default function TimePageClient({
   const [workInitialRange, setWorkInitialRange] = React.useState<{ startAt: Date; endAt: Date } | null>(null);
 
   const [editingWorkEntryId, setEditingWorkEntryId] = React.useState<string | null>(null);
+  const [taskDialogOpen, setTaskDialogOpen] = React.useState(false);
+  const [taskDialogProjectId, setTaskDialogProjectId] = React.useState<string | null>(null);
+  const [lastCreatedTask, setLastCreatedTask] = React.useState<{ id: string; projectId: string | null } | null>(null);
+  const [highlightedId, setHighlightedId] = React.useState<string | null>(null);
+
+  const timelineEntries = React.useMemo(() => hydratedEntries.filter((e) => e.type === "work"), [hydratedEntries]);
+  const timelineActiveTimer = hydratedActiveTimer?.mode === "work" ? hydratedActiveTimer : null;
 
   const editingWorkEntry = React.useMemo(() => {
     if (!editingWorkEntryId) return null;
     return hydratedEntries.find((e) => e.id === editingWorkEntryId && e.type === "work") ?? null;
   }, [hydratedEntries, editingWorkEntryId]);
 
-  const [taskDialogOpen, setTaskDialogOpen] = React.useState(false);
-  const [taskDialogProjectId, setTaskDialogProjectId] = React.useState<string | null>(null);
-  const [lastCreatedTask, setLastCreatedTask] = React.useState<{ id: string; projectId: string | null } | null>(null);
-
-  // Timeline: only WORK segments. Break = empty space.
-  const timelineEntries = React.useMemo(() => hydratedEntries.filter((e) => e.type === "work"), [hydratedEntries]);
-  const timelineActiveTimer = hydratedActiveTimer?.mode === "work" ? hydratedActiveTimer : null;
-
-  // Hover highlighting state
-  const [highlightedId, setHighlightedId] = React.useState<string | null>(null);
-
   return (
-    <div className="flex flex-1 min-h-0 flex-col gap-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-        <div className="flex items-center gap-3">
-          <Button
-            size="icon"
-            className="h-10 w-10 shrink-0 rounded-full"
-            onClick={onMainTimerAction}
-            disabled={pending}
-            aria-label={mainButton.aria}
-            title={mainButton.title}
-          >
-            {mainButton.icon}
-          </Button>
-          <h1 className="text-2xl font-semibold tracking-tight">Мій час</h1>
+    <div className="flex flex-col gap-6 h-full">
+      <div className="flex items-center justify-between px-1 gap-4">
+        <div className="flex flex-1 items-center justify-between sm:justify-start sm:gap-6">
+          <div className="flex items-center gap-3">
+            <Button
+              size="icon"
+              className="h-10 w-10 shrink-0 rounded-full shadow-md bg-foreground text-background hover:bg-foreground/90 transition-colors"
+              onClick={onMainTimerAction}
+              disabled={pending}
+              aria-label={mainButton.aria}
+            >
+              {mainButton.icon}
+            </Button>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
@@ -676,66 +673,65 @@ export default function TimePageClient({
       )}
 
 
-      {viewMode === "day" ? (
-      <>
-      {/* Timeline */}
-      <Card className="p-4 gap-0">
-        <div className="flex items-start justify-between gap-6">
-          <div className="flex flex-col gap-1">
-            <div className="text-sm text-muted-foreground">Робота</div>
-            <div className="text-2xl font-semibold">{formatDurationUa(totals.work + activeDurationSec)}</div>
-
-            <div className="text-sm text-muted-foreground pt-1">
-              Перерва: <span className="text-foreground font-medium">{formatDurationUa(totals.brk)}</span>
+      <Card className="flex-1 flex flex-col min-h-0 sm:rounded-3xl border-none shadow-none dark:shadow-none sm:ring-1 sm:ring-border/50 sm:dark:bg-neutral-900 dark:bg-transparent sm:bg-white bg-transparent backdrop-blur-none sm:backdrop-blur-sm overflow-hidden py-0">
+        
+        {viewMode === "day" ? (
+        <div className="flex-1 min-h-0 flex flex-col overflow-y-auto custom-scrollbar relative">
+          
+          {/* Header Stats Section within Card */}
+          <div className="hidden sm:flex px-6 py-4 border-b border-border/50 items-center justify-between gap-4 bg-muted/10">
+            <div className="flex items-center gap-6">
+              <div className="flex flex-col gap-0.5">
+                <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Робота</div>
+                <div className="text-xl font-bold text-foreground">{formatDurationUa(totals.work + activeDurationSec)}</div>
+              </div>
+              <div className="w-px h-8 bg-border/50" />
+              <div className="flex flex-col gap-0.5">
+                <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Перерва</div>
+                <div className="text-xl font-medium text-muted-foreground">{formatDurationUa(totals.brk)}</div>
+              </div>
             </div>
-          </div>
 
-          <div className="ml-auto flex items-end gap-8">
-            {/* Weekly Activity Block */}
-            <div className="hidden lg:flex pb-1">
-              <WeeklySparkline data={weeklyData} selectedDateISO={dateISO} />
-            </div>
+            <div className="flex items-center gap-8">
+              {/* Weekly Activity Block */}
+              <div className="hidden xl:flex opacity-80 hover:opacity-100 transition-opacity">
+                <WeeklySparkline data={weeklyData} selectedDateISO={dateISO} />
+              </div>
 
-            <div className="text-right">
-              {/* Progress Bar (Goal) moved to right */}
-              <div className="w-64 text-left">
-                <div className="flex justify-between items-center text-[10px] uppercase font-bold text-muted-foreground mb-1 tracking-wider">
-                  <Button
-                    variant="ghost"
-                    className="h-auto p-0 text-[10px] uppercase font-bold text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 group"
+              {/* Goal Progress */}
+              <div className="w-64 text-left flex flex-col gap-1.5">
+                <div className="flex justify-between items-center text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
+                  <button
+                    className="h-auto p-0 m-0 text-[10px] uppercase font-bold text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 group bg-transparent border-none outline-none cursor-pointer"
                     onClick={handleGoalChange}
                     title="Змінити ціль"
                   >
                     Денна ціль: {goalHours} год
                     <History className="h-2.5 w-2.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </Button>
+                  </button>
                   <span>{Math.min(100, Math.floor(((totals.work + activeDurationSec) / GOAL_SEC) * 100))}%</span>
                 </div>
-                <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                <div className="h-1.5 w-full bg-border/50 rounded-full overflow-hidden">
                   <div
                     className={cn(
                       "h-full transition-all duration-1000 ease-out rounded-full",
                       (() => {
                         const pct = (totals.work + activeDurationSec) / GOAL_SEC;
-                        if (pct >= 1) return "bg-red-500";
+                        if (pct >= 1) return "bg-green-500";
                         if (pct >= 0.8) return "bg-amber-500";
-                        return "bg-green-500";
+                        return "bg-primary/80";
                       })()
                     )}
                     style={{ width: `${Math.min(100, Math.floor(((totals.work + activeDurationSec) / GOAL_SEC) * 100))}%` }}
                   />
                 </div>
-                <div className="mt-1 text-[10px] text-muted-foreground italic truncate">
-                  {totals.work + activeDurationSec >= GOAL_SEC
-                    ? "Ціль досягнута! 🎉"
-                    : `Залишилось: ${formatDurationUa(GOAL_SEC - (totals.work + activeDurationSec))}`
-                  }
-                </div>
               </div>
             </div>
           </div>
-        </div>
-        <div className="mt-4">
+
+          <div className="p-0 sm:p-6 flex flex-col gap-8 flex-1">
+            {/* Timeline */}
+            <div className="w-full">
           <TimeTimeline
             entries={timelineEntries}
             activeTimer={timelineActiveTimer}
@@ -784,10 +780,9 @@ export default function TimePageClient({
           />
 
         </div>
-      </Card>
-
-      {/* List */}
-      <div className="flex flex-col gap-4">
+            
+            {/* List */}
+            <div className="w-full">
 
         {/* Idle Detection Dialog */}
         <AlertDialog open={isIdleDialogOpen} onOpenChange={setIsIdleDialogOpen}>
@@ -892,10 +887,14 @@ export default function TimePageClient({
           activeTimerTick={tick}
         />
       </div>
-      </>
-      ) : (
-      <WeekView data={weekViewData} />
-      )}
+          </div>
+        </div>
+        ) : (
+          <div className="p-6">
+            <WeekView data={weekViewData} />
+          </div>
+        )}
+      </Card>
 
       {/* Work entry dialog (create/edit) */}
       <WorkEntryDialog

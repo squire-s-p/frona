@@ -113,7 +113,6 @@ export function TransferDialog({
             form.reset();
             onSuccess?.();
         } catch (error) {
-            console.error("Failed to create transfer:", error);
             toast.error("Не вдалося створити переказ");
         } finally {
             setIsLoading(false);

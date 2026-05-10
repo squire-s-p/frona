@@ -40,7 +40,7 @@ export function calculateBreakAndWork(entries: CalculableEntry[]): {
     const gapSec = Math.floor(
       (next.startAt.getTime() - cur.endAt.getTime()) / 1000
     );
-    if (gapSec > 0 && gapSec <= GAP_THRESHOLD_SEC) {
+    if (gapSec > 0) {
       breakSec += gapSec;
     }
   }

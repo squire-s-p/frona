@@ -6,6 +6,47 @@ import { getMonobankClient } from "@/lib/monobank";
 import { revalidatePath } from "next/cache";
 import { format } from "date-fns";
 import { requireUser } from "@/lib/require-user";
+import { z } from "zod";
+
+const createSavingsGoalSchema = z.object({
+    name: z.string().min(1).max(100),
+    targetAmount: z.number().positive(),
+    deadline: z.coerce.date().optional(),
+    color: z.string().max(7).optional(),
+    goalType: z.string().max(30).optional(),
+    accountId: z.string().optional(),
+});
+
+const updateSavingsGoalSchema = z.object({
+    currentAmount: z.number().min(0).optional(),
+    name: z.string().min(1).max(100).optional(),
+    color: z.string().max(7).optional(),
+    goalType: z.string().max(30).optional(),
+    status: z.enum(["active", "completed", "cancelled"]).optional(),
+    accountId: z.string().optional(),
+    targetAmount: z.number().positive().optional(),
+    deadline: z.coerce.date().optional(),
+});
+
+const createRecurringPaymentSchema = z.object({
+    name: z.string().min(1).max(100),
+    amount: z.number().positive(),
+    frequency: z.enum(["weekly", "monthly", "yearly", "once"]),
+    nextPaymentDate: z.coerce.date(),
+    type: z.enum(["income", "expense"]).optional(),
+    category: z.string().optional(),
+    accountId: z.string().optional(),
+    affectsForecast: z.boolean().optional(),
+    isExpectedIncome: z.boolean().optional(),
+});
+
+const shoppingItemSchema = z.object({
+    name: z.string().min(1).max(200),
+    url: z.string().url().optional().or(z.literal("")),
+    price: z.number().min(0).optional(),
+});
+
+const idSchema = z.string().cuid();
 
 // ─── Legacy Monobank Sync Removed ──────────────────────────────────────────────
 // Now using /modules/bank for all synchronization logic.
@@ -50,7 +91,7 @@ export async function getRecentTransactions(limit = 10, offset = 0, filters?: {
 }) {
     const user = await requireUser();
 
-    const txWhere: Prisma.TransactionWhereInput = { userId: user.id, NOT: { amount: 0, note: "[SPLIT]" } };
+    const txWhere: Prisma.TransactionWhereInput = { userId: user.id, type: { in: ["income", "expense"] }, NOT: { amount: 0, note: "[SPLIT]" } };
     const transferWhere: Prisma.TransferWhereInput = { userId: user.id };
 
     if (filters) {
@@ -188,20 +229,13 @@ export async function getRecentTransactions(limit = 10, offset = 0, filters?: {
     ];
 
     // 4. Отримуємо загальні підсумки для фільтрації (без пагінації)
-    // Виключаємо внутрішні перекази з підсумків доходу/витрат
-    const exclusionFilter = {
-        category: {
-            name: { notIn: ["Внутрішній переказ"] }
-        }
-    };
-
     const [incomeAgg, expenseAgg] = await Promise.all([
         prisma.transaction.aggregate({
-            where: { ...txWhere, type: 'income', ...exclusionFilter },
+            where: { ...txWhere, type: 'income' },
             _sum: { amount: true }
         }),
         prisma.transaction.aggregate({
-            where: { ...txWhere, type: 'expense', ...exclusionFilter },
+            where: { ...txWhere, type: 'expense' },
             _sum: { amount: true }
         })
     ]);
@@ -261,6 +295,7 @@ export async function getProjects() {
  */
 export async function updateTransactionProject(transactionId: string, projectId: string | null) {
     const user = await requireUser();
+    idSchema.parse(transactionId);
 
     try {
         await prisma.transaction.update({
@@ -279,13 +314,17 @@ export async function updateTransactionProject(transactionId: string, projectId:
  */
 export async function updateTransactionDetails(transactionId: string, data: { categoryId?: string, projectId?: string | null, note?: string }) {
     const user = await requireUser();
+    idSchema.parse(transactionId);
+
+    const updateData: Record<string, unknown> = {};
+    if (data.categoryId !== undefined) {
+        idSchema.parse(data.categoryId);
+        updateData.categoryId = data.categoryId;
+    }
+    if (data.projectId !== undefined) updateData.projectId = data.projectId === "none" ? null : data.projectId;
+    if (data.note !== undefined) updateData.note = z.string().max(500).parse(data.note);
 
     try {
-        const updateData: Record<string, unknown> = {};
-        if (data.categoryId !== undefined) updateData.categoryId = data.categoryId === "none" ? null : data.categoryId;
-        if (data.projectId !== undefined) updateData.projectId = data.projectId === "none" ? null : data.projectId;
-        if (data.note !== undefined) updateData.note = data.note;
-
         await prisma.transaction.update({
             where: { id: transactionId, userId: user.id },
             data: updateData as Prisma.TransactionUncheckedUpdateInput
@@ -310,9 +349,6 @@ export async function getSpendingAnalytics() {
             userId: user.id,
             type: "expense",
             date: { gte: fourteenDaysAgo },
-            category: {
-                name: { notIn: ["Внутрішній переказ"] }
-            }
         },
         orderBy: { date: "asc" }
     });
@@ -370,7 +406,6 @@ export async function getExchangeRates() {
     try {
         return await getCachedRates();
     } catch (error) {
-        console.error("Failed to fetch rates:", error);
         return FALLBACK_RATES;
     }
 }
@@ -380,6 +415,11 @@ export async function getExchangeRates() {
  */
 export async function createBudget(categoryId: string, amount: number) {
     const user = await requireUser();
+
+    if (amount <= 0) return { success: false, error: "Сума має бути більше 0" };
+
+    const cat = await prisma.category.findFirst({ where: { id: categoryId, userId: user.id } });
+    if (!cat) return { success: false, error: "Категорію не знайдено" };
 
     try {
         await prisma.budget.upsert({
@@ -477,18 +517,10 @@ export async function getFinancialStats(period: "month" | "year" = "month") {
         }
     });
 
-    const transferCategoryIdSet = new Set<string>();
-    const transferCategories = await prisma.category.findMany({
-        where: { userId: user.id, name: "Внутрішній переказ" },
-        select: { id: true },
-    });
-    transferCategories.forEach((c) => transferCategoryIdSet.add(c.id));
-
     const filteredExpenses = expensesByCategory
-        .filter((item) => !transferCategoryIdSet.has(item.categoryId));
+        .filter((item) => item.categoryId !== null);
 
-    // Batch fetch all needed categories at once instead of N+1
-    const categoryIds = filteredExpenses.map(item => item.categoryId);
+    const categoryIds = filteredExpenses.map(item => item.categoryId).filter((id): id is string => id !== null);
     const categories = await prisma.category.findMany({
         where: { id: { in: categoryIds } },
         select: { id: true, name: true },
@@ -496,18 +528,18 @@ export async function getFinancialStats(period: "month" | "year" = "month") {
     const categoryMap = new Map(categories.map(c => [c.id, c.name]));
 
     const categoryStats = filteredExpenses.map((item) => ({
-        name: categoryMap.get(item.categoryId) || "Інше",
+        name: categoryMap.get(item.categoryId!) || "Інше",
         value: Number(item._sum.amount),
         fill: ""
     }));
 
     const income = await prisma.transaction.aggregate({
-        where: { userId: user.id, type: "income", date: { gte: startDate }, categoryId: { notIn: [...transferCategoryIdSet] } },
+        where: { userId: user.id, type: "income", date: { gte: startDate } },
         _sum: { amount: true }
     });
 
     const expense = await prisma.transaction.aggregate({
-        where: { userId: user.id, type: "expense", date: { gte: startDate }, categoryId: { notIn: [...transferCategoryIdSet] } },
+        where: { userId: user.id, type: "expense", date: { gte: startDate } },
         _sum: { amount: true }
     });
 
@@ -534,16 +566,23 @@ export async function createSavingsGoal(data: {
     accountId?: string;
 }) {
     const user = await requireUser();
+    const validated = createSavingsGoalSchema.parse(data);
+
+    if (validated.accountId) {
+        const acc = await prisma.financeAccount.findFirst({ where: { id: validated.accountId, userId: user.id } });
+        if (!acc) throw new Error("Рахунок не знайдено або доступ заборонено");
+    }
+
     try {
         await prisma.savingsGoal.create({
             data: {
                 userId: user.id,
-                name: data.name,
-                targetAmount: data.targetAmount,
-                deadline: data.deadline,
-                color: data.color,
-                goalType: data.goalType || "general",
-                accountId: data.accountId,
+                name: validated.name,
+                targetAmount: validated.targetAmount,
+                deadline: validated.deadline,
+                color: validated.color,
+                goalType: validated.goalType || "general",
+                accountId: validated.accountId,
                 status: "active"
             }
         });
@@ -568,19 +607,18 @@ export async function updateSavingsGoal(id: string, data: {
     deadline?: Date;
 }) {
     const user = await requireUser();
+    const validated = updateSavingsGoalSchema.parse(data);
+    idSchema.parse(id);
+
+    if (validated.accountId) {
+        const acc = await prisma.financeAccount.findFirst({ where: { id: validated.accountId, userId: user.id } });
+        if (!acc) throw new Error("Рахунок не знайдено або доступ заборонено");
+    }
+
     try {
         await prisma.savingsGoal.update({
             where: { id, userId: user.id },
-            data: {
-                currentAmount: data.currentAmount,
-                name: data.name,
-                color: data.color,
-                goalType: data.goalType,
-                status: data.status,
-                accountId: data.accountId,
-                targetAmount: data.targetAmount,
-                deadline: data.deadline,
-            }
+            data: validated
         });
         revalidatePath("/dashboard/finance");
         return { success: true };
@@ -594,6 +632,7 @@ export async function updateSavingsGoal(id: string, data: {
  */
 export async function deleteSavingsGoal(id: string) {
     const user = await requireUser();
+    idSchema.parse(id);
     try {
         await prisma.savingsGoal.delete({
             where: { id, userId: user.id }
@@ -620,19 +659,30 @@ export async function createRecurringPayment(data: {
     isExpectedIncome?: boolean;
 }) {
     const user = await requireUser();
+    const validated = createRecurringPaymentSchema.parse(data);
+
+    if (validated.accountId) {
+        const acc = await prisma.financeAccount.findFirst({ where: { id: validated.accountId, userId: user.id } });
+        if (!acc) throw new Error("Рахунок не знайдено або доступ заборонено");
+    }
+    if (validated.category) {
+        const cat = await prisma.category.findFirst({ where: { id: validated.category, userId: user.id } });
+        if (!cat) throw new Error("Категорію не знайдено або доступ заборонено");
+    }
+
     try {
         await prisma.recurringPayment.create({
             data: {
                 userId: user.id,
-                name: data.name,
-                amount: Math.abs(data.amount),
-                type: data.type || (data.amount >= 0 ? "income" : "expense"),
-                frequency: data.frequency,
-                nextPaymentDate: data.nextPaymentDate,
-                categoryId: data.category,
-                accountId: data.accountId,
-                affectsForecast: data.affectsForecast ?? true,
-                isExpectedIncome: data.isExpectedIncome ?? false,
+                name: validated.name,
+                amount: validated.amount,
+                type: validated.type || "expense",
+                frequency: validated.frequency,
+                nextPaymentDate: validated.nextPaymentDate,
+                categoryId: validated.category,
+                accountId: validated.accountId,
+                affectsForecast: validated.affectsForecast ?? true,
+                isExpectedIncome: validated.isExpectedIncome ?? false,
             }
         });
         revalidatePath("/dashboard/finance");
@@ -647,6 +697,7 @@ export async function createRecurringPayment(data: {
  */
 export async function deleteRecurringPayment(id: string) {
     const user = await requireUser();
+    idSchema.parse(id);
     try {
         await prisma.recurringPayment.delete({
             where: { id, userId: user.id }
@@ -666,12 +717,13 @@ export async function deleteRecurringPayment(id: string) {
  */
 export async function createShoppingItem(data: { name: string; url?: string; price?: number }) {
     const user = await requireUser();
+    const validated = shoppingItemSchema.parse(data);
     try {
         const item = await prisma.shoppingItem.create({
             data: {
                 userId: user.id,
-                name: data.name,
-                url: data.url, // Keep as main/fallback
+                name: validated.name,
+                url: validated.url, // Keep as main/fallback
                 price: data.price,
                 status: "PLANNED"
             }
@@ -717,7 +769,6 @@ async function scrapePrice(url: string): Promise<{ price: number | null, siteNam
         });
 
         if (!response.ok) {
-            console.error(`Scraping failed: ${response.status} for ${url}`);
             return { price: null, siteName: null };
         }
 
@@ -777,7 +828,6 @@ async function scrapePrice(url: string): Promise<{ price: number | null, siteNam
 
         return { price, siteName };
     } catch (error) {
-        console.error("Scraping error:", error);
         return { price: null, siteName: null };
     }
 }
@@ -787,6 +837,8 @@ async function scrapePrice(url: string): Promise<{ price: number | null, siteNam
  */
 export async function addShoppingLink(itemId: string, url: string) {
     const user = await requireUser();
+    idSchema.parse(itemId);
+    z.string().url().parse(url);
     try {
         const item = await prisma.shoppingItem.findFirst({
             where: { id: itemId, userId: user.id },
@@ -816,9 +868,7 @@ export async function addShoppingLink(itemId: string, url: string) {
  */
 export async function deleteShoppingLink(linkId: string) {
     const user = await requireUser();
-    // Validate ownership via item->user relation query would be safer, 
-    // but for now simple delete is okay if we assume IDs are hard to guess.
-    // Better: verify ownership.
+    idSchema.parse(linkId);
     try {
         const link = await prisma.shoppingLink.findUnique({
             where: { id: linkId },
@@ -845,6 +895,7 @@ export async function deleteShoppingLink(linkId: string) {
  */
 export async function deleteShoppingItem(id: string) {
     const user = await requireUser();
+    idSchema.parse(id);
     try {
         await prisma.shoppingItem.delete({
             where: { id, userId: user.id }
@@ -972,8 +1023,15 @@ export async function applySmartCategorization(data: {
 }) {
     const user = await requireUser();
 
+    const cat = await prisma.category.findFirst({ where: { id: data.categoryId, userId: user.id } });
+    if (!cat) return { success: false, error: "Категорію не знайдено" };
+
+    if (data.projectId && data.projectId !== "none") {
+        const proj = await prisma.project.findFirst({ where: { id: data.projectId, userId: user.id } });
+        if (!proj) return { success: false, error: "Проєкт не знайдено" };
+    }
+
     try {
-        // 1. Оновлюємо всі існуючі транзакції з таким самим описом
         const updateData: Record<string, unknown> = { categoryId: data.categoryId };
         if (data.projectId !== undefined) {
             updateData.projectId = data.projectId === "none" ? null : data.projectId;
@@ -1020,7 +1078,6 @@ export async function applySmartCategorization(data: {
         revalidatePath("/dashboard/finance");
         return { success: true };
     } catch (error: unknown) {
-        console.error("Smart categorization error:", error);
         return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
 }
@@ -1030,6 +1087,9 @@ export async function applySmartCategorization(data: {
  */
 export async function bulkUpdateTransactions(transactionIds: string[], data: { categoryId?: string, projectId?: string | null }) {
     const user = await requireUser();
+
+    z.array(idSchema).min(1).max(100).parse(transactionIds);
+    if (data.categoryId) idSchema.parse(data.categoryId);
 
     try {
         const updateData: Record<string, unknown> = {};
@@ -1047,7 +1107,6 @@ export async function bulkUpdateTransactions(transactionIds: string[], data: { c
         revalidatePath("/dashboard/finance");
         return { success: true };
     } catch (error: unknown) {
-        console.error("Bulk update error:", error);
         return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
 }

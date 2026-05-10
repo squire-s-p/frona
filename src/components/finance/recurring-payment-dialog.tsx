@@ -44,6 +44,7 @@ import { cn } from "@/lib/utils";
 const formSchema = z.object({
     name: z.string().min(1, "Введіть назву"),
     amount: z.coerce.number().positive("Сума має бути більше 0"),
+    type: z.enum(["income", "expense"]),
     frequency: z.enum(["once", "weekly", "monthly", "yearly"]),
     nextPaymentDate: z.date(),
     categoryId: z.string().optional(),
@@ -75,6 +76,7 @@ export function RecurringPaymentDialog({
         defaultValues: {
             name: "",
             amount: 0,
+            type: "expense",
             frequency: "monthly",
             nextPaymentDate: new Date(),
             affectsForecast: true,
@@ -87,6 +89,7 @@ export function RecurringPaymentDialog({
             form.reset({
                 name: "",
                 amount: 0,
+                type: "expense",
                 frequency: "monthly",
                 nextPaymentDate: new Date(),
                 affectsForecast: true,
@@ -101,7 +104,7 @@ export function RecurringPaymentDialog({
             const cats = await getCategories();
             setCategories(cats);
         } catch (error) {
-            console.error("Failed to fetch categories:", error);
+            toast.error("Не вдалося завантажити категорії");
         }
     }
 
@@ -111,6 +114,7 @@ export function RecurringPaymentDialog({
             await createRecurringPayment({
                 name: values.name,
                 amount: values.amount,
+                type: values.type,
                 frequency: values.frequency,
                 nextPaymentDate: values.nextPaymentDate,
                 category: values.categoryId,
@@ -123,7 +127,6 @@ export function RecurringPaymentDialog({
             onSuccess?.();
             form.reset();
         } catch (error) {
-            console.error("Failed to create recurring payment:", error);
             toast.error("Помилка при створенні");
         } finally {
             setIsLoading(false);
@@ -159,13 +162,21 @@ export function RecurringPaymentDialog({
                         <div className="grid grid-cols-2 gap-4">
                             <FormField
                                 control={form.control}
-                                name="amount"
+                                name="type"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Сума (від&apos;ємна для витрат)</FormLabel>
-                                        <FormControl>
-                                            <Input type="number" step="0.01" {...field} />
-                                        </FormControl>
+                                        <FormLabel>Тип</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="expense">Витрата</SelectItem>
+                                                <SelectItem value="income">Дохід</SelectItem>
+                                            </SelectContent>
+                                        </Select>
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -197,6 +208,20 @@ export function RecurringPaymentDialog({
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="amount"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Сума</FormLabel>
+                                        <FormControl>
+                                            <Input type="number" step="0.01" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
                             <FormField
                                 control={form.control}
                                 name="nextPaymentDate"

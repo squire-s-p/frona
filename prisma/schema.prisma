@@ -601,6 +601,7 @@ enum Priority {
 enum MoneyType {
   income
   expense
+  transfer
 }
 
 enum ProjectStatus {

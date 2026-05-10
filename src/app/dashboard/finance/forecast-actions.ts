@@ -4,23 +4,27 @@ import { prisma } from "@/lib/prisma";
 import { addDays, addMonths, format } from "date-fns";
 import { uk } from "date-fns/locale";
 import { requireUser } from "@/lib/require-user";
+import { z } from "zod";
 
-export interface ForecastOptions {
-    months?: number;
-    whatIf?: {
-        name: string;
-        amount: number;
-        date: Date;
-        type: "income" | "expense";
-    }[];
-}
+const forecastOptionsSchema = z.object({
+    months: z.number().int().min(1).max(24).optional(),
+    whatIf: z.array(z.object({
+        name: z.string().max(100),
+        amount: z.number().positive(),
+        date: z.coerce.date(),
+        type: z.enum(["income", "expense"]),
+    })).optional(),
+}).optional();
+
+export type ForecastOptions = z.infer<typeof forecastOptionsSchema>;
 
 /**
  * Герує прогноз руху коштів на вказану кількість місяців (Симулятор)
  */
 export async function generateForecast(options: ForecastOptions = { months: 6 }) {
     const user = await requireUser();
-    const months = options.months || 6;
+    const validated = forecastOptionsSchema.parse(options);
+    const months = validated?.months || 6;
     const now = new Date();
     const endDate = addMonths(now, months);
 
@@ -51,7 +55,8 @@ export async function generateForecast(options: ForecastOptions = { months: 6 })
         where: {
             userId: user.id,
             date: { gt: now, lte: endDate },
-            isRecurring: false
+            isRecurring: false,
+            type: { in: ["income", "expense"] }
         }
     });
 
@@ -107,8 +112,8 @@ export async function generateForecast(options: ForecastOptions = { months: 6 })
         }
 
         // В) What-if сценарії
-        if (options.whatIf) {
-            const dayWhatIf = options.whatIf.filter(w => new Date(w.date).toDateString() === dStr);
+        if (validated?.whatIf) {
+            const dayWhatIf = validated.whatIf.filter(w => new Date(w.date).toDateString() === dStr);
             for (const w of dayWhatIf) {
                 const amount = Math.abs(w.amount);
                 if (w.type === "income") dayIncome += amount;

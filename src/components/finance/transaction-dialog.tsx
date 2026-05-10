@@ -60,8 +60,9 @@ import {
     getTags,
     getCategories,
     getClients,
-    createTag
+    createTag,
 } from "@/app/dashboard/finance/phase1-actions";
+import { getFinanceAccounts, getProjects } from "@/app/dashboard/finance/actions";
 import { toast } from "sonner";
 
 const formSchema = z.object({
@@ -90,8 +91,8 @@ type FormValues = z.infer<typeof formSchema>;
 interface TransactionDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    accounts: any[];
-    projects: any[];
+    accounts: Awaited<ReturnType<typeof getFinanceAccounts>>;
+    projects: Awaited<ReturnType<typeof getProjects>>;
     onSuccess?: () => void;
 }
 
@@ -107,7 +108,7 @@ export function TransactionDialog({
     const [isLoading, setIsLoading] = React.useState(false);
     const [categories, setCategories] = React.useState<any[]>([]);
     const [tags, setTags] = React.useState<any[]>([]);
-    const [clients, setClients] = React.useState<any[]>([]);
+    const [clients, setClients] = React.useState<Awaited<ReturnType<typeof getClients>>>([]);
     const [newTagName, setNewTagName] = React.useState("");
     const [isCreatingTag, setIsCreatingTag] = React.useState(false);
 
@@ -135,7 +136,7 @@ export function TransactionDialog({
 
     const { fields, append, remove } = useFieldArray({
         control,
-        name: "splits" as any,
+        name: "splits",
     });
 
     const loadData = React.useCallback(async () => {
@@ -211,12 +212,12 @@ export function TransactionDialog({
                     tagIds: values.tagIds,
                     clientId: values.clientId,
                     projectId: values.projectId === "none" ? undefined : values.projectId,
-                } as any);
+                });
             } else {
                 await createTransactionWithTags({
                     ...values,
                     projectId: values.projectId === "none" ? undefined : values.projectId,
-                } as any);
+                });
             }
             toast.success("Транзакцію створено");
             onOpenChange(false);
@@ -249,7 +250,7 @@ export function TransactionDialog({
                 </DialogHeader>
 
                 <Form {...form}>
-                    <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-6">
+                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                         <div className="flex p-1 bg-zinc-100 dark:bg-zinc-900 rounded-lg">
                             <Button
                                 type="button"
